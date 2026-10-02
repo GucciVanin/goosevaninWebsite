@@ -1,0 +1,2 @@
+/* Lets shared shell styles position the footer without an extra layout box. */
+:host { display: contents; }

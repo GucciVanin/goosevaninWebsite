@@ -1,0 +1,35 @@
+<!-- Keeps contact details and the submission workflow together at their feature boundary. -->
+<section class="contact page-section" id="contact">
+  <div class="contact-aside">
+    <div class="section-label"><span>04</span><span>Start a conversation</span></div>
+    <h2>Have a good<br /><em>problem?</em></h2>
+    <p>Tell me what you are working through. I am always interested in the thoughtful, slightly tricky ones.</p>
+    <a class="contact-email" [href]="'mailto:' + profile.email">{{ profile.email }} <span>↗</span></a>
+  </div>
+  <div class="contact-form-wrap">
+    @if (submitted()) {
+      <div class="form-success" role="status">
+        <span>Thanks for reaching out.</span>
+        <p>I need to verify your email before the message is delivered.</p>
+        <button type="button" class="text-link" (click)="submitted.set(false)">Send another message ↗</button>
+      </div>
+    } @else {
+      <form #contactForm="ngForm" (ngSubmit)="submit(contactForm.value)" novalidate>
+        <label><span>Your name</span><input name="name" ngModel required placeholder="What should I call you?" /></label>
+        <label><span>Email address</span><input name="email" ngModel required email type="email" placeholder="you@company.com" /></label>
+        <label>
+          <span>Reason</span>
+          <select name="reason" ngModel required>
+            <option value="" disabled selected>Select a reason</option>
+            <option value="Work or collaboration">Work or collaboration</option>
+            <option value="Personal note">Personal note</option>
+          </select>
+        </label>
+        <label><span>What are you thinking about?</span><textarea name="message" ngModel required rows="4" placeholder="A new product, a tricky system, a good question..."></textarea></label>
+        <input type="text" name="website" ngModel autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;" />
+        <button class="button button-dark button-submit" type="submit" [disabled]="contactForm.invalid || isSubmitting()">{{ isSubmitting() ? 'Sending...' : 'Send message' }} <span>↗</span></button>
+        @if (error()) { <p class="form-error">{{ error() }}</p> }
+      </form>
+    }
+  </div>
+</section>

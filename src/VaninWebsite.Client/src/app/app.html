@@ -1,0 +1,14 @@
+<!-- Keeps route content inside one shared shell so navigation stays consistent. -->
+<router-outlet />
+@if (!authRoute()) {
+  <div class="site-shell">
+    <app-site-header [activeSection]="activeSection()" [hidden]="headerHidden()" [navItems]="navItems" (navigate)="scrollTo($event)"></app-site-header>
+
+    <main>
+      <app-home-page (navigate)="scrollTo($event)"></app-home-page>
+      <app-blog-page></app-blog-page>
+      <app-contact-page></app-contact-page>
+    </main>
+    <app-site-footer (navigate)="scrollTo($event)"></app-site-footer>
+  </div>
+}

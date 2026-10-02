@@ -1,0 +1,2 @@
+/* Lets shared shell styles position the header without an extra layout box. */
+:host { display: contents; }

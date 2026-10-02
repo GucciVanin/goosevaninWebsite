@@ -1,0 +1,175 @@
+/* Keeps the blog's reading surface isolated from shared navigation and shell styles. */
+.blog-page {
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  min-height: 100vh;
+  padding: 9rem 8vw 8rem;
+}
+.blog-hero {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 5rem;
+}
+.blog-kicker,
+.post-meta,
+.blog-controls span {
+  color: var(--accent-soft);
+  font: 11px var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.blog-hero h1 {
+  font: 400 clamp(58px, 9vw, 126px)/0.86 var(--display);
+  letter-spacing: -0.08em;
+  margin: 30px 0;
+}
+.blog-hero h1 em {
+  color: var(--accent);
+}
+.blog-hero > p:last-child {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 420px;
+}
+.blog-controls {
+  align-items: end;
+  display: flex;
+  gap: 4rem;
+  justify-content: space-between;
+  padding: 2rem 0;
+}
+.blog-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(420px, 100%);
+}
+.blog-controls input {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--ink);
+  font: 16px var(--mono);
+  outline: 0;
+  padding: 13px 0;
+}
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.categories button,
+.back-button {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  cursor: pointer;
+  font: 10px var(--mono);
+  padding: 10px 12px;
+  text-transform: uppercase;
+}
+.categories button.active,
+.categories button:hover,
+.back-button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+.post-card {
+  align-items: start;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 55px 1fr 30px;
+  padding: 2rem 0;
+  transition:
+    padding 0.25s,
+    background 0.25s;
+}
+.post-card:hover {
+  background: rgba(128, 255, 207, 0.04);
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.post-index {
+  color: var(--accent);
+  font: 13px var(--mono);
+}
+.post-card h2 {
+  font: 400 38px var(--display);
+  letter-spacing: -0.05em;
+  margin: 12px 0;
+}
+.post-card p:not(.post-meta),
+.post-content {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 600px;
+}
+.post-arrow {
+  color: var(--accent-soft);
+  font-size: 22px;
+}
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.tag-list span {
+  color: var(--muted);
+  font: 10px var(--mono);
+}
+.post-detail {
+  border: 1px solid var(--line);
+  margin-top: 2rem;
+  max-width: 850px;
+  padding: 3rem;
+}
+.back-button {
+  margin-bottom: 4rem;
+}
+.post-detail h2 {
+  font: 400 clamp(44px, 7vw, 82px)/0.95 var(--display);
+  letter-spacing: -0.07em;
+  margin: 25px 0;
+}
+.post-lede {
+  color: var(--accent-soft);
+  font: 21px/1.5 var(--display);
+  max-width: 620px;
+}
+.post-content {
+  font-size: 17px;
+  margin-top: 3rem;
+}
+.empty-state {
+  color: var(--muted);
+  font: 12px var(--mono);
+  padding: 4rem 0;
+}
+@media (max-width: 760px) {
+  .blog-page {
+    padding: 6rem 7vw;
+  }
+  .blog-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .post-card {
+    gap: 1rem;
+    grid-template-columns: 32px 1fr 20px;
+  }
+  .post-card h2 {
+    font-size: 29px;
+  }
+  .post-detail {
+    padding: 1.5rem;
+  }
+  .back-button {
+    margin-bottom: 2rem;
+  }
+}

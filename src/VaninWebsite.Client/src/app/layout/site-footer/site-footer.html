@@ -1,0 +1,12 @@
+<!-- Keeps site identity and external links consistent across routed views. -->
+<footer>
+  <a class="brand" href="#home" (click)="onNavigate('home', $event)">
+    <span class="brand-mark">{{ profile.initials }}</span>
+    <span class="brand-copy"><strong>{{ profile.name }}</strong><small>{{ profile.title }}</small></span>
+  </a>
+  <p>Designed and built with attention. <span>© 2025</span></p>
+  <div class="footer-links">
+    <a [href]="profile.links.github" target="_blank" rel="noreferrer">GitHub ↗</a>
+    <a [href]="profile.links.linkedin" target="_blank" rel="noreferrer">LinkedIn ↗</a>
+  </div>
+</footer>

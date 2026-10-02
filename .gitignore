@@ -1,0 +1,22 @@
+# Secrets and local certificates
+.env
+certs/
+*.pfx
+*.p12
+
+# Build output
+**/bin/
+**/obj/
+src/VaninWebsite.Client/node_modules/
+src/VaninWebsite.Client/.angular/
+src/VaninWebsite.Client/dist/
+src/VaninWebsite.Api/wwwroot/
+
+# Local runtime state (database, Data Protection keys)
+src/VaninWebsite.Api/Data/*.db
+src/VaninWebsite.Api/Data/*.db-shm
+src/VaninWebsite.Api/Data/*.db-wal
+src/VaninWebsite.Api/data-protection-keys/
+
+# IDE
+.vs/

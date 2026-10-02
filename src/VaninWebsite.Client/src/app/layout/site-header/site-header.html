@@ -1,0 +1,18 @@
+<!-- Centralizes primary navigation so every page shares the same wayfinding. -->
+<header class="topbar" [class.header-hidden]="hidden()">
+  <a class="brand" href="#home" (click)="onNavigate('home', $event)" [attr.aria-label]="profile.name + ' home'">
+    <span class="brand-mark">{{ profile.initials }}</span>
+    <span class="brand-copy"><strong>{{ profile.name }}</strong><small>{{ profile.title }}</small></span>
+  </a>
+  <nav class="desktop-nav" aria-label="Primary navigation">
+    @for (item of navItems(); track item.id) {
+      <a [class.active]="activeSection() === item.id" [href]="'#' + item.id" (click)="onNavigate(item.id, $event)">
+        {{ item.label }}
+      </a>
+    }
+  </nav>
+  <div class="topbar-actions">
+    <a class="topbar-login" routerLink="/sign-in">Sign in</a>
+    <a class="topbar-cta" href="#contact" (click)="onNavigate('contact', $event)">Let's talk <span>↗</span></a>
+  </div>
+</header>

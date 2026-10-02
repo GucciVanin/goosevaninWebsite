@@ -1,0 +1,59 @@
+<!-- Keeps search, filtering, and post content in one focused reading view. -->
+<section class="blog-page">
+  <div class="blog-hero">
+    <p class="blog-kicker">// personal transmission log</p>
+    <h1>Signals from<br /><em>the field.</em></h1>
+    <p>Daily life, security engineering, and the projects that keep me curious.</p>
+  </div>
+  <div class="blog-controls">
+    <label
+      ><span>Search notes</span
+      ><input
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+        placeholder="try 'systems' or 'tools'"
+    /></label>
+    <div class="categories" aria-label="Filter by category">
+      @for (item of categories; track item) {
+        <button type="button" [class.active]="category() === item" (click)="category.set(item)">
+          {{ item }}
+        </button>
+      }
+    </div>
+  </div>
+  @if (selected(); as post) {
+    <article class="post-detail">
+      <button class="back-button" type="button" (click)="selected.set(null)">← all signals</button>
+      <p class="post-meta">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</p>
+      <h2>{{ post.title }}</h2>
+      <p class="post-lede">{{ post.excerpt }}</p>
+      <p class="post-content">{{ post.content }}</p>
+      <div class="tag-list">
+        @for (tag of post.tags; track tag) {
+          <span>#{{ tag }}</span>
+        }
+      </div>
+    </article>
+  } @else {
+    <div class="post-list">
+      @for (post of filteredPosts(); track post.slug) {
+        <article class="post-card" (click)="selected.set(post)">
+          <div class="post-index">{{ $index + 1 }}</div>
+          <div>
+            <p class="post-meta">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</p>
+            <h2>{{ post.title }}</h2>
+            <p>{{ post.excerpt }}</p>
+            <div class="tag-list">
+              @for (tag of post.tags; track tag) {
+                <span>#{{ tag }}</span>
+              }
+            </div>
+          </div>
+          <span class="post-arrow">↗</span>
+        </article>
+      } @empty {
+        <p class="empty-state">No signal found. Try another query.</p>
+      }
+    </div>
+  }
+</section>

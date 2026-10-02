@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>VaninWebsite.Api</RootNamespace>
+    <!-- Dotnet user-secrets id: keeps SMTP credentials outside the repository. -->
+    <UserSecretsId>vaninwebsite-api</UserSecretsId>
+    <SpaRoot>..\VaninWebsite.Client\</SpaRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
+  </ItemGroup>
+
+  <!-- The Angular client builds into this project's wwwroot and is served from the same origin. -->
+  <Target Name="BuildClient" BeforeTargets="Build" Condition="'$(SkipClientBuild)' != 'true'">
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+  </Target>
+
+</Project>

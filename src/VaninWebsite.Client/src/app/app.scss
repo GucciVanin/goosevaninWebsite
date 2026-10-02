@@ -1,0 +1,8 @@
+/* Keeps shell-level layout rules out of individual feature components. */
+:host {
+  display: block;
+}
+
+.site-shell {
+  overflow: hidden;
+}

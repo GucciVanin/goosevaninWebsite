@@ -1,0 +1,17 @@
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/node_modules
+**/.angular
+**/dist
+**/.env
+**/secrets.json
+tests
+Docs
+certs
+*.md
+src/VaninWebsite.Api/Data
+src/VaninWebsite.Api/data-protection-keys
+src/VaninWebsite.Api/wwwroot
