@@ -7,16 +7,16 @@ certs/
 # Build output
 **/bin/
 **/obj/
-src/VaninWebsite.Client/node_modules/
-src/VaninWebsite.Client/.angular/
-src/VaninWebsite.Client/dist/
-src/VaninWebsite.Api/wwwroot/
+src/GooseWebsite.Client/node_modules/
+src/GooseWebsite.Client/.angular/
+src/GooseWebsite.Client/dist/
+src/GooseWebsite.Api/wwwroot/
 
 # Local runtime state (database, Data Protection keys)
-src/VaninWebsite.Api/Data/*.db
-src/VaninWebsite.Api/Data/*.db-shm
-src/VaninWebsite.Api/Data/*.db-wal
-src/VaninWebsite.Api/data-protection-keys/
+src/GooseWebsite.Api/Data/*.db
+src/GooseWebsite.Api/Data/*.db-shm
+src/GooseWebsite.Api/Data/*.db-wal
+src/GooseWebsite.Api/data-protection-keys/
 
 # IDE
 .vs/

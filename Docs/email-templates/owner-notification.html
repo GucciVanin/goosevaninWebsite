@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>New contact message</title>
+<style>
+  body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+  img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; }
+  @media only screen and (max-width:620px) {
+    .container { width:100% !important; }
+    .pad { padding-left:20px !important; padding-right:20px !important; }
+    .h1 { font-size:26px !important; line-height:32px !important; }
+    .stack { display:block !important; width:100% !important; padding-bottom:2px !important; border-bottom:0 !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background-color:#05060f;" bgcolor="#05060f">
+<!-- Preheader: inbox preview text, hidden in the body. -->
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#05060f;">New message from {{name}}: {{reason}}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#05060f" style="background-color:#05060f;">
+<tr><td align="center" style="padding:28px 12px;">
+  <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+    <tr><td style="font-size:0; line-height:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td width="50%" height="3" bgcolor="#ff2bd6" style="height:3px; line-height:3px; font-size:0;">&nbsp;</td>
+        <td width="50%" height="3" bgcolor="#19e6ff" style="height:3px; line-height:3px; font-size:0;">&nbsp;</td>
+      </tr></table>
+    </td></tr>
+
+    <!-- Header -->
+    <tr><td class="pad" align="center" bgcolor="#000000" style="background-color:#000000; padding:26px 32px 18px 32px; border-left:1px solid #23264a; border-right:1px solid #23264a;">
+      <a href="{{site_url}}" style="text-decoration:none;"><img src="{{logo_url}}" width="150" alt="GCV, Gustavo Couto Vanin" style="display:block; width:150px; height:auto; margin:0 auto;"></a>
+      <div style="padding-top:14px; font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:4px; text-transform:uppercase; color:#8b90b8;">Build <span style="color:#ff2bd6;">&middot;</span> Break <span style="color:#19e6ff;">&middot;</span> Improve</div>
+    </td></tr>
+
+    <!-- Card -->
+    <tr><td class="pad" bgcolor="#0b0d1f" style="background-color:#0b0d1f; padding:34px 40px 36px 40px; border-left:1px solid #23264a; border-right:1px solid #23264a; border-top:1px solid #23264a;">
+      <div style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#ff2bd6; padding-bottom:12px;">// Incoming transmission</div>
+
+      <h1 class="h1" style="font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-weight:800; font-size:32px; line-height:38px; letter-spacing:1px; text-transform:uppercase; color:#ffffff; margin:0 0 16px 0;">New contact<br><span style="color:#ff2bd6;">message</span></h1>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 22px 0; border-top:1px solid #23264a;">
+        <tr>
+          <td class="stack" width="110" valign="top" style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; padding:12px 0; border-bottom:1px solid #23264a;">From</td>
+          <td class="stack" valign="top" style="font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:15px; color:#ffffff; padding:12px 0; border-bottom:1px solid #23264a;">{{name}}</td>
+        </tr>
+        <tr>
+          <td class="stack" width="110" valign="top" style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; padding:12px 0; border-bottom:1px solid #23264a;">Email</td>
+          <td class="stack" valign="top" style="font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:15px; color:#ffffff; padding:12px 0; border-bottom:1px solid #23264a;"><a href="mailto:{{sender_email}}" style="color:#19e6ff; text-decoration:none;">{{sender_email}}</a> <span style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#3dff9e;">&#10003; verified</span></td>
+        </tr>
+        <tr>
+          <td class="stack" width="110" valign="top" style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; padding:12px 0; border-bottom:1px solid #23264a;">Reason</td>
+          <td class="stack" valign="top" style="font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:15px; color:#ffffff; padding:12px 0; border-bottom:1px solid #23264a;">{{reason}}</td>
+        </tr>
+      </table>
+      <div style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; padding:0;">Message</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 18px 0;"><tr>
+        <td width="3" bgcolor="#ff2bd6" style="width:3px; background-color:#ff2bd6; font-size:0;">&nbsp;</td>
+        <td bgcolor="#080a18" style="background-color:#080a18; padding:16px 18px; border:1px solid #23264a; border-left:0;">
+          <div style="font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:14px; line-height:22px; color:#e8eaff; white-space:pre-wrap;">{{message}}</div>
+        </td>
+      </tr></table>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 4px 0;"><tr>
+        <td bgcolor="#0b0d1f" style="border:1px solid #19e6ff; border-left:3px solid #ff2bd6; border-bottom:3px solid #ff2bd6; background-color:#0b0d1f;">
+          <a href="mailto:{{sender_email}}" target="_blank" style="display:block; padding:15px 30px; font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:13px; font-weight:bold; letter-spacing:3px; text-transform:uppercase; color:#ffffff; text-decoration:none;">Reply to {{name}} &rarr;</a>
+        </td>
+      </tr></table>
+    </td></tr>
+
+    <!-- Footer -->
+    <tr><td class="pad" align="center" bgcolor="#000000" style="background-color:#000000; padding:22px 32px 26px 32px; border:1px solid #23264a;">
+      <div style="font-family:Consolas,'SFMono-Regular','Courier New',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; line-height:20px;">Curious mind. Practical solutions. Real impact.</div>
+      <div style="padding-top:10px; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:12px; line-height:18px; color:#6c7199;">Gustavo Couto Vanin &middot; <a href="{{site_url}}" style="color:#19e6ff; text-decoration:none;">{{site_url}}</a></div>
+      <div style="padding-top:10px; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:11px; line-height:16px; color:#555a80;">Sent by the contact form on {{site_url}} after the sender confirmed their email address. Replying to this email replies to the sender.</div>
+    </td></tr>
+
+    <tr><td style="font-size:0; line-height:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td width="50%" height="3" bgcolor="#19e6ff" style="height:3px; line-height:3px; font-size:0;">&nbsp;</td>
+        <td width="50%" height="3" bgcolor="#ff2bd6" style="height:3px; line-height:3px; font-size:0;">&nbsp;</td>
+      </tr></table>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>

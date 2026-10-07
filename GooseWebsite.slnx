@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GooseWebsite.Api/GooseWebsite.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GooseWebsite.Api.Tests/GooseWebsite.Api.Tests.csproj" />
+  </Folder>
+</Solution>

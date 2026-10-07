@@ -1,7 +1,9 @@
-name: vaninwebsite
+name: goosewebsite
 
 services:
   web:
+    image: goosewebsite-web:latest
+    container_name: goosewebsite-web
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,7 +12,7 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8888
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: Data Source=/data/vaninwebsite.db
+      ConnectionStrings__Default: Data Source=/data/goosewebsite.db
       DataProtection__KeysPath: /data/keys
       ForwardedHeaders__KnownProxies__0: 172.30.100.2
       PublicBaseUrl: https://${SITE_DOMAIN:-localhost}
@@ -21,6 +23,10 @@ services:
       Email__Smtp__Password: ${SMTP_PASSWORD:-}
       Email__Smtp__FromEmail: ${SMTP_FROM_EMAIL:-}
       Email__Smtp__FromName: ${SMTP_FROM_NAME:-Gustavo Couto Vanin}
+      # MailerSend HTTP API: sends the templated contact emails. The sender defaults to the SMTP sender.
+      MailerSend__ApiKey: ${MAILERSEND_API_KEY:-}
+      MailerSend__FromEmail: ${MAILERSEND_FROM_EMAIL:-${SMTP_FROM_EMAIL:-}}
+      MailerSend__FromName: ${SMTP_FROM_NAME:-Gustavo Couto Vanin}
       Contact__RecipientEmail: ${CONTACT_RECIPIENT_EMAIL:-}
     volumes:
       - web-data:/data
@@ -30,6 +36,7 @@ services:
     restart: unless-stopped
 
   caddy:
+    container_name: goosewebsite-caddy
     image: caddy:2-alpine
     ports:
       - "80:80"

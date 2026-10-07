@@ -1,10 +1,10 @@
-# VaninWebsite: Our Goal
+# GooseWebsite: Our Goal
 
 *This page is the ultimate goal of the project. Every plan, feature, and design decision should serve it. If another document disagrees with this page, this page wins.*
 
 ## What we are building
 
-VaninWebsite is the public home of Gustavo Couto Vanin on the internet. It is one place where friends, family, and professional contacts can find out who he is, see the work he is proud of, read the stories he chooses to share, and get in touch with him.
+GooseWebsite is the public home of Gustavo Couto Vanin on the internet. It is one place where friends, family, and professional contacts can find out who he is, see the work he is proud of, read the stories he chooses to share, and get in touch with him.
 
 It is not a private diary and it is not a social network. It is a credible, welcoming home base that Gustavo fully controls.
 
@@ -44,7 +44,7 @@ The work is delivered in three releases, each one useful on its own.
 
 | Release | What visitors and Gustavo get |
 | --- | --- |
-| **One: a credible home base** | A public profile, a trustworthy contact form and email link, and a private area where Gustavo writes and publishes. |
+| **One: a credible home base** | A public profile, a trustworthy contact form and email link, a private area where Gustavo writes and publishes, all in a look that is his own. |
 | **Two: explore the work and stories** | Visitors can browse and read everything Gustavo has published. |
 | **Three: a conversation** | Readers can create a verified account, comment on projects and stories, and share an optional profile so people can get to know each other. Every personal detail is a choice and can be skipped. |
 
@@ -55,6 +55,7 @@ The work is delivered in three releases, each one useful on its own.
 - **Trust.** The site never claims something happened when it has not. For example, it does not say a message was delivered before the sender has confirmed their email address.
 - **Honest and human.** No invented credentials or results. The tone is curious and thoughtful, not salesy and not a stereotype of a tech person.
 - **Easy for everyone.** The site works on phones and computers, can be used without a mouse, and is readable.
+- **Looks like Gustavo.** The site wears his own logo and a design he chose, applied the same way on every page and email.
 - **Easy to keep growing.** The site is built so that features can be added, changed, or removed without rebuilding everything.
 
 ## What this project is not

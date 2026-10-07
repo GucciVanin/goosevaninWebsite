@@ -12,6 +12,6 @@ tests
 Docs
 certs
 *.md
-src/VaninWebsite.Api/Data
-src/VaninWebsite.Api/data-protection-keys
-src/VaninWebsite.Api/wwwroot
+src/GooseWebsite.Api/Data
+src/GooseWebsite.Api/data-protection-keys
+src/GooseWebsite.Api/wwwroot
