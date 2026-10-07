@@ -1,4 +1,4 @@
-# VaninWebsite
+# GooseWebsite
 
 The personal website of Gustavo Couto Vanin: a public profile, a verified contact form, and (in progress) a private editor for projects and stories.
 
@@ -15,7 +15,7 @@ The personal website of Gustavo Couto Vanin: a public profile, a verified contac
 
 ```powershell
 # 1. Build the Angular client into the API's wwwroot
-Push-Location src/VaninWebsite.Client
+Push-Location src/GooseWebsite.Client
 npm ci
 npm run build
 Pop-Location
@@ -24,17 +24,17 @@ Pop-Location
 dotnet dev-certs https --trust
 
 # 3. Run the API, which also serves the client
-dotnet run --project src/VaninWebsite.Api
+dotnet run --project src/GooseWebsite.Api
 ```
 
-The site is at `https://localhost:8889` (HTTP on 8888 redirects). For fast client iteration, run `npm start` in `src/VaninWebsite.Client`; it proxies `/api` to the running API.
+The site is at `https://localhost:8889` (HTTP on 8888 redirects). For fast client iteration, run `npm start` in `src/GooseWebsite.Client`; it proxies `/api` to the running API.
 
 ### Configuration and secrets
 
 Email settings are not in the repository. For `dotnet run`, store them as user-secrets:
 
 ```powershell
-cd src/VaninWebsite.Api
+cd src/GooseWebsite.Api
 dotnet user-secrets set "Email:Smtp:Host" "smtp.example.com"
 dotnet user-secrets set "Email:Smtp:Port" "587"
 dotnet user-secrets set "Email:Smtp:Username" "<username>"
@@ -50,7 +50,7 @@ Without them the app still runs; email sending is skipped with a warning. All se
 There is no public administrator sign-up. On the host, run:
 
 ```powershell
-dotnet run --project src/VaninWebsite.Api -- admin provision
+dotnet run --project src/GooseWebsite.Api -- admin provision
 ```
 
 It prompts for an email and a masked password.
@@ -58,8 +58,8 @@ It prompts for an email and a masked password.
 ## Test
 
 ```powershell
-dotnet test VaninWebsite.slnx -p:SkipClientBuild=true
-Push-Location src/VaninWebsite.Client; npm test -- --watch=false --browsers=ChromeHeadless; Pop-Location
+dotnet test GooseWebsite.slnx -p:SkipClientBuild=true
+Push-Location src/GooseWebsite.Client; npm test -- --watch=false --browsers=ChromeHeadless; Pop-Location
 ```
 
 ## Run with Docker
@@ -74,8 +74,8 @@ The site is served over HTTPS at `https://localhost` through Caddy. Operational 
 ## Layout
 
 ```text
-src/VaninWebsite.Api/      ASP.NET Core API (Modules/Accounts, Blog, Contact; Shared/)
-src/VaninWebsite.Client/   Angular client
+src/GooseWebsite.Api/      ASP.NET Core API (Modules/Accounts, Blog, Contact; Shared/)
+src/GooseWebsite.Client/   Angular client
 tests/                     API tests
 Docs/                      goal, project, architecture, backlog
 ```

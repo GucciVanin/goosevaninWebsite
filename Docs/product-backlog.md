@@ -2,7 +2,7 @@
 
 ## Purpose of This Document
 
-This is the living product specification and delivery backlog for Gustavo Couto Vanin's personal website (VaninWebsite). It records **why** the product exists, **what outcome** each feature must deliver, and **how completion can be verified**. It is intended for Gustavo, developers, testers, and AI agents working on the project. Read this document before changing product behavior.
+This is the living product specification and delivery backlog for Gustavo Couto Vanin's personal website (GooseWebsite). It records **why** the product exists, **what outcome** each feature must deliver, and **how completion can be verified**. It is intended for Gustavo, developers, testers, and AI agents working on the project. Read this document before changing product behavior.
 
 It is the detailed layer of a three-level documentation set. [goal.md](./goal.md) states the ultimate purpose in plain language, [project.md](./project.md) turns that purpose into a Scrum roadmap, and this file holds the stories and acceptance tests. [architecture.md](./architecture.md) describes how the code is built. If this file and `goal.md` ever disagree, `goal.md` wins.
 
@@ -38,7 +38,7 @@ Gustavo Couto Vanin is the site's author and a site administrator. More than one
 
 ### Visual and Interaction Direction
 
-**Status:** Proposed from Gustavo's confirmed persona; palette and visual metaphor have not been separately approved. Treat this as the working design brief and record any later decision in the decision log.
+**Status:** Superseded in part by Feature F9 (2026-10-02): Gustavo wants a full redesign from his own logo and an inspiration image. Until F9 is Ready and its design analysis replaces this section, treat the typography, color, and composition details below as the current implementation, not the target. The accessibility, content, and privacy rules in this section still apply. Originally: proposed from Gustavo's confirmed persona; palette and visual metaphor were not separately approved. Treat this as the working design brief and record any later decision in the decision log.
 
 The site should feel like a **humanist engineering journal**: precise enough to make Gustavo's engineering work easy to inspect, but editorial and personal enough to make his writing feel authored. Avoid a generic cybersecurity dashboard, hacker/terminal stereotype, gaming-themed portfolio, or marketing landing page. Carry forward the current editorial serif, sans-serif, and monospace typography and existing dark ink, mint, and coral tokens, while adding restrained light reading surfaces so long-form text is comfortable and the page does not become a single-color field.
 
@@ -71,7 +71,7 @@ The visual direction is accepted when the implemented public pages and editor pa
 
 | Release | Included outcomes | Exit measure |
 | --- | --- | --- |
-| R1: Credible home base | Gustavo's public profile, contact form/email delivery, provisioned administrator account(s) and sign-in, private editor for projects and stories | All R1 feature gates pass; no sensitive profile fields are exposed; only authenticated, provisioned administrators can access editing; no public project/story content or comments are required |
+| R1: Credible home base | Gustavo's public profile, contact form/email delivery, provisioned administrator account(s) and sign-in, private editor for projects and stories, and the new brand design (F9) | All R1 feature gates pass; no sensitive profile fields are exposed; only authenticated, provisioned administrators can access editing; no public project/story content or comments are required |
 | R2: Explore the work and stories | Public project and story browsing, with published content only | Every published item is reachable from its section; drafts are never visible publicly; project and story details expose the agreed fields |
 | R3: Reader conversation | Verified reader accounts, public comments on projects and stories, and optional member profiles | Readers can register and verify email; only verified readers can comment; comment privacy and author-ownership rules pass; accepted comments display without Gustavo's pre-approval |
 
@@ -104,7 +104,7 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 - [x] Render Gustavo's profile and photo with appropriate alternative text; label links by their destination.
 - [x] Review desktop and mobile first-viewport hierarchy against the visual direction; test links and sensitive-field omission and record results.
 
-**Implementation evidence (2026-09-26):** Profile content comes from the shared typed source in `src/VaninWebsite.Client/src/app/shared/models/profile.ts` and is rendered through the hero, header, footer, and contact surfaces. `src/VaninWebsite.Client/public/Headshot.svg` is rendered in the first viewport with descriptive alternative text. The production Angular build and Docker deployment pass. Browser review at 1440x900 and 320x800 confirmed the profile hierarchy, portrait visibility, no horizontal overflow, and no overlap after the responsive hero fix. The hero contact button scrolls to `#contact`; the header contact action is visible. GitHub returned HTTP 200; LinkedIn's configured URL is present and opens in a new tab, but automated requests are blocked by LinkedIn's anti-bot response. Page review found no age, exact-location, or other sensitive profile fields.
+**Implementation evidence (2026-09-26):** Profile content comes from the shared typed source in `src/GooseWebsite.Client/src/app/shared/models/profile.ts` and is rendered through the hero, header, footer, and contact surfaces. `src/GooseWebsite.Client/public/Headshot.svg` is rendered in the first viewport with descriptive alternative text. The production Angular build and Docker deployment pass. Browser review at 1440x900 and 320x800 confirmed the profile hierarchy, portrait visibility, no horizontal overflow, and no overlap after the responsive hero fix. The hero contact button scrolls to `#contact`; the header contact action is visible. GitHub returned HTTP 200; LinkedIn's configured URL is present and opens in a new tab, but automated requests are blocked by LinkedIn's anti-bot response. Page review found no age, exact-location, or other sensitive profile fields.
 
 ### User Story F1-US2: Use the Profile Accessibly
 
@@ -133,7 +133,7 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 ## Feature F2: Contact and Message Delivery
 
 **Release:** R1  
-**Status:** In Progress  
+**Status:** Done  
 **Goal:** Let personal and professional visitors send a message reliably while minimizing retained personal data and blocking obvious abuse.
 
 **Feature is complete when:** The form contains the agreed fields and reason choices, invalid input is rejected, a verified sender triggers exactly two delivery emails (one to Gustavo and one acknowledgment to the sender), pending content is removed after delivery or expiry, and abuse controls and delivery tests pass. There is no durable in-site inbox.
@@ -161,8 +161,8 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 
 ### User Story F2-US2: Verify Email Before Delivery
 
-**Status:** In Progress (reopened 2026-10-01; was recorded as Done)  
-**Estimate:** 2 US (24 hours); roughly 1 US of the original estimate remains  
+**Status:** Done (2026-10-06; reopened 2026-10-01 after review)  
+**Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I receive contact messages only after the sender proves control of the submitted email address.
 
 **Implementation evidence (2026-09-29):** The verification flow is implemented with an expiring, single-use token stored in memory and a `GET /api/contact/verify` endpoint. The form submission returns `verificationRequired: true` and exposes the verification URL instead of claiming delivery. After verification, the backend sends two SMTP emails: the message to Gustavo's configured contact address and a professional acknowledgement to the sender. The workflow was validated successfully with the provider and accepted the confirmed real inbox target. The backend build passes after the final delivery update.
@@ -179,12 +179,14 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 **Tasks:**
 
 - [x] Select and configure a mail delivery provider without committing secrets to source control. (Secrets were moved out of `appsettings.json` into user-secrets and environment variables on 2026-10-01; the credentials that were committed earlier must be rotated.)
-- [ ] Email the verification link to the submitted address and remove the token and URL from the `POST /api/contact` response.
-- [ ] Add a verification page in the client that confirms with an explicit action, and show a "check your email" state after submission.
+- [x] Email the verification link to the submitted address and remove the token and URL from the `POST /api/contact` response.
+- [x] Add a verification page in the client that confirms with an explicit action, and show a "check your email" state after submission.
 - [x] Implement expiring, single-use verification and message delivery; ensure retry behavior cannot deliver duplicates.
 - [x] Define and implement transient pending-data storage and cleanup; do not persist a durable message archive.
 - [x] Test valid, expired, replayed, and failed-delivery paths with a test mail sink; assert recipient, delivery count, and cleanup.
-- [ ] Add an end-to-end test that fails if the verification token or URL is ever returned to the submitter.
+- [x] Add an end-to-end test that fails if the verification token or URL is ever returned to the submitter.
+
+**Implementation evidence (2026-10-02):** `POST /api/contact` now emails the link to the submitted address through `IContactEmailDeliveryService.SendVerificationRequestAsync` (link only, no message body) and returns `verificationRequired` without a token or URL. If the verification email cannot be sent, the pending message is discarded and the API returns 502. The link is `/contact/verify#token=...`; the token is in the fragment, and the client page `ContactVerifyPage` confirms only after an explicit button press with `POST /api/contact/verify {token}`. `GET /api/contact/verify` no longer exists, so a link scanner cannot trigger delivery. Automated evidence: `ContactVerificationApiTests` (4 tests: link emailed to the sender and absent from the response body, nothing delivered before confirmation, a GET with the token delivers nothing, delivery happens once on POST and a replay returns 409, unknown token rejected, 502 and nothing sent when the verification email fails); the full .NET suite passes (24 tests) and the Angular suite passes (5 tests, 3 new for the confirmation page: no automatic post, expired-link message, incomplete link). Expired-link behavior is covered by the unchanged token store logic, not by a new test. **Review follow-up (2026-10-02):** a code review and a runtime run (SMTP blanked, so no email was sent) confirmed the 502 path, the absence of the token in responses, the unknown-token 409, the 429 limit, log privacy, and the confirmation page rendering in headless Chrome. The review found three defects, now fixed and tested, and recorded in `architecture.md` section 8.1: (1) a failed delivery after confirmation consumed the link, so the promised retry was rejected; `Restore` puts the message back until the original 30-minute expiry. If the notice to Gustavo is sent and only the acknowledgement fails, the restored message is marked `OwnerNotified` so a retry sends only the receipt (fixed 2026-10-06 after a second review). (2) The form could be used to email a third party repeatedly; a per-address limit (`Contact:RateLimit:MaxRequestsPerRecipient`, default 2 per window, address stored only as a hash) now applies. (3) A malformed address that made the mail library throw skipped cleanup; it is now treated as a failed send and the pending message is discarded. The .NET suite is now 28 tests (4 new). Failed sends still count against the per-IP limit, which is accepted. **Manual end-to-end check (2026-10-06, Docker stack behind Caddy with a trusted local CA, MailerSend SMTP):** Gustavo submitted the form, received the verification email, confirmed with the explicit button, and both the message to Gustavo and the acknowledgement to the sender arrived. The Definition of Done checks pass (28 .NET and 5 Angular tests, production build, no secrets or message content in logs). Replaying the used link and the 30-minute expiry were checked only by automated tests, not by hand. The MailerSend domain is a trial, so delivery to other recipients is unverified.
 
 ### User Story F2-US3: Reach Gustavo Reliably and Safely
 
@@ -240,7 +242,7 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 - [x] Configure production cookies as HttpOnly, Secure, and SameSite=Lax; require antiforgery validation for cookie-authenticated mutations.
 - [x] Test valid/invalid sign-in, sign-out, expired sessions, protected operations, privilege escalation attempts, CSRF rejection, and cookie flags through API integration tests.
 
-**Implementation evidence (2026-09-30):** Added operator-only interactive administrator provisioning (`dotnet run --project src/VaninWebsite.Api -- admin provision`), allowing multiple distinct Admin accounts while rejecting duplicate account creation and never promoting an existing user. Removed the public registration endpoint and demo identity/content seed. All account types use the single `/sign-in` route and API; login and `/me` return a server-derived `isAdmin` flag, while protected APIs independently enforce roles. Login is non-persistent, uses Identity lockout, generic errors, and an HttpOnly same-origin cookie; logout/login mutations require antiforgery tokens. Unknown-user and locked-account paths perform dummy password-hash verification to reduce login timing differences. Added the shared sign-in screen and applied `AdminOnly` plus antiforgery validation to blog mutation endpoints. Integration coverage verifies valid admin and standard-account login, backend-derived access levels, generic unknown/wrong-password/locked responses, session and antiforgery cookie flags, missing-CSRF rejection, protected writes, logout, expiry, and disabled public registration. The header component test verifies the visible shared sign-in link and `/sign-in` target. The full .NET and Angular test suites and the Angular production build pass. HTTPS Docker runtime checks are documented in the architecture; this story remains In Progress pending the remaining account and deployment acceptance work.
+**Implementation evidence (2026-09-30):** Added operator-only interactive administrator provisioning (`dotnet run --project src/GooseWebsite.Api -- admin provision`), allowing multiple distinct Admin accounts while rejecting duplicate account creation and never promoting an existing user. Removed the public registration endpoint and demo identity/content seed. All account types use the single `/sign-in` route and API; login and `/me` return a server-derived `isAdmin` flag, while protected APIs independently enforce roles. Login is non-persistent, uses Identity lockout, generic errors, and an HttpOnly same-origin cookie; logout/login mutations require antiforgery tokens. Unknown-user and locked-account paths perform dummy password-hash verification to reduce login timing differences. Added the shared sign-in screen and applied `AdminOnly` plus antiforgery validation to blog mutation endpoints. Integration coverage verifies valid admin and standard-account login, backend-derived access levels, generic unknown/wrong-password/locked responses, session and antiforgery cookie flags, missing-CSRF rejection, protected writes, logout, expiry, and disabled public registration. The header component test verifies the visible shared sign-in link and `/sign-in` target. The full .NET and Angular test suites and the Angular production build pass. HTTPS Docker runtime checks are documented in the architecture; this story remains In Progress pending the remaining account and deployment acceptance work.
 
 ### User Story F3-US2: Register and Verify Reader Accounts
 
@@ -267,11 +269,11 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 
 **Implementation evidence (2026-10-01):** Reader registration creates only an unconfirmed `Reader`, sends a 24-hour Identity confirmation link through the separate account-email sender, and always returns the same generic response for new and duplicate addresses. The token and user ID are placed in the URL fragment so they are not sent in the initial HTTP request; the verification page requires an explicit confirmation action and submits the token through a CSRF-protected POST. A resend endpoint uses the same generic response for known and unknown addresses. Identity refuses sign-in until email confirmation. The `VerifiedReader` policy requires the `Reader` role and checks current persisted `EmailConfirmed` state, so a cookie/principal alone is insufficient. Registration, resend, and verification share a fixed-window limit of five requests per client IP per ten minutes. The credential policy recorded at the time was the existing Identity minimum of eight characters (raised to twelve on 2026-10-02, see the decision log) with no composition requirement and lockout after five failed attempts for fifteen minutes. Reader password recovery is selected as a generic-response email reset flow, but its endpoints and UI remain a separate R3 follow-up; exact recovery email copy and production mail-provider delivery still require deployment verification.
 
-Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTests.cs` exercises registration through a test mail sink, generic duplicate/resend responses, no account-existence disclosure, no sign-in before confirmation, invalid/expired/replayed token rejection, GET-link non-mutation, confirmed sign-in/sign-out, live `VerifiedReader` authorization, delivery-failure resend recovery, the per-IP registration limit, and rejection when registration is disabled. The `Auth:ReaderRegistration:Enabled` setting defaults to false; Development opts in, and Production requires an explicit true setting when R3 launches. Angular headless tests verify that opening the confirmation link does not post automatically and that explicit confirmation triggers the CSRF flow. Browser review confirmed registration/sign-in and verification fit at 320px without horizontal overflow, keyboard focus reaches the confirmation action, and auth pages omit the public navigation shell. A local HTTP smoke check returned 200 for `/verify-email` and confirmed `Referrer-Policy: no-referrer`. SMTP was replaced by a test sender for automated tests; production delivery credentials were not exercised by these checks.
+Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTests.cs` exercises registration through a test mail sink, generic duplicate/resend responses, no account-existence disclosure, no sign-in before confirmation, invalid/expired/replayed token rejection, GET-link non-mutation, confirmed sign-in/sign-out, live `VerifiedReader` authorization, delivery-failure resend recovery, the per-IP registration limit, and rejection when registration is disabled. The `Auth:ReaderRegistration:Enabled` setting defaults to false; Development opts in, and Production requires an explicit true setting when R3 launches. Angular headless tests verify that opening the confirmation link does not post automatically and that explicit confirmation triggers the CSRF flow. Browser review confirmed registration/sign-in and verification fit at 320px without horizontal overflow, keyboard focus reaches the confirmation action, and auth pages omit the public navigation shell. A local HTTP smoke check returned 200 for `/verify-email` and confirmed `Referrer-Policy: no-referrer`. SMTP was replaced by a test sender for automated tests; production delivery credentials were not exercised by these checks.
 
 ### User Story F3-US3: Recover Administrator Access
 
-**Status:** Proposed  
+**Status:** Ready (approach approved 2026-10-02: operator-only reset command)  
 **Release:** R1  
 **Estimate:** 1 US (12 hours), proposed 2026-10-01  
 **Goal:** As a site administrator who has lost a password, I can regain access through an operator-authorized path without any public recovery endpoint.
@@ -412,7 +414,8 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Choose allowed formats, maximum upload size, storage location, and safe generated file names before implementation; record the choices here.
+- [x] Choose allowed formats and maximum size: JPEG, PNG, and WebP, 5 MB, generated file names (decided 2026-10-02).
+- [ ] Choose the storage location and the deletion behavior for unreferenced images (see "Decisions to Record").
 - [ ] Implement administrator-only upload handling, content-type/size validation, and safe image references.
 - [ ] Test allowed, oversized, disallowed, and unauthenticated uploads; assert response, storage state, and preview rendering.
 
@@ -493,6 +496,7 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 - [ ] Implement comment creation for published project and story identifiers.
 - [ ] Render comments with display name and safe text handling; never serialize reader email publicly.
+- [ ] Link the commenter's display name to their member profile (F8), subject to the profile viewer rule.
 - [ ] Test immediate visibility, both content types, anonymous/unverified access, and missing/unpublished targets.
 
 ### User Story F6-US2: Reply to a Comment
@@ -528,7 +532,7 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Define whether deletion is hard delete or a visible tombstone; record the choice before implementation.
+- [x] Deletion policy decided 2026-10-02: replace the comment with a "[deleted]" placeholder (text and author removed, replies stay attached).
 - [ ] Implement author-scoped edit/delete authorization on the server.
 - [ ] Test author, other-reader, and anonymous operations; assert response and persisted/public state.
 
@@ -553,7 +557,9 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Current state (2026-10-02):** `Shared/Persistence/DatabaseService.cs` is the single gateway and all modules use it. It performs **no** sanitization and **no** access checks yet, so each controller still validates for itself.
 
-**Decisions to record before this story is Ready:** which fields are sanitized and how (trimming, length limits, control-character stripping, rejecting versus normalizing); whether access rules are declared per entity (for example an attribute or a per-entity policy) or per operation; and how a rejected operation is reported to callers.
+**Decided 2026-10-02:** user-written text is normalized on save (trimmed, control characters stripped), input over the field limits is rejected with a clear error, and text is always rendered as plain text.
+
+**Decisions to record before this story is Ready:** whether access rules are declared per entity (for example an attribute or a per-entity policy) or per operation; and how a rejected operation is reported to callers.
 
 **Acceptance tests:**
 
@@ -582,10 +588,11 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Feature is complete when:** A verified user can create a profile in which every detail beyond the display name is optional and can be skipped; other signed-in users can view that profile; users can later change or remove any detail; private data (email, credentials, and anything the user left blank) is never exposed; and all F8 acceptance tests pass. F8 uses the accounts built in F3-US2 and is distinct from Gustavo's public profile in F1, which is site content, not an account profile.
 
-**Product rules for this feature (proposed 2026-10-02 from Gustavo's request; confirm before stories are `Ready`):**
+**Product rules for this feature (confirmed by Gustavo 2026-10-02):**
 
 - Every profile detail other than the display name is optional. Nothing is required to finish creating an account or profile, and each optional step offers a clear **Skip** action.
-- Profile fields in scope: hobbies/interests, profession, location, and a short "about me". Additional fields are added only by a recorded decision.
+- Profile fields in scope: hobbies/interests (200 characters), profession (100), location (100), and a short "about me" (500), all plain text. Additional fields are added only by a recorded decision.
+- Only signed-in verified users may view a member profile. Administrators have no member profile (their public identity is F1). A commenter's display name links to their profile (F6).
 - Location is a broad, free-text place (for example a region or country) and the interface discourages exact addresses. The same privacy stance applies as for Gustavo's own profile: do not ask for age or other sensitive personal details.
 - Email address, credentials, and role are never part of any profile response.
 - Content is user-written, so it is stored and displayed as safe text and passes through the F7 database safeguards once they exist.
@@ -607,8 +614,8 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Record the profile fields, length limits, and default visibility in this backlog.
-- [ ] Add the profile data (stored with the user's account in the Accounts module or in a new Profiles module; record the choice) with server-side validation of length and content.
+- [x] Profile fields, length limits, and visibility recorded (see "Decided on 2026-10-02").
+- [ ] Add the profile data in a new `Profiles` module with its own table (one row per user; proposed default, record if changed) with server-side validation of length and content.
 - [ ] Implement the create/skip screens in the client using the existing form, validation, and accessibility patterns.
 - [ ] Test skipping the whole step, skipping individual fields, partial and full profiles, over-long and markup input, and the 320 px and keyboard flows.
 
@@ -630,7 +637,8 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Record who may view profiles (signed-in verified users, or anyone) and the profile URL scheme before implementation.
+- [x] Viewer rule decided: signed-in verified users only.
+- [ ] Record the profile URL scheme before implementation.
 - [ ] Implement a profile read endpoint that returns a dedicated public profile contract (never the account entity) and authorizes with the `VerifiedReader` policy unless the decision says otherwise.
 - [ ] Implement the profile page with an empty-profile state and a not-found state.
 - [ ] Test shown versus omitted fields, response privacy, empty profile, unknown and unverified targets, and anonymous access.
@@ -657,18 +665,208 @@ Automated runtime coverage in `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Feature estimate:** 5 US (60 hours)
 
+## Feature F9: Brand and Visual Redesign
+
+**Release:** R1 (after the R1 content features, before public launch)  
+**Status:** Proposed  
+**Goal:** Give the whole site Gustavo's own identity: his logo and a visual design he chose, applied consistently to every page, email, and screen, replacing the earlier working design.
+
+**Confirmed scope (Gustavo, 2026-10-02):**
+
+- A **full visual re-skin of every page**: public site, sign-in and verification screens, and the private editor.
+- Follow the **inspiration image closely** for layout and look. The image, and Gustavo's **logo as an SVG**, are supplied by Gustavo; neither is in the repository yet.
+- A **single look** as shown in the inspiration (no light/dark switch).
+- Included beyond styling: a **new typography and design-token system**, a **rewrite of the home page layout and section order**, **page transitions and animation**, and the **editor screens** in the new design.
+- The logo appears in the **header, the footer, and the email templates**. A favicon or social preview image is not in scope unless added later.
+- Timing: after the R1 content features (F2, F3, F4, F7), before public launch. The editor is first built in the current look and re-skinned by F9-US5.
+- **Approval after each story.** Gustavo reviews and approves tokens, then shell, then home, then the other pages before the next story starts.
+- Design is done first and **accessibility is verified afterward** in F9-US7. The accessibility requirements are not relaxed: WCAG AA contrast, keyboard operation with visible focus, 320 CSS-pixel layout, and reduced-motion support remain release gates, and a failing check blocks R1.
+
+**Feature is complete when:** every public, account, and editor screen and both email templates use the new design and logo; the design tokens are documented and used instead of hard-coded values; Gustavo has approved each story; the F9-US7 checks pass on the supported browsers (latest two versions of Chrome, Edge, Firefox, and Safari); and the earlier F1 and F2-US1 acceptance tests are re-run against the new design and pass.
+
+**Design analysis (received 2026-10-02, decisions by Gustavo):**
+
+- **Look:** a single dark neon-cyberpunk look. Near-black navy background; neon magenta/violet and cyan/blue as accents; green (Security) and orange (Systems & Tools) appear only as per-card accents. Wide-tracked uppercase monospace-style labels; a large geometric sans headline with a cyan-to-white gradient on the second word. Corner-bracket buttons and thin glowing rules. Exact token values are taken from the image in F9-US1.
+- **Home regions (top to bottom):** header (logo, Home / Projects / Skills / About, GitHub, LinkedIn, and email icons); hero with eyebrow "Build · Break · Improve", headline "Software Engineer", a three-line intro, and an "Explore my work" button over a full-bleed city illustration; a row of four category cards (Applications, Cloud & DevOps, Security, Systems & Tools), each with an icon, title, arrow, and image strip; footer strip with a closing line and a "Let's connect" button.
+- **Logo:** the supplied `Logo.svg` reads "GCV" and is a raster PNG (1254x1254, black background, about 1.4 MB) wrapped in an SVG, not a vector. The mockup header shows a different script "GV" mark. **Decision:** use the GCV logo as supplied in the header, footer, and emails. Because it is raster, add an optimized, resized copy for header and footer sizes, blend its black background into the page, and give it descriptive alt text. A true vector remains an optional later upgrade.
+- **Hero imagery:** **Decision:** the illustration is the hero background and Gustavo's portrait appears in the About section. F9-US3 acceptance test 2 is amended: the first viewport shows his name, positioning line, introduction, and contact action; the portrait is shown in About, not in the first viewport.
+- **Copy kept:** the eyebrow "Build · Break · Improve", the three-line intro ("Curious mind. Practical solutions. Real impact."), the four category cards, and the decorative Japanese text. Gustavo confirmed all four cards (Applications, Cloud & DevOps, Security, Systems & Tools) as reflecting his real work. **Dropped:** the footer line "Solve complex problems"; the footer shows the logo and the "Let's connect" button.
+- **Navigation:** **Decision:** match the mockup (Home, Projects, Skills, About). Skills and About are sections of the home page; Projects links to projects in the Blog module. No new Skills page is added to the F9 scope.
+
+**Still open before F9-US1 is Ready:** Gustavo supplies the hero illustration as a file (the mockup is a flattened image) and his GitHub and LinkedIn URLs, both promised before Sprint 4. Until then, build with placeholders. The text under each card (what it says about his work) is written with him in the F9-US3 copy review. The existing "Visual and Interaction Direction" section is revised or replaced with this analysis, as soon as the tokens are extracted, so the backlog has a single design brief.
+
+### User Story F9-US1: Establish Brand and Design Tokens
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 2 US (24 hours), proposed 2026-10-02  
+**Goal:** As Gustavo, I get a documented brand foundation (logo, colors, typography, spacing, and base components) taken from my inspiration image, so every screen is built from the same pieces.
+
+**Acceptance tests:**
+
+1. Given the supplied logo SVG, when it is added to the client, then it renders crisply at header and footer sizes, has descriptive alternative text, and keeps clear space and a minimum size.
+2. Given the inspiration image, when the tokens are defined, then colors, font families and sizes, spacing, radii, and motion timings are named tokens in one place and the values are traceable to the image.
+3. Given the token documentation is read, when a developer builds a new screen, then every color, font, and spacing value comes from a token rather than a literal.
+4. Given the tokens are applied to a sample page, when Gustavo reviews it, then he approves or requests changes before the next story starts.
+
+**Tasks:**
+
+- [ ] Receive the logo SVG and the inspiration image; record the design analysis (regions, palette, typography, imagery, animation) in this feature.
+- [ ] Define the token system (client styles) and document it in `architecture.md`.
+- [ ] Add the logo asset with accessible markup; build base components (buttons, links, form fields, headings).
+- [ ] Review with Gustavo and record approval.
+
+### User Story F9-US2: Redesign the Site Shell
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 2 US (24 hours), proposed 2026-10-02  
+**Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
+
+**Acceptance tests:**
+
+1. Given any page, when it loads, then the new header (with the logo) and footer (with the logo) match the approved design at desktop and mobile widths.
+2. Given a visitor navigates between sections or routes, when the transition runs, then it matches the approved motion design, and with reduced-motion enabled the transition is removed or minimal.
+3. Given the shell is used by keyboard, when the visitor tabs through it, then focus order is logical and focus is visible.
+4. Given Gustavo reviews the shell, when he approves it, then the approval is recorded before F9-US3 starts.
+
+**Tasks:**
+
+- [ ] Rebuild the header and footer components and the navigation behavior to the design.
+- [ ] Implement shell-level transitions and animation using the tokens, with a reduced-motion path.
+- [ ] Update the header tests and record Gustavo's approval.
+
+### User Story F9-US3: Redesign the Home Page
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 3 US (36 hours), proposed 2026-10-02  
+**Goal:** As a visitor, I see a home page whose layout and section order follow Gustavo's inspiration image closely and still make who he is and how to contact him clear.
+
+**Acceptance tests:**
+
+1. Given the approved design, when the home page renders at desktop and mobile widths, then its sections, order, and visual treatment match the inspiration image closely, as reviewed side by side with Gustavo.
+2. Given the home page is read, when the first viewport is shown, then Gustavo's name, his positioning line, a concise introduction, and a contact action are visible (his portrait is shown in the About section, per the 2026-10-02 design decision), and no sensitive personal detail is exposed (the F1 content rules still apply).
+3. Given animations are present, when reduced-motion is requested, then essential content is fully available without them.
+4. Given Gustavo approves the page, when approval is recorded, then F9-US4 may start.
+
+**Tasks:**
+
+- [ ] Agree the new section list and order with Gustavo; update the home components and the shared profile content only where the design requires.
+- [ ] Implement the layout, imagery, and animation from the tokens.
+- [ ] Review side by side with the inspiration image and record approval.
+
+### User Story F9-US4: Redesign Contact, Blog, and Account Pages
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 2 US (24 hours), proposed 2026-10-02  
+**Goal:** As a visitor or account holder, I see the same design on the contact form, the blog or story section, and the sign-in and email-verification screens.
+
+**Acceptance tests:**
+
+1. Given the contact form, when it renders, then fields, validation, and the verification-pending state use the new design and keep their current behavior and accessible labeling.
+2. Given the blog or story section, when it renders, then lists and reading views use the new design.
+3. Given the sign-in and email-verification screens, when they render, then they use the new design and keep the existing CSRF and explicit-confirmation behavior.
+4. Given Gustavo reviews these pages, when he approves them, then approval is recorded before F9-US5.
+
+**Tasks:**
+
+- [ ] Re-skin the contact, blog, sign-in, and verify-email components using the tokens.
+- [ ] Confirm existing component tests still pass and update them for markup changes.
+- [ ] Record Gustavo's approval.
+
+### User Story F9-US5: Apply the Design to the Editor
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 2 US (24 hours), proposed 2026-10-02  
+**Goal:** As Gustavo, I use a private editor that matches the new design while staying compact and task-focused.
+
+**Acceptance tests:**
+
+1. Given the editor workspace, lists, and project and story forms built in F4, when they render, then they use the new tokens and components with clear draft, preview, save, and publish states that do not rely on color alone.
+2. Given the editor at 320 CSS-pixel width or by keyboard, when it is used, then actions stay reachable and focus is visible.
+3. Given Gustavo reviews the editor, when he approves it, then approval is recorded.
+
+**Tasks:**
+
+- [ ] Re-skin the F4 editor screens with the tokens and base components.
+- [ ] Update editor tests for markup changes and record Gustavo's approval.
+
+### User Story F9-US6: Brand the Emails
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 1 US (12 hours), proposed 2026-10-02  
+**Goal:** As a person who receives a message from the site, I see Gustavo's logo and design in the contact acknowledgement and account verification emails.
+**Head start (2026-10-06):** the three contact email templates exist at MailerSend and the contact flow already sends them through the HTTP API (see the decision log). The HTML sources are in `Docs/email-templates/`. Remaining for this story: the account verification email template and checking all emails in real mail clients.
+
+**Acceptance tests:**
+
+1. Given the contact acknowledgement and the account verification email are sent, when they are opened in common email clients, then they show the logo and follow the approved design, with a readable plain-text alternative.
+2. Given an email is inspected, when its content is reviewed, then it contains no tracking or third-party resources, and links, expiry guidance, and privacy rules are unchanged.
+3. Given the test mail sink, when emails are sent in automated tests, then recipient, count, and message content assertions still pass.
+
+**Tasks:**
+
+- [ ] Add HTML and plain-text templates through the shared mail sender, embedding the logo without third-party hosting.
+- [ ] Test rendering in representative clients and the automated mail-sink tests.
+
+### User Story F9-US7: Verify Accessibility and Responsiveness After the Redesign
+
+**Status:** Proposed  
+**Release:** R1  
+**Estimate:** 2 US (24 hours), proposed 2026-10-02  
+**Goal:** As Gustavo, I know the new design is still accessible and works on the supported devices and browsers before launch.
+
+**Acceptance tests:**
+
+1. Given every public, account, and editor screen, when text and controls are measured against their backgrounds, then contrast meets WCAG AA and state is not conveyed by color alone.
+2. Given every screen at 320 CSS pixels, when it is loaded, then there is no horizontal scrolling or clipped content.
+3. Given keyboard-only use, when a visitor tabs through each screen, then every control is reachable in a logical order with visible focus.
+4. Given reduced-motion is enabled, when pages and transitions run, then motion is removed or minimal and no content depends on it.
+5. Given the latest two versions of Chrome, Edge, Firefox, and Safari, when the main flows are exercised, then they work without layout or behavior defects.
+6. Given the F1 and F2-US1 acceptance tests, when they are re-run against the new design, then they pass, or the failure is fixed before launch.
+7. Given an automated accessibility scan runs, when violations are reviewed, then there are zero critical or serious violations.
+
+**Tasks:**
+
+- [ ] Run contrast, 320 px, keyboard, reduced-motion, and browser-matrix checks and fix findings.
+- [ ] Re-run the F1 and F2-US1 acceptance tests and record evidence.
+- [ ] Run the automated accessibility scan (see enabler TE5) and record results.
+
+**Feature estimate:** 14 US (168 hours)
+
 ## Decisions to Record Before Implementation
 
 These are technical/product-detail choices not settled in the interview. Record the selected option here before the related story is marked `Ready`:
 
 - Contact mail provider, sender identity, verification-link lifetime, pending-message storage mechanism, and delivery retry policy. (Current state: MailerSend SMTP configured through `Email:Smtp:*`, 30-minute in-memory pending store, no automatic retry.)
 - Contact rate-limit threshold and exact abuse-control combination.
-- Confirm Gustavo's administrator authentication and account recovery approach against the proposed F3 architecture.
-- Confirm F3 credential policy, verification/reset token lifetime, lockout duration, and authentication endpoint rate limits.
-- Allowed image formats, upload-size limit, image storage location, and deletion behavior for unreferenced uploads.
-- Project/story URL and deletion behavior; reader-comment deletion policy.
-- Member profiles (F8): exact field list and limits, who may view a profile (proposed: signed-in verified users), profile URL scheme, whether administrators also get an account profile, and whether comments link to the commenter's profile.
-- Supported browser/version matrix and automated test tools.
+- Confirm F3 credential policy (the 12-character minimum is decided), verification/reset token lifetime, lockout duration, and authentication endpoint rate limits.
+- Image storage location and deletion behavior for unreferenced uploads (formats and size are decided; proposed default: `/data/uploads` on the data volume, and delete an image when its content item is deleted).
+- Member profiles (F8): profile URL scheme and where the profile data lives (proposed: a new `Profiles` module with its own table, one row per user).
+- F7: how access rules are declared (per entity or per operation) and how a rejected operation is reported.
+- Automated test tools for browsers and accessibility (see enabler TE5).
+- Redesign (F9): the logo SVG and the inspiration PNG must be supplied, and the design analysis recorded, before F9 stories can be `Ready`.
+
+### Decided on 2026-10-02
+
+| Topic | Decision |
+| --- | --- |
+| Administrator recovery (F3-US3) | Operator-only interactive reset command on the host; no public or emailed administrator recovery. |
+| Member profile viewers (F8) | Signed-in verified users only. |
+| Administrator profiles (F8) | Administrators have no member profile; their public identity is the F1 profile. |
+| Comment author links (F6, F8) | A commenter's display name links to their member profile (subject to the viewer rule above). |
+| Member profile fields (F8) | Hobbies/interests (200 characters), profession (100), location (100, broad free text), about-me (500), all optional and plain text. |
+| Image uploads (F4-US5) | JPEG, PNG, and WebP only, maximum 5 MB, files renamed to generated names. SVG and GIF are not accepted. |
+| Story/project deletion (F4) | Hard delete after explicit confirmation. |
+| Comment deletion (F6-US3) | The comment is replaced by a "[deleted]" placeholder; text and author are removed and replies stay attached. |
+| Content URLs (F4, F5) | Readable slugs such as `/stories/my-title` and `/projects/my-title`, with a numeric suffix on collisions. |
+| Browser support | Latest two versions of Chrome, Edge, Firefox, and Safari (including iOS Safari and Android Chrome). |
+| User-written text (F7) | Normalize on save (trim, strip control characters), reject input over the field limits with a clear error, and always render as plain text. |
+| Visual direction (F9) | The earlier "humanist engineering journal" direction and palette are superseded by the redesign in F9. See F9 for the confirmed scope. |
 
 ## Decision Log
 
@@ -681,8 +879,16 @@ These are technical/product-detail choices not settled in the interview. Record 
 | 2026-09-30 | Added a proposed F3 architecture note for Identity cookie sessions, operator-authorized administrator provisioning, R3 reader verification, and API authorization boundaries. | Connects the planned F3 behavior to the existing ASP.NET Core Identity/SQLite stack and calls out mismatches in current public registration and demo seeding; proposed credential, recovery, and abuse-control values still require confirmation. |
 | 2026-09-30 | Confirmed that multiple administrator accounts may exist and all explicitly provisioned administrators may manage editor content. | Removes the one-administrator restriction while keeping administrator assignment private and operator-authorized; updates the editor's authorization boundary to the provisioned administrator role. |
 | 2026-10-01 | Restructured the code base into a modular monolith and renamed the project from TestWebsite to VaninWebsite (solution, projects, namespaces, cookie names `vaninwebsite.auth`/`vaninwebsite.csrf`, database file `vaninwebsite.db`). SMTP settings moved from `TestMailerSend:*` to `Email:Smtp:*` plus `Contact:RecipientEmail`, supplied by user-secrets or environment variables. Added `goal.md`, `project.md`, and `architecture.md`. | Makes features removable and new ones addable without touching unrelated code, and removes committed credentials from configuration. No product behavior changed. The credentials that were committed must be rotated. Existing Docker volumes keep the old database file name (see architecture.md, "Operations"). |
+| 2026-10-05 | Renamed the project from VaninWebsite to GooseWebsite everywhere so it is easy to find in tooling: solution, projects, namespaces, folders, Docker (compose project, containers, image, volumes, network), cookie names `goosewebsite.auth`/`goosewebsite.csrf`, database file `goosewebsite.db`, user-secrets id `goosewebsite-api`, Angular project, and all documents. The person's name (Gustavo Couto Vanin) is unchanged. | The generic names made diagnostics hard. Existing sessions are signed out because the cookie names changed. The development database file and user-secrets were moved to the new names; Docker data under old names must be copied across (see architecture.md, Operations). |
+| 2026-10-06 | F2-US2 marked Done after Gustavo confirmed the whole contact flow end to end (verification email, explicit confirmation, message and acknowledgement delivered). Draft cyberpunk HTML email templates were added for the sender confirmation, the sender receipt and the notification to Gustavo, as a head start on F9-US6. | The templates are drafts: SMTP cannot reference a provider-stored template, so they must be rendered by the application (F9-US6) with all values HTML-escaped. |
+| 2026-10-06 | Contact emails now go through the MailerSend HTTP API using the three templates Gustavo created (confirmation `z86org868nk4ew13`, receipt `jy7zpl9vnmog5vx6`, owner notification `3vz9dle61vngkj50`) instead of plain-text SMTP; account verification emails stay on SMTP. Each request supplies the variables the templates read, pinned by tests. | SMTP cannot reference a stored template. Adds a `MailerSend:ApiKey` secret (user-secrets or `MAILERSEND_API_KEY`). F9-US6 now only needs the account verification email and in-app wiring checks. |
+| 2026-10-06 | The email logo is sent as a plain URL (`{PublicBaseUrl}/email/gcv-logo.png`, overridable with `Contact:LogoUrl`). An inline `cid:` image was tried and reverted because it did not render in the MailerSend templates. | The logo appears in emails once the site has a public address. Until then, test emails show no logo. |
+| 2026-10-06 | A second code review of the contact flow led to two fixes: confirmation is now claimed atomically so concurrent clicks deliver once, and a failed receipt no longer causes a duplicate notice to Gustavo on retry. Accepted risk: the per-address limit (2 verification emails per 10 minutes) also counts failed sends, so someone who knows a person's address can use it up and delay that person's own contact by up to 10 minutes; each device is still limited to 5 submissions per 10 minutes. The rename of the database file and secrets id affects only existing local setups (migrated for Gustavo's machine); there is no deployment yet. | Keeps the per-address limit simple. Revisit with a CAPTCHA or a longer-lived verification state if abuse appears. |
 | 2026-10-01 | Reopened F2-US2 after code review: the verification link is returned in the API response instead of being emailed, and the Angular form never uses it. Added F3-US3 (administrator recovery, R1) and F3-US4 (reader password reset, R3) so the recovery decisions already named in F3 have stories. Reconciled feature statuses and totals. | Earlier "Done" status for F2-US2 was not supported by its own acceptance tests. Totals rise from 30 US to 32 US (F3 +2); R1 is 20 US, R2 4 US, R3 8 US. |
 | 2026-10-02 | Gustavo answered the open questions from the restructure review: the public title in `profile.ts` is correct; the password minimum is **12 characters** (implemented in Identity, the register contract, and the sign-in form; supersedes the 8-character policy recorded in F3-US2); two-week sprints and a capacity of about 6 US per sprint are confirmed; the estimates proposed for F3-US3 and F3-US4 are authorized; sample blog posts and the demo posts in local databases stay during development and are removed before deployment (enabler TE4). | Resolves the password and title items in the risk list. Existing accounts created with shorter passwords keep working; the new minimum applies to new passwords. |
+| 2026-10-02 | Resolved open decisions with Gustavo: administrator recovery is an operator-only reset command (F3-US3 now Ready); member profiles are viewable by signed-in verified users only, administrators have none, commenters link to profiles, and the four fields and limits are confirmed; uploads allow JPEG, PNG, and WebP up to 5 MB; story and project deletion is a hard delete after confirmation; deleted comments become a "[deleted]" placeholder; content URLs use readable slugs; browser support is the latest two versions of Chrome, Edge, Firefox, and Safari; user text is normalized and rejected over limits. Full table under "Decided on 2026-10-02". | Unblocks F3-US3, F4-US5, F5, F6, F7, and F8 planning. Remaining open items are listed under "Decisions to Record". |
+| 2026-10-02 | Added F9 (Brand and Visual Redesign, R1) at Gustavo's request: a full re-skin from his SVG logo and an inspiration image, followed closely, in a single look; includes design tokens and typography, a rewritten home page, animation, the editor screens, and branded emails; approval after each story; accessibility verified afterward in F9-US7 and still a release gate. Seven stories proposed at 14 US. Supersedes the earlier proposed palette and visual direction. | Adds 14 US to R1 (22 to 36 US) and the total to 53 US. Assets (logo, inspiration image) are not yet supplied, so F9 cannot become Ready until they are. Design is built after F4 and before launch, so F4 is first built in the current look. |
+| 2026-10-02 | Gustavo supplied the logo and inspiration image and answered the design questions: use the GCV logo as supplied (it is a raster PNG inside an SVG, so an optimized copy is added); the hero illustration is the background and his portrait moves to About (F9-US3 test 2 amended); keep "Build · Break · Improve", the four category cards, and the Japanese text; navigation matches the mockup with Skills and About as home-page sections. The intro line stays, the footer line "Solve complex problems" is dropped, and all four cards are confirmed. | Design analysis is recorded in Feature F9. Still needed before Sprint 4: the hero illustration as a file and the GitHub and LinkedIn URLs. |
 | 2026-10-02 | Added F8 (Member Profiles, R3) at Gustavo's request: users have a profile other users can view; basic details such as hobbies, profession, and location are optional and can be skipped at creation. Stories F8-US1 to F8-US3 proposed at 5 US total. | Extends R3 from 8 US to 13 US and the total from 34 US to 39 US. Visibility (signed-in only versus public), field list, and storage location are recorded as decisions to confirm before the stories are Ready. |
 | 2026-10-02 | `DatabaseService` is the intended single gateway for all database reads and writes and was restored as such; modules keep their query logic but never use the context or Identity managers directly. It performs no sanitization or access checks yet, so story F7-US1 was added (2 US, Sprint 2, before the editor). | Keeps cross-cutting safeguards in one place as features grow. Raises totals from 32 US to 34 US; R1 is now 22 US. |
 | 2026-10-01 | Implemented F3-US2 ahead of its planned R3 release at Gustavo's request; retained R3 as the intended public-release stage. | Adds reader email verification, generic registration/resend responses, confirmed-email sign-in, and a live verified-reader policy. `Auth:ReaderRegistration:Enabled` defaults off and must be explicitly enabled for the R3 Production release; Development opts in. Reader password recovery remains a separate R3 follow-up and production SMTP delivery requires deployment verification. |
@@ -692,13 +898,14 @@ These are technical/product-detail choices not settled in the interview. Record 
 | Feature | Release | Estimate | Status | Stories Done |
 | --- | --- | ---: | --- | --- |
 | F1 Public Profile | R1 | 2 US / 24 hours | Done | 2 of 2 |
-| F2 Contact and Message Delivery | R1 | 4 US / 48 hours | In Progress (F2-US2 reopened) | 2 of 3 |
+| F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
 | F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 1 of 4 |
 | F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | Proposed | 0 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2 US / 24 hours | Proposed | 0 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
-| **Total planned effort** | **R1-R3** | **39 US / 468 hours** | **In Progress** | **5 of 23** |
+| F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
+| **Total planned effort** | **R1-R3** | **53 US / 636 hours** | **In Progress** | **6 of 30** |
 
-By release: R1 is 22 US / 264 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 6 US of the 39. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.
+By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

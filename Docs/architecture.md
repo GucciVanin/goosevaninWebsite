@@ -1,4 +1,4 @@
-# VaninWebsite Architecture
+# GooseWebsite Architecture
 
 **Audience:** AI agents and developers. Read this before implementing a feature or changing existing behavior.  
 **Also for:** Gustavo, to see the product as it is built today. Diagrams are Mermaid and render in VS Code, GitHub, and most Markdown viewers.  
@@ -21,13 +21,13 @@ flowchart LR
     subgraph host [Docker host]
         caddy[Caddy<br/>TLS reverse proxy<br/>ports 80 and 443]
         subgraph app [web container, port 8888]
-            api[ASP.NET Core<br/>VaninWebsite.Api]
+            api[ASP.NET Core<br/>GooseWebsite.Api]
             spa[Angular build<br/>wwwroot static files]
         end
-        vol[(web-data volume<br/>vaninwebsite.db<br/>Data Protection keys)]
+        vol[(web-data volume<br/>goosewebsite.db<br/>Data Protection keys)]
     end
 
-    smtp[[SMTP provider<br/>MailerSend]]
+    smtp[[MailerSend<br/>SMTP and HTTP API]]
     inbox([Gustavo's inbox])
 
     visitor -->|HTTPS| caddy
@@ -35,7 +35,8 @@ flowchart LR
     caddy -->|HTTP, forwarded headers| api
     api --- spa
     api --> vol
-    api -->|SMTP over TLS| smtp
+    api -->|SMTP over TLS: account emails| smtp
+    api -->|HTTPS API: templated contact emails| smtp
     smtp --> inbox
     smtp --> sender
 ```
@@ -49,8 +50,8 @@ Runtime decisions that other code depends on:
 ## 2. Repository layout
 
 ```text
-VaninWebsite/
-├── VaninWebsite.slnx                 Solution (API + tests)
+GooseWebsite/
+├── GooseWebsite.slnx                 Solution (API + tests)
 ├── Directory.Build.props             Shared .NET settings (net10.0, nullable, implicit usings)
 ├── Dockerfile                        Three stages: client build, .NET publish, runtime
 ├── docker-compose.yml                web + caddy, private network, one data volume
@@ -63,10 +64,10 @@ VaninWebsite/
 │   ├── architecture.md               This file
 │   ├── product-backlog.md            Stories and acceptance tests
 │   ├── f3-authentication-architecture.md   Design record for accounts
-│   ├── Api/VaninWebsite.http         Sample requests for the REST client
+│   ├── Api/GooseWebsite.http         Sample requests for the REST client
 │   └── archive/                      Superseded documents
 ├── src/
-│   ├── VaninWebsite.Api/             ASP.NET Core application
+│   ├── GooseWebsite.Api/             ASP.NET Core application
 │   │   ├── Program.cs                Composition root, one line per module
 │   │   ├── Modules/                  One folder per feature (section 3)
 │   │   │   ├── Accounts/
@@ -78,9 +79,9 @@ VaninWebsite/
 │   │   ├── data-protection-keys/     Local cookie-protection keys (git-ignored)
 │   │   ├── wwwroot/                  Angular build output (git-ignored)
 │   │   └── appsettings*.json
-│   └── VaninWebsite.Client/          Angular application (section 6)
+│   └── GooseWebsite.Client/          Angular application (section 6)
 └── tests/
-    └── VaninWebsite.Api.Tests/       xUnit tests (section 10)
+    └── GooseWebsite.Api.Tests/       xUnit tests (section 10)
 ```
 
 Inside each backend module the folders mean the same thing everywhere:
@@ -146,6 +147,7 @@ flowchart TB
 | `Shared/Modules/IModuleInitializer` | A module's startup hook (for example, create roles). Run in registration order after the database exists. | Accounts, Persistence |
 | `Shared/Modules/IModuleCommand` | A module's operator command-line entry point. If one handles the arguments, the web host does not start. | Accounts (`admin provision`) |
 | `Shared/Email/ISmtpMailSender` | The only class that talks to SMTP. Returns `false` and logs only the exception type on failure. | Accounts, Contact |
+| `Shared/Email/IMailerSendClient` | The only class that talks to the MailerSend HTTP API. Sends one templated email (template id plus variables). Returns `false` and logs only the HTTP status code on failure. | Contact |
 | `Shared/Hosting/AddTrustedProxyHeaders` | Forwarded-header trust from configuration | `Program.cs` |
 
 Startup order in `Program.cs`: register shared services, register modules, build, run all `IModuleInitializer`s, offer the arguments to all `IModuleCommand`s, then configure the pipeline.
@@ -181,7 +183,7 @@ Owns identity, sessions, and authorization. Source: `Modules/Accounts/`.
 | Admin provisioning | `Services/AdminProvisioningService.cs`, `AdminProvisioningCommand.cs` | Interactive operator command; refuses existing accounts; never promotes a user |
 | Verification email | `Services/IAccountEmailSender.cs`, `SmtpAccountEmailSender.cs` | Separate from contact delivery on purpose |
 
-Security settings in force: unique email, password minimum 12 characters with no composition rule, lockout after 5 failures for 15 minutes, email confirmation required to sign in, confirmation token lifetime 24 hours, cookie `vaninwebsite.auth` (HttpOnly, SameSite=Lax, Secure always in Production, 30-minute sliding expiry, not persistent), antiforgery cookie `vaninwebsite.csrf` with header `X-CSRF-TOKEN`. Cookie events return 401 and 403 rather than redirecting.
+Security settings in force: unique email, password minimum 12 characters with no composition rule, lockout after 5 failures for 15 minutes, email confirmation required to sign in, confirmation token lifetime 24 hours, cookie `goosewebsite.auth` (HttpOnly, SameSite=Lax, Secure always in Production, 30-minute sliding expiry, not persistent), antiforgery cookie `goosewebsite.csrf` with header `X-CSRF-TOKEN`. Cookie events return 401 and 403 rather than redirecting.
 
 | Endpoint | Auth | Purpose |
 | --- | --- | --- |
@@ -201,10 +203,10 @@ Owns the public contact form. Source: `Modules/Contact/`. It keeps no durable da
 | Piece | File | Notes |
 | --- | --- | --- |
 | Registration | `ContactModule.cs` | Binds `ContactOptions`; singletons for the token store and abuse guard |
-| Endpoints | `Controllers/ContactController.cs` | `POST /api/contact`, `GET /api/contact/verify?token=` |
-| Abuse guard | `Services/ContactSubmissionAbuseGuard.cs` | Thread-safe sliding window per socket IP, bounded client count, configured under `Contact:RateLimit` |
+| Endpoints | `Controllers/ContactController.cs` | `POST /api/contact` (emails the link to the sender), `POST /api/contact/verify` (body `{token}`; the emailed link opens the client page `/contact/verify#token=...`) |
+| Abuse guard | `Services/ContactSubmissionAbuseGuard.cs` | Thread-safe sliding windows in two separate bounded stores: per socket IP, and per submitted address (stored only as a SHA-256 hash, case-insensitive). Configured under `Contact:RateLimit` |
 | Pending store | `Services/ContactVerificationService.cs` | In-memory, 30-minute lifetime, single use, removed on use or expiry |
-| Delivery | `Services/ContactEmailDeliveryService.cs` | Two messages through `ISmtpMailSender`: one to Gustavo, one acknowledgement to the sender |
+| Delivery | `Services/ContactEmailDeliveryService.cs` | Three MailerSend templates through `IMailerSendClient`: the confirm link to the sender, then the notice to Gustavo, then the receipt to the sender. Template ids come from `Contact:Templates`; the variables each template needs are in `Models/ContactEmailTemplateVariables.cs` and pinned by `ContactEmailTemplateTests` |
 
 Validation on `POST /api/contact`: honeypot field `website` must be empty, all four fields required, `reason` must be `Work or collaboration` or `Personal note`, email must be well formed, then the rate limit applies (HTTP 429 before any token is created). Logs carry the reason and a client key, never the sender's address or the message body.
 
@@ -289,16 +291,16 @@ sequenceDiagram
     alt unknown, wrong, locked, or unconfirmed
         A-->>B: 401 generic error
     else success
-        I-->>B: Set-Cookie vaninwebsite.auth (HttpOnly)
+        I-->>B: Set-Cookie goosewebsite.auth (HttpOnly)
         A-->>B: 200 displayName, isAdmin
     end
     B->>A: GET /api/auth/me
     A-->>B: displayName, isAdmin (UI hint only)
 ```
 
-### 5.2 Contact message, as implemented today
+### 5.2 Contact message
 
-The diagram shows the code as it behaves, including the gap described in section 11. The target flow emails the link to the sender instead of returning it.
+The link is emailed to the submitted address and never returned to the browser, so only the owner of that inbox can confirm it. Confirmation is an explicit POST from the client page, so mail link scanners that fetch the URL cannot trigger delivery.
 
 ```mermaid
 sequenceDiagram
@@ -308,7 +310,7 @@ sequenceDiagram
     participant G as AbuseGuard
     participant V as VerificationService (memory)
     participant D as DeliveryService
-    participant S as SMTP
+    participant S as MailerSend API
 
     B->>C: POST /api/contact {name, email, reason, message, website}
     C->>C: honeypot, required fields, reason, email format
@@ -317,16 +319,23 @@ sequenceDiagram
         C-->>B: 429
     else allowed
         C->>V: CreateVerification (30 minute token)
-        C-->>B: 200 verificationRequired plus token and URL (GAP)
+        C->>D: SendVerificationRequestAsync (link only, no message body)
+        D->>S: confirmation template to the sender
+        alt email failed
+            C->>V: Discard(token)
+            C-->>B: 502
+        else sent
+            C-->>B: 200 verificationRequired (no token or URL)
+        end
     end
-    Note over B: Client ignores the URL, so nothing is delivered
-    B->>C: GET /api/contact/verify?token=... (only if someone calls it)
+    Note over B: Sender opens /contact/verify#token=... and presses Confirm
+    B->>C: POST /api/contact/verify {token}
     C->>V: Verify (single use)
     alt invalid, expired, or reused
         C-->>B: 400, 410, or 409
     else valid
         C->>D: SendAsync(pending message)
-        D->>S: notice to Gustavo, then acknowledgement to sender
+        D->>S: owner template to Gustavo, then receipt template to the sender
         C-->>B: 200, or 502 if delivery failed
     end
 ```
@@ -355,7 +364,7 @@ sequenceDiagram
 
 ## 6. Frontend
 
-Angular 20 with standalone components, signals, SCSS, and the built-in router. Source: `src/VaninWebsite.Client/src/app/`.
+Angular 20 with standalone components, signals, SCSS, and the built-in router. Source: `src/GooseWebsite.Client/src/app/`.
 
 ```mermaid
 flowchart TD
@@ -401,7 +410,7 @@ flowchart TD
 
 The public site is one long page with anchors (`home`, `work`, `approach`, `blog`, `contact`); only the authentication screens are routed URLs. The client keeps the CSRF token in memory and requests a fresh one before each mutation (`AuthApi.postWithCsrf`). The contact form and blog section call the API with plain `HttpClient`.
 
-Build facts: output goes to `../VaninWebsite.Api/wwwroot`; production budgets warn at 500 kB and fail at 1 MB for the initial bundle; `ng serve` proxies `/api` to `https://localhost:8889` through `proxy.conf.json`.
+Build facts: output goes to `../GooseWebsite.Api/wwwroot`; production budgets warn at 500 kB and fail at 1 MB for the initial bundle; `ng serve` proxies `/api` to `https://localhost:8889` through `proxy.conf.json`.
 
 ## 7. Configuration, build, and operations
 
@@ -411,27 +420,30 @@ Configuration binds in this order of precedence, last wins: `appsettings.json`, 
 
 | Key | Purpose | Default |
 | --- | --- | --- |
-| `ConnectionStrings:Default` | SQLite database; a relative path resolves against the project folder | `Data Source=Data/vaninwebsite.db` |
+| `ConnectionStrings:Default` | SQLite database; a relative path resolves against the project folder | `Data Source=Data/goosewebsite.db` |
 | `Email:Smtp:Host`, `Port`, `Username`, `Password`, `FromEmail`, `FromName` | The shared SMTP sender. **Secrets: user-secrets or environment only** | empty; mail is skipped with a warning |
+| `MailerSend:ApiKey`, `FromEmail`, `FromName` | MailerSend HTTP API for the templated contact emails. **The API key is a secret: user-secrets or environment only** (Docker: `MAILERSEND_API_KEY`, sender defaults to `SMTP_FROM_EMAIL`) | empty; contact emails are not sent |
+| `Contact:Templates:SenderConfirmation`, `SenderReceipt`, `OwnerNotification` | MailerSend template ids (identifiers, not secrets) | the three ids in `appsettings.json` |
+| `Contact:LogoUrl` | Public address of the email logo | `{PublicBaseUrl}/email/gcv-logo.png` |
 | `Contact:RecipientEmail` | Inbox for verified contact messages | empty; delivery is skipped |
-| `Contact:RateLimit:MaxRequestsPerWindow`, `WindowMinutes`, `MaxTrackedClients` | Contact abuse guard | 5, 10, 10000 |
+| `Contact:RateLimit:MaxRequestsPerWindow`, `WindowMinutes`, `MaxTrackedClients`, `MaxRequestsPerRecipient` | Contact abuse guard | 5, 10, 10000, 2 |
 | `Auth:ReaderRegistration:Enabled` | Reader registration endpoints | `false`; `true` in Development |
 | `PublicBaseUrl` | Base for links in emails | `https://localhost` |
 | `DataProtection:KeysPath` | Cookie-key folder; must persist across restarts | `data-protection-keys` next to the project |
 | `ForwardedHeaders:KnownProxies:N` | Trusted proxy IP addresses | none |
 
-Set development secrets with `dotnet user-secrets` from `src/VaninWebsite.Api` (id `vaninwebsite-api`), for example `dotnet user-secrets set "Email:Smtp:Password" "<value>"`. For Docker, copy `.env.example` to `.env`. Never commit either.
+Set development secrets with `dotnet user-secrets` from `src/GooseWebsite.Api` (id `goosewebsite-api`), for example `dotnet user-secrets set "Email:Smtp:Password" "<value>"`. For Docker, copy `.env.example` to `.env`. Never commit either.
 
 ### 7.2 Build and run
 
 | Task | Command |
 | --- | --- |
-| Run API (serves built client) | `dotnet run --project src/VaninWebsite.Api` (HTTPS on 8889, HTTP 8888 redirects) |
-| Build client | `npm ci` then `npm run build` in `src/VaninWebsite.Client` |
-| Client dev server with proxy | `npm start` in `src/VaninWebsite.Client` |
-| Run all .NET tests | `dotnet test VaninWebsite.slnx -p:SkipClientBuild=true` |
+| Run API (serves built client) | `dotnet run --project src/GooseWebsite.Api` (HTTPS on 8889, HTTP 8888 redirects) |
+| Build client | `npm ci` then `npm run build` in `src/GooseWebsite.Client` |
+| Client dev server with proxy | `npm start` in `src/GooseWebsite.Client` |
+| Run all .NET tests | `dotnet test GooseWebsite.slnx -p:SkipClientBuild=true` |
 | Run client tests | `npm test -- --watch=false --browsers=ChromeHeadless` |
-| Provision an administrator | `dotnet run --project src/VaninWebsite.Api -- admin provision` |
+| Provision an administrator | `dotnet run --project src/GooseWebsite.Api -- admin provision` |
 | Container stack | `docker compose up --build -d` (site at `https://localhost`) |
 
 The API project's `BuildClient` target runs `npm run build` before every build unless `-p:SkipClientBuild=true` is passed. Some integration tests request `/verify-email` and expect the SPA fallback, so build the client at least once first.
@@ -449,22 +461,43 @@ flowchart LR
 
 ### 7.3 Operations
 
-- **State to back up:** the `web-data` volume (`/data/vaninwebsite.db` and `/data/keys`). Losing the keys signs everyone out; losing the database loses accounts and posts.
+- **State to back up:** the `web-data` volume (`/data/goosewebsite.db` and `/data/keys`). Losing the keys signs everyone out; losing the database loses accounts and posts.
 - **TLS:** Caddy uses its local CA for `localhost`. To trust it on Windows, export the root with `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./certs/caddy-root.crt` and import it into the current user's trusted roots. For a public site set `SITE_DOMAIN` to a real DNS name that points at the host with ports 80 and 443 open, and Caddy obtains a certificate automatically. Do not share the CA key held in the `caddy-data` volume.
-- **Renamed volumes:** the Compose project is now `vaninwebsite` with volumes `web-data`, `caddy-data`, and `caddy-config`. A stack created before the rename has the old volume (for example `testwebsite_portfolio-data`) holding `testwebsite.db`. To keep that data, copy the volume's contents into `vaninwebsite_web-data` and rename `testwebsite.db*` to `vaninwebsite.db*`, with the stack stopped.
+- **TLS and the container's HTTP port:** the browser always talks to Caddy over HTTPS (port 443; port 80 redirects). Caddy terminates TLS with a certificate from its own local CA and forwards to the app container over the private Docker network, so the app's `Now listening on http://[::]:8888` log line is expected: port 8888 is not published to the host. Production will replace the local CA with a public one by setting `SITE_DOMAIN` to a real DNS name.
+- **Trusting the local CA:** the CA lives in the `goosewebsite_caddy-data` volume, so it survives restarts but a new volume (for example after a project rename or `docker compose down -v`) creates a new CA that the machine does not trust, and the browser shows a certificate error. After that, export the root with `docker cp goosewebsite-caddy:/data/caddy/pki/authorities/local/root.crt certs/caddy-root.crt`, import it with `certutil -user -addstore Root certs\caddy-root.crt` (Windows asks for confirmation), and remove the stale root with `certutil -user -delstore Root <old thumbprint>`. Compare `openssl x509 -in certs/caddy-root.crt -noout -fingerprint -sha256` with what is trusted.
+- **Renamed volumes:** the Compose project is `goosewebsite` (containers `goosewebsite-web` and `goosewebsite-caddy`, image `goosewebsite-web`, volumes `goosewebsite_web-data`, `goosewebsite_caddy-data`, `goosewebsite_caddy-config`, network `goosewebsite_app-private`). Stacks created under the earlier names `testwebsite` (volume `testwebsite_portfolio-data`, database `testwebsite.db`) or `vaninwebsite` (database `vaninwebsite.db`) keep their data in the old volumes. To keep it, stop the old stack with `docker compose -p testwebsite down` (or `-p vaninwebsite`) (never `-v`), copy the old volume's contents into `goosewebsite_web-data`, and rename the database file to `goosewebsite.db*`. An old stack left running also blocks the new one, because it holds ports 80 and 443 and the `172.30.100.0/24` subnet.
 - **Logging policy:** log categories and counts only. Never log message bodies, email addresses, tokens, or passwords. Keep this when adding log lines.
+- **Mail troubleshooting:** the API logs `SMTP delivery failed` with the exception type and SMTP status code. `smtpStatusCode=MustIssueStartTlsFirst` is .NET's name for any 530 reply, and it usually means the provider rejected the credentials (a `535` on AUTH). Confirm with a handshake that sends no data: `openssl s_client -connect smtp.mailersend.net:587 -starttls smtp -crlf -quiet`, then `EHLO`, `AUTH PLAIN <base64 of \0user\0pass>`, `MAIL FROM`, `RCPT TO`, `QUIT`. `235` means the credentials work. For a MailerSend trial domain, send from an address on that domain.
 
 ## 8. Conventions
 
-- **Layout:** one module per feature under `Modules/<Name>/`, folders as in section 2. Namespaces match folders (`VaninWebsite.Api.Modules.<Name>.<Folder>`).
+- **Layout:** one module per feature under `Modules/<Name>/`, folders as in section 2. Namespaces match folders (`GooseWebsite.Api.Modules.<Name>.<Folder>`).
 - **Registration:** every module exposes exactly one `Add<Name>Module(...)` extension and is wired by one line in `Program.cs`. Startup work goes in an `IModuleInitializer`; operator commands go in an `IModuleCommand`.
 - **Persistence:** entities and their `IEntityTypeConfiguration<T>` live in the owning module. Query logic lives in an interface in the module's `Services/`, and every read or write goes through `DatabaseService`. Controllers and modules do not use the context or Identity managers directly. Add a generic method to `DatabaseService` rather than bypassing it.
 - **Contracts:** never return an entity from an endpoint. Use a request and response type in `Contracts/` with validation attributes. Never bind privilege-bearing fields (role, `EmailConfirmed`, ids of other users) from a request.
 - **Authorization:** protect every write with a policy from `AuthorizationPolicies`, not bare `[Authorize]`, and add `[ValidateAntiForgeryToken]` to cookie-authenticated mutations.
 - **Configuration:** bind settings to an options class (see `SmtpOptions`, `ContactOptions`). Do not read `IConfiguration` ad hoc in new code, and never hard-code addresses or credentials.
-- **Mail:** build the message in the module, send it through `ISmtpMailSender`.
+- **Mail:** account emails are built in the module and sent through `ISmtpMailSender`. Contact emails are MailerSend templates sent through `IMailerSendClient`: the module picks the template id and supplies every variable it reads (case-sensitive names, constants in `ContactEmailTemplateVariables`), and a test pins them. A variable the request omits renders as its own name in the inbox.
 - **Style:** C# with nullable references enabled, file-scoped namespaces, primary constructors for dependency injection, `sealed` classes by default, a short comment saying why a type exists. TypeScript uses standalone components, signals, and typed models; one feature per folder under `app/features/`.
 - **Naming:** `I<Name>` for seams, `<Name>Module`, `<Name>Controller`, `<Name>Repository`, `<Name>Configuration` for EF mappings.
+
+### 8.1 Pitfalls found in review (do not repeat)
+
+Each item is a defect that a code review found in this repository. Check new code against the list before it is committed.
+
+| Pitfall | What went wrong (found 2026-10-02, F2-US2) | Rule |
+| --- | --- | --- |
+| Consuming a one-time token before the side effect succeeds | `Verify` removed the token, then delivery to Gustavo failed. The client was told to try again, but the retry was rejected and the message was lost | If a failure response tells the caller to retry, the retry must work. Restore the state (`Restore`) or consume the token only after the side effect succeeds. Test the failure, then the retry |
+| A public endpoint that emails a caller-supplied address | The contact form emailed any address, limited only per IP, so it could flood a third party from Gustavo's sender | Rate limit by the target address as well as the caller. Keep only a hash of the address. Test the limit, and that a different address is unaffected |
+| Cleanup skipped on an exception | Pending data was discarded only when the send returned `false`, not when the mail library threw on a malformed address | Treat exceptions from the mail library as failed sends, and clean up in the same path. Test the throwing case |
+| Returning secrets to the caller | The verification token and URL were returned in the API response, so anyone could verify any address | The token goes only to the channel it proves, such as the inbox. An API test must assert it is absent from the response body |
+| State change on `GET` | A verify link that changed state would be triggered by mail scanners | State changes use `POST` after an explicit user action |
+| Secrets or mail settings in `appsettings.json` | Working MailerSend credentials were placed in `appsettings.json` under a `MailerSend:Smtp` section the code never reads, while the values the app did read (user-secrets) were stale, so every send failed with `535` | Mail settings live only under `Email:Smtp:*` in user-secrets or environment variables, never in a tracked file (CLAUDE.md rule 4). When a setting seems ignored, check the key name against `SmtpOptions.SectionName` |
+| Logging only the exception type for a failure | `SmtpException` alone hid the cause, and .NET reports every SMTP 530 reply as `MustIssueStartTlsFirst`, which misled the diagnosis | Log safe categories that identify the cause (exception type, SMTP status code). To diagnose an SMTP failure, replay the handshake (EHLO, AUTH, MAIL FROM, RCPT TO) without sending data |
+| Template variables that do not match the request | A MailerSend template renders any variable the request omits (or spells differently) as its own name, for example `{{name}}` | Keep the variable names in one constants class, document them next to the templates, and pin them with a test that checks every variable for every template. Variable names in the MailerSend editor must be copied exactly |
+| Check-then-act on a one-time token | `Verify` looked the token up, then removed it, so two simultaneous confirmations both succeeded and the message was delivered twice | Claim the token with one atomic operation (`TryRemove`) and act only if it returned the value. Test with many parallel requests and assert exactly one success |
+| Retrying a multi-step action from the start | A failed receipt made the retry notify Gustavo a second time | Record how far an attempt got (`ContactDeliveryOutcome`, `OwnerNotified`) and resume from there. Test the partial failure and the retry |
+| Backlog status from reading code | F2-US2 was recorded Done before the browser flow was exercised | Run the acceptance tests and a runtime check before marking Done (CLAUDE.md rule 7) |
 
 ## 9. How to add, change, or remove a feature
 
@@ -476,7 +509,7 @@ flowchart LR
 4. Protect endpoints with `AuthorizationPolicies.VerifiedReader` (and CSRF on writes). Do not copy role checks.
 5. Create `CommentsModule.cs` with `AddCommentsModule(...)` that registers the services (and an `IModuleInitializer` if needed).
 6. Add one line to `Program.cs`: `builder.Services.AddCommentsModule();`.
-7. Add tests in `tests/VaninWebsite.Api.Tests/`. Add a client feature under `app/features/comments/`.
+7. Add tests in `tests/GooseWebsite.Api.Tests/`. Add a client feature under `app/features/comments/`.
 8. Update this document (sections 3, 4, and the matrix) and the backlog evidence.
 9. Until TE1 lands, a new table needs the migration work first; `EnsureCreated` will not add it to an existing database.
 
@@ -492,7 +525,7 @@ Delete the module folder, its registration line in `Program.cs`, its tests, and 
 
 | Level | Location | What it covers |
 | --- | --- | --- |
-| Integration (host in memory) | `tests/VaninWebsite.Api.Tests/AuthApiIntegrationTests.cs`, `AuthApiFactory.cs` | Login, CSRF, cookie flags, lockout, expiry, registration, verification, authorization, rate limit. The factory swaps in an in-memory SQLite connection and a test mail sink. |
+| Integration (host in memory) | `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTests.cs`, `AuthApiFactory.cs` | Login, CSRF, cookie flags, lockout, expiry, registration, verification, authorization, rate limit. The factory swaps in an in-memory SQLite connection and a test mail sink. |
 | Unit and service | `AdminProvisioningTests.cs`, `ContactFeatureTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry), honeypot, log privacy; pinned table and index names so existing databases keep working |
 | Client | `*.spec.ts` beside components | Header sign-in link; verify-email page does not post until confirmed |
 
@@ -506,13 +539,11 @@ Each item is also tracked in [project.md](./project.md) or the backlog.
 
 | Gap | Where | Consequence | Tracked as |
 | --- | --- | --- | --- |
-| The contact verification link is returned in the API response and never emailed; the client ignores it | `ContactController.Send`, `contact-page.ts` | Email ownership is not proven and the browser form never delivers | F2-US2 |
-| `GET /api/contact/verify` changes state | `ContactController.Verify` | A mail scanner that fetches the link would trigger delivery once the link is emailed | F2-US2 (use an explicit confirm action) |
 | `EnsureCreated` instead of migrations | `Shared/Persistence/DatabaseInitializer.cs` | No safe schema evolution | TE1 |
 | Pending contact messages are in process memory | `ContactVerificationService` | Lost on restart; single instance only | Accepted for R1 |
 | Blog section ships hard-coded sample posts, the "selected work" section is placeholder, and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
 | `DatabaseService` applies no input sanitization or access checks yet | `Shared/Persistence/DatabaseService.cs` | Safeguards must be repeated by callers until added | F7-US1 |
 | No reader display-name update, password reset, or administrator recovery | Accounts | Recovery paths missing | F3-US3, F3-US4 |
-| `SQLitePCLRaw.lib.e_sqlite3` advisory warning (NU1903) | `VaninWebsite.Api.csproj` | Known vulnerability in a transitive package | TE3 |
+| `SQLitePCLRaw.lib.e_sqlite3` advisory warning (NU1903) | `GooseWebsite.Api.csproj` | Known vulnerability in a transitive package | TE3 |
 | No CI | repository | Regressions are not caught automatically | TE2 |
-| Contact and blog HTTP behavior lack tests | `tests/` | Gaps above went unnoticed | F2-US2, TE5 |
+| Blog HTTP behavior and browser-level contact flow lack tests | `tests/` | Contact API behavior is covered by `ContactVerificationApiTests`; the rest is not | TE5 |

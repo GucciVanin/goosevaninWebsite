@@ -1,9 +1,9 @@
-# VaninWebsite: Project Specification and Roadmap
+# GooseWebsite: Project Specification and Roadmap
 
 **Audience:** Gustavo, contributors, and AI agents planning work.  
 **Last reviewed:** 2026-10-01
 
-This document is the high-level technical specification of VaninWebsite, organized as a Scrum plan. It answers three questions: what are we building technically, in what order, and how do we know each piece is finished.
+This document is the high-level technical specification of GooseWebsite, organized as a Scrum plan. It answers three questions: what are we building technically, in what order, and how do we know each piece is finished.
 
 | Document | Role |
 | --- | --- |
@@ -42,7 +42,7 @@ The full statement and principles are in [goal.md](./goal.md). Anything in this 
 | Contact | Public contact form, abuse controls (honeypot and rate limit), verification-first delivery | R1 |
 | Blog | Posts with draft/publish state; the seed that will grow into Stories and Projects | R1, R2 |
 | Shared | `DatabaseService` (the single gateway for all database reads and writes), SMTP transport, trusted-proxy headers, module startup hooks | all |
-| Client | Public profile and home sections, contact form, blog section, sign-in and verification screens | all |
+| Client | Public profile and home sections, contact form, blog section, sign-in and verification screens; redesigned in F9 | all |
 
 New product areas (for example Comments and Member Profiles in R3) are added as new modules; see the recipe in [architecture.md](./architecture.md#9-how-to-add-change-or-remove-a-feature).
 
@@ -97,7 +97,7 @@ A durable contact inbox, public posting by anyone other than administrators, ana
 **Definition of Done.** A story is done only when all of the following hold.
 
 1. Every acceptance test passes, and the evidence (test name or manual check) is recorded in the backlog.
-2. `dotnet test VaninWebsite.slnx` and `npm test -- --watch=false --browsers=ChromeHeadless` (in `src/VaninWebsite.Client`) pass, and the production build succeeds.
+2. `dotnet test GooseWebsite.slnx` and `npm test -- --watch=false --browsers=ChromeHeadless` (in `src/GooseWebsite.Client`) pass, and the production build succeeds.
 3. New behavior has automated tests at the right level (see [architecture.md](./architecture.md#10-testing)).
 4. No secrets, personal data, or message content are added to code, config, or logs.
 5. The change follows the module conventions and, if structure or contracts changed, [architecture.md](./architecture.md) is updated in the same change.
@@ -109,7 +109,7 @@ A durable contact inbox, public posting by anyone other than administrators, ana
 
 | Release | Outcome | Exit measure | Planned effort |
 | --- | --- | --- | --- |
-| R1: Credible home base | Public profile, verified contact, administrator sign-in, private editor | All R1 gates pass; no sensitive fields exposed; only administrators can edit | 22 US (264 h) |
+| R1: Credible home base | Public profile, verified contact, administrator sign-in, private editor, new brand design | All R1 gates pass; no sensitive fields exposed; only administrators can edit | 36 US (432 h) |
 | R2: Explore the work and stories | Public browsing of published projects and stories | Drafts never visible; every published item reachable | 4 US (48 h) |
 | R3: Reader conversation | Verified readers comment on projects and stories and share optional profiles | Only verified readers comment; email stays private; authors own their comments | 13 US (156 h) |
 
@@ -124,6 +124,7 @@ flowchart LR
     F3a[F3 Admin accounts<br/>In progress]
     F7[F7 Data access safeguards<br/>Proposed]
     F4[F4 Private editor<br/>Proposed]
+    F9[F9 Brand redesign<br/>Proposed]
     F5[F5 Public browsing<br/>Proposed]
     F3b[F3 Reader accounts<br/>Built, off by default]
     F6[F6 Reader comments<br/>Proposed]
@@ -133,7 +134,8 @@ flowchart LR
     F3a --> F4
     TE1 --> F4
     F7 --> F4
-    F4 --> F5
+    F4 --> F9
+    F9 --> F5
     F5 --> F6
     F3b --> F6
     F3b --> F8
@@ -147,14 +149,17 @@ Gustavo confirmed on 2026-10-02 a capacity of about 6 US (72 hours) per sprint a
 
 | Sprint | Sprint Goal | Stories and enablers | Effort |
 | --- | --- | --- | --- |
-| 0 (done, 2026-10-01) | The project is ready to grow | Modular restructure, rename to VaninWebsite, secrets out of config, goal/project/architecture documents | n/a |
+| 0 (done, 2026-10-01) | The project is ready to grow | Modular restructure, rename to GooseWebsite, secrets out of config, goal/project/architecture documents | n/a |
 | 1 | Contact is truly verified and R1 sign-in is closed out | F2-US2 remaining work (email the link, stop returning it, confirmation page); F3-US1 close-out (production HTTPS runtime checks); F3-US3 administrator recovery; TE1 EF Core migrations; TE2 CI pipeline; TE3 dependency hygiene | about 5 US |
 | 2 | Data access is safe by default, and the editor is protected | F7-US1 database access safeguards (sanitization and access checks in `DatabaseService`); F4-US2 secure administrator editor | 4 US |
 | 3 | Gustavo can manage and write content | F4-US1 editor workspace; F4-US3 stories | 5 US |
-| 4 | **R1 ships** | F4-US4 projects; F4-US5 image upload; TE4 remove sample content (deployment gate); R1 release gate (all exit measures, desktop and mobile review) | 4 US plus gate |
-| 5 | **R2 ships** | TE5 browser tests and accessibility scan; F5-US1 projects; F5-US2 stories | 6 US |
-| 6 | Readers can converse | F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments  | 6 US |
-| 7 | **R3 ships** | F8-US1 create profile with optional details; F8-US2 view another user's profile; F8-US3 edit or remove my details; enable reader registration in production | 5 US plus launch checks |
+| 4 | Content can be managed; the new brand foundation exists | F4-US4 projects; F4-US5 image upload; F9-US1 brand and design tokens (needs Gustavo's logo SVG and inspiration image) | 6 US || 5 | The new design covers the shell and home page | F9-US2 site shell; F9-US3 home page redesign | 5 US || 6 | The new design covers every screen and email | F9-US4 contact, blog, and account pages; F9-US5 editor; F9-US6 branded emails | 5 US || 7 | **R1 ships** | F9-US7 accessibility and responsiveness verification; TE5 browser tests and accessibility scan; TE4 remove sample content (deployment gate); R1 release gate (all exit measures) | 4.5 US plus gate || 8 | **R2 ships** | F5-US1 projects; F5-US2 stories | 4 US || 9 | Readers can converse | F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments | 6 US || 10 | **R3 ships** | F8-US1 create profile with optional details; F8-US2 view another user's profile; F8-US3 edit or remove my details; enable reader registration in production | 5 US plus launch checks |
+| 5 | The new design covers the shell and home page | F9-US2 site shell; F9-US3 home page redesign | 5 US |
+| 6 | The new design covers every screen and email | F9-US4 contact, blog, and account pages; F9-US5 editor; F9-US6 branded emails | 5 US |
+| 7 | **R1 ships** | F9-US7 accessibility and responsiveness verification; TE5 browser tests and accessibility scan; TE4 remove sample content (deployment gate); R1 release gate (all exit measures) | 4.5 US plus gate |
+| 8 | **R2 ships** | F5-US1 projects; F5-US2 stories | 4 US |
+| 9 | Readers can converse | F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments | 6 US |
+| 10 | **R3 ships** | F8-US1 create profile with optional details; F8-US2 view another user's profile; F8-US3 edit or remove my details; enable reader registration in production | 5 US plus launch checks |
 
 ### Current sprint backlog (Sprint 1, not yet started)
 
@@ -162,9 +167,9 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| F2-US2: email the verification link, remove token and URL from the response, add confirmation page | Ready | Gap found 2026-10-01; see the story |
+| F2-US2: email the verification link, remove token and URL from the response, add confirmation page | Done | Verified end to end 2026-10-06; see the story |
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
-| F3-US3: administrator recovery command | Proposed | Needs Gustavo to confirm the recovery approach |
+| F3-US3: administrator recovery command | Ready | Operator-only reset command approved 2026-10-02 |
 | TE1 to TE3 | Proposed | See section 6 |
 
 ### Sprint log
@@ -185,17 +190,18 @@ Enablers are work that is not a product feature but that the features depend on.
 | TE4 | Remove sample content: the hard-coded posts in the blog section, placeholder "selected work", and the demo posts in local databases. Gustavo: leave in place during development, remove before deployment | R1 requires no sample content; this is a deployment gate in Sprint 4 | 0.5 US |
 | TE5 | Browser tests and an automated accessibility scan | Several acceptance tests (320 px, keyboard, contrast) are manual today | 2 US |
 
-Enablers total 5 US (60 hours) and are in addition to the 39 US of product features.
+Enablers total 5 US (60 hours) and are in addition to the 53 US of product features.
 
 ## 7. Risks and open decisions
 
 | Item | Impact | Next step |
 | --- | --- | --- |
-| Contact verification does not prove email ownership (link returned to the submitter, and not shown by the client) | Spam and impersonation can reach Gustavo; the form does not deliver from the browser | Sprint 1, F2-US2 |
 | SMTP credentials were committed to `appsettings.json` and `CLAUDE.md` before 2026-10-01 | Anyone with the repository or a copy can send mail as the sender | Rotate the MailerSend key and password; the values in git history stay exposed if a repository is ever created from earlier copies |
 | Pending contact messages live in memory | Lost on restart; works only with one instance | Acceptable for R1 (matches the no-inbox decision); revisit if the site scales out |
 | `DatabaseService` has no input sanitization or access checks yet | Every caller must remember its own checks | Sprint 2, F7-US1 |
-| Visual direction and palette are proposed, not approved | Rework risk | Approve at the first Sprint Review that shows the editor |
+| The logo and inspiration image for the redesign (F9) were supplied on 2026-10-02, but the hero illustration file and the GitHub and LinkedIn URLs are still missing; the logo is a raster PNG inside an SVG | F9-US1 and F9-US3 cannot be Ready without them | Gustavo to provide the remaining items before Sprint 4 |
+| The redesign is built after the editor, so F4 screens are first built in the current look | Some rework in F9-US5 | Accepted by Gustavo (design after R1 features, before launch); keep editor styles on shared tokens where possible |
+| Accessibility is verified after the redesign rather than during it | A late finding could delay R1 | F9-US7 is a launch gate; run the automated scan (TE5) early in F9 |
 | Decisions listed at the end of the backlog (image formats and limits, URL and deletion behavior, browser matrix) | Block F4-US5, F5, and F6 stories from becoming `Ready` | Decide before the sprint that needs them |
 
 ## 8. Ideas parked for later

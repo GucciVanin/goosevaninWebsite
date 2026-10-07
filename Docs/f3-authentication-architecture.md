@@ -1,6 +1,6 @@
 # F3 User Accounts and Authentication Architecture
 
-**Status (2026-10-01):** Design record, partly implemented. The code lives in `src/VaninWebsite.Api/Modules/Accounts/`; [architecture.md](./architecture.md) describes it as built. This note keeps the reasoning and the remaining design.
+**Status (2026-10-01):** Design record, partly implemented. The code lives in `src/GooseWebsite.Api/Modules/Accounts/`; [architecture.md](./architecture.md) describes it as built. This note keeps the reasoning and the remaining design.
 
 | Area | State |
 | --- | --- |
@@ -78,7 +78,7 @@ Provide a maintenance-only provisioning command executed by an authorized deploy
 
 There is no HTTP endpoint for bootstrap, promotion, or administrator registration. A failed partial operation must be safe to rerun only after the operator has inspected and corrected the state; it must not grant privileges to an arbitrary existing reader. Each administrator is a distinct account, and every account created by the authorized provisioning operation receives the `Admin` role. If Gustavo's account needs recovery, the proposed R1 path is another explicitly authorized, interactive operator command that resets only the selected existing administrator's password and never creates or promotes an account. Confirm this recovery choice before F3-US1 is marked `Ready`.
 
-The R1 command is available as `dotnet run --project src/VaninWebsite.Api -- admin provision` during development and `dotnet VaninWebsite.Api.dll admin provision` in deployment. Password and confirmation are read interactively without echo and are never command-line arguments. Startup creates the `Admin` role if missing but does not create a user or seed content.
+The R1 command is available as `dotnet run --project src/GooseWebsite.Api -- admin provision` during development and `dotnet GooseWebsite.Api.dll admin provision` in deployment. Password and confirmation are read interactively without echo and are never command-line arguments. Startup creates the `Admin` role if missing but does not create a user or seed content.
 
 ## API contract
 
@@ -174,7 +174,7 @@ These are recommendations in this design, not recorded product decisions:
 
 | Decision | Proposed default |
 | --- | --- |
-| Administrator recovery | Authorized operator-only interactive reset command for the selected existing administrator; no public administrator password-recovery endpoint |
+| Administrator recovery | **Confirmed 2026-10-02.** Authorized operator-only interactive reset command for the selected existing administrator; no public administrator password-recovery endpoint |
 | Reader recovery | Generic-response email reset flow in R3 |
 | Confirmation token lifetime | 24 hours |
 | Idle cookie lifetime | 30 minutes, non-persistent |
