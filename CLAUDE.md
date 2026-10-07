@@ -56,3 +56,17 @@ Build the client at least once before running the .NET tests; some tests expect 
 ## Known gaps to keep in mind
 
 The contact verification flow emails the link to the sender (story F2-US2) but has not yet been exercised against the production SMTP provider. The full list is in `Docs/architecture.md` section 11.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`gh` CLI). See `Docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `Docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at the repo root, ADRs in `Docs/adr/`. See `Docs/agents/domain.md`.
