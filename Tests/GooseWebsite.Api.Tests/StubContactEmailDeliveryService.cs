@@ -28,8 +28,15 @@ internal sealed class StubContactEmailDeliveryService : IContactEmailDeliverySer
     /// <summary>Gustavo is notified but the sender's receipt fails.</summary>
     public bool ReceiptShouldFail { get; set; }
 
+    /// <summary>Every verification link handed to the sender, including attempts that then failed or threw.</summary>
+    public IReadOnlyCollection<string> AttemptedVerificationUrls => _attemptedVerificationUrls.ToArray();
+
+    private readonly ConcurrentQueue<string> _attemptedVerificationUrls = new();
+
     public Task<bool> SendVerificationRequestAsync(string name, string email, string verificationUrl)
     {
+        _attemptedVerificationUrls.Enqueue(verificationUrl);
+
         if (VerificationShouldThrow)
         {
             throw new FormatException("malformed address");

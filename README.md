@@ -14,7 +14,7 @@ The personal website of Gustavo Couto Vanin: a public profile, a verified contac
 ## Run locally
 
 ```powershell
-# 1. Build the Angular client into the API's wwwroot
+# 1. Build the Angular client into the APt's wwwroot
 Push-Location src/GooseWebsite.Client
 npm ci
 npm run build
@@ -23,7 +23,7 @@ Pop-Location
 # 2. Trust the ASP.NET Core development certificate (once)
 dotnet dev-certs https --trust
 
-# 3. Run the API, which also serves the client
+# 3. Run the APt, which also serves the client
 dotnet run --project src/GooseWebsite.Api
 ```
 

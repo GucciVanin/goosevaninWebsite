@@ -5,7 +5,7 @@ namespace GooseWebsite.Api.Modules.Contact.Services;
 
 // Keeps expired partitions from consuming the bounded contact rate-limit stores. Client addresses
 // and recipient addresses are tracked in separate stores so neither can evict the other.
-public sealed class ContactSubmissionAbuseGuard : IContactSubmissionAbuseGuard
+public sealed class ContactSubmissionAbuseGuard
 {
     private const int DefaultMaxTrackedClients = 10000;
     private const int DefaultMaxRequestsPerRecipient = 2;

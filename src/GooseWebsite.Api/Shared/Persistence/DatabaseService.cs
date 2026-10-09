@@ -62,6 +62,24 @@ public sealed class DatabaseService(
     public Task<string> GenerateUserEmailConfirmationTokenAsync(ApplicationUser user) =>
         users.GenerateEmailConfirmationTokenAsync(user);
 
+    /// <summary>
+    /// Replaces a user's password without the old one (operator recovery). Changes the security stamp so
+    /// existing sessions end, and clears any lockout so the new password can be used straight away.
+    /// </summary>
+    public async Task<IdentityResult> ResetUserPasswordAsync(ApplicationUser user, string newPassword)
+    {
+        var token = await users.GeneratePasswordResetTokenAsync(user);
+        var result = await users.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        await users.SetLockoutEndDateAsync(user, null);
+        await users.ResetAccessFailedCountAsync(user);
+        return result;
+    }
+
     public Task<bool> RoleExistsAsync(string role) => roles.RoleExistsAsync(role);
 
     public Task<IdentityResult> CreateRoleAsync(string role) => roles.CreateAsync(new IdentityRole(role));

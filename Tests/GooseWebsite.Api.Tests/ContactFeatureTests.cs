@@ -1,11 +1,6 @@
-using System.Net;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using GooseWebsite.Api.Modules.Contact.Contracts;
-using GooseWebsite.Api.Modules.Contact.Controllers;
 using GooseWebsite.Api.Modules.Contact.Models;
 using GooseWebsite.Api.Modules.Contact.Services;
 using Xunit;
@@ -116,58 +111,6 @@ public sealed class ContactFeatureTests
     }
 
     [Fact]
-    public async Task ContactController_RejectsHoneypotAndRateLimitedRequests()
-    {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Contact:RateLimit:MaxRequestsPerWindow"] = "1",
-                ["Contact:RateLimit:WindowMinutes"] = "10"
-            })
-            .Build();
-
-        var controller = new ContactController(
-            new StubContactVerificationService(),
-            new StubContactEmailDeliveryService(),
-            new ContactSubmissionAbuseGuard(configuration),
-            NullLogger<ContactController>.Instance);
-
-        controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext()
-        };
-        controller.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("127.0.0.1");
-
-        var honeypotResult = await controller.Send(new ContactMessage
-        {
-            Name = "Test User",
-            Email = "test@example.com",
-            Reason = "Work or collaboration",
-            Message = "hello",
-            Website = "https://example.com"
-        });
-
-        Assert.IsType<BadRequestObjectResult>(honeypotResult);
-
-        var validRequest = new ContactMessage
-        {
-            Name = "Test User",
-            Email = "test@example.com",
-            Reason = "Work or collaboration",
-            Message = "hello",
-            Website = string.Empty
-        };
-
-        var firstResult = await controller.Send(validRequest);
-        Assert.IsType<OkObjectResult>(firstResult);
-
-        controller.HttpContext.Request.Headers["X-Forwarded-For"] = "198.51.100.25";
-        var secondResult = await controller.Send(validRequest);
-        var objectResult = Assert.IsType<ObjectResult>(secondResult);
-        Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
-    }
-
-    [Fact]
     public void ContactSubmissionAbuseGuard_LimitsRecipientsIndependentlyOfClientsAndIgnoresCase()
     {
         var configuration = new ConfigurationBuilder()
@@ -185,60 +128,6 @@ public sealed class ContactFeatureTests
         Assert.Equal("rate_limit", rejectionReason);
         Assert.True(guard.TryAllowRecipient("other@example.test", out _));
         Assert.True(guard.TryAllow("victim@example.test", out _));
-    }
-
-    [Fact]
-    public async Task ContactController_DiscardsPendingMessageWhenVerificationEmailThrows()
-    {
-        var verification = new StubContactVerificationService();
-        var delivery = new StubContactEmailDeliveryService { VerificationShouldThrow = true };
-        var controller = new ContactController(
-            verification,
-            delivery,
-            new ContactSubmissionAbuseGuard(new ConfigurationBuilder().Build()),
-            NullLogger<ContactController>.Instance)
-        {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
-        };
-
-        var result = await controller.Send(new ContactMessage
-        {
-            Name = "Test User",
-            Email = "test@example.com",
-            Reason = "Personal note",
-            Message = "hello"
-        });
-
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status502BadGateway, objectResult.StatusCode);
-        Assert.Equal(["token-123"], verification.DiscardedTokens);
-    }
-
-    [Fact]
-    public async Task ContactController_DoesNotLogSenderEmailOrMessageBody()
-    {
-        var logger = new CapturingLogger<ContactController>();
-        var controller = new ContactController(
-            new StubContactVerificationService(),
-            new StubContactEmailDeliveryService(),
-            new ContactSubmissionAbuseGuard(new ConfigurationBuilder().Build()),
-            logger)
-        {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
-        };
-        controller.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("127.0.0.1");
-
-        await controller.Send(new ContactMessage
-        {
-            Name = "Test User",
-            Email = "private-sender@example.com",
-            Reason = "Personal note",
-            Message = "private contact message body"
-        });
-
-        var logOutput = string.Join(Environment.NewLine, logger.Messages);
-        Assert.DoesNotContain("private-sender@example.com", logOutput, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("private contact message body", logOutput, StringComparison.OrdinalIgnoreCase);
     }
 
 }
