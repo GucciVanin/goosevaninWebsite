@@ -150,12 +150,12 @@ Gustavo confirmed on 2026-10-02 a capacity of about 6 US (72 hours) per sprint a
 | Sprint | Sprint Goal | Stories and enablers | Effort |
 | --- | --- | --- | --- |
 | 0 (done, 2026-10-01) | The project is ready to grow | Modular restructure, rename to GooseWebsite, secrets out of config, goal/project/architecture documents | n/a |
-| 1 | Contact is truly verified and R1 sign-in is closed out | F2-US2 remaining work (email the link, stop returning it, confirmation page); F3-US1 close-out (production HTTPS runtime checks); F3-US3 administrator recovery; TE1 EF Core migrations; TE2 CI pipeline; TE3 dependency hygiene | about 5 US |
-| 2 | Data access is safe by default, and the editor is protected | F7-US1 database access safeguards (sanitization and access checks in `DatabaseService`); F4-US2 secure administrator editor | 4 US |
-| 3 | Gustavo can manage and write content | F4-US1 editor workspace; F4-US3 stories | 5 US |
-| 4 | Content can be managed; the new brand foundation exists | F4-US4 projects; F4-US5 image upload; F9-US1 brand and design tokens (needs Gustavo's logo SVG and inspiration image) | 6 US || 5 | The new design covers the shell and home page | F9-US2 site shell; F9-US3 home page redesign | 5 US || 6 | The new design covers every screen and email | F9-US4 contact, blog, and account pages; F9-US5 editor; F9-US6 branded emails | 5 US || 7 | **R1 ships** | F9-US7 accessibility and responsiveness verification; TE5 browser tests and accessibility scan; TE4 remove sample content (deployment gate); R1 release gate (all exit measures) | 4.5 US plus gate || 8 | **R2 ships** | F5-US1 projects; F5-US2 stories | 4 US || 9 | Readers can converse | F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments | 6 US || 10 | **R3 ships** | F8-US1 create profile with optional details; F8-US2 view another user's profile; F8-US3 edit or remove my details; enable reader registration in production | 5 US plus launch checks |
+| 1 | Contact is truly verified and R1 sign-in is closed out | F2-US2 remaining work (email the link, stop returning it, confirmation page); F3-US1 close-out (production HTTPS runtime checks); F3-US3 administrator recovery; TE1 EF Core migrations; TE2 CI pipeline; TE3 dependency hygiene; TE6 Contact submission module ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | about 6 US |
+| 2 | Data access is safe by default, and the editor is protected | F7-US1 database access safeguards (sanitization and access checks in `DatabaseService`); F4-US2 secure administrator editor; TE7 Reader account registration ([#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)). F7-US1 starts with the persistence interface design ([#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3)) | 5 US |
+| 3 | Gustavo can manage and write content | TE9 decision on a blog authoring module ([#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)), made before F4-US3; F4-US1 editor workspace; F4-US3 stories | about 5.5 US |
+| 4 | Content can be managed; the new brand foundation exists | F4-US4 projects; F4-US5 image upload; F9-US1 brand and design tokens (needs Gustavo's logo SVG and inspiration image) | 6 US |
 | 5 | The new design covers the shell and home page | F9-US2 site shell; F9-US3 home page redesign | 5 US |
-| 6 | The new design covers every screen and email | F9-US4 contact, blog, and account pages; F9-US5 editor; F9-US6 branded emails | 5 US |
+| 6 | The new design covers every screen and email | F9-US4 contact, blog, and account pages; F9-US5 editor; F9-US6 branded emails; TE8 one Mail module ([#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)), right after F9-US6 | 6 US |
 | 7 | **R1 ships** | F9-US7 accessibility and responsiveness verification; TE5 browser tests and accessibility scan; TE4 remove sample content (deployment gate); R1 release gate (all exit measures) | 4.5 US plus gate |
 | 8 | **R2 ships** | F5-US1 projects; F5-US2 stories | 4 US |
 | 9 | Readers can converse | F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments | 6 US |
@@ -171,6 +171,7 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
 | F3-US3: administrator recovery command | Ready | Operator-only reset command approved 2026-10-02 |
 | TE1 to TE3 | Proposed | See section 6 |
+| TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | Ready | From the architecture review 2026-10-06; behavior-preserving, spec published with `ready-for-agent` |
 
 ### Sprint log
 
@@ -189,8 +190,12 @@ Enablers are work that is not a product feature but that the features depend on.
 | TE3 | Dependency hygiene: resolve the `SQLitePCLRaw.lib.e_sqlite3` high-severity advisory (NU1903) and run `npm audit` | The build already warns about the advisory | 0.5 US |
 | TE4 | Remove sample content: the hard-coded posts in the blog section, placeholder "selected work", and the demo posts in local databases. Gustavo: leave in place during development, remove before deployment | R1 requires no sample content; this is a deployment gate in Sprint 4 | 0.5 US |
 | TE5 | Browser tests and an automated accessibility scan | Several acceptance tests (320 px, keyboard, contrast) are manual today | 2 US |
+| TE6 | Deepen the Contact submission flow: one module owns checks, Verification link, delivery and retry; the controller only maps outcomes ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | The retry and restore rules can only be tested through HTTP today | 1 US |
+| TE7 | Deepen Reader account registration and share one public-link builder ([#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)) | Registration rules sit in the controller; F3-US4 would copy them | 1 US |
+| TE8 | One Mail module replacing the SMTP and MailerSend seams ([#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)) | The same failure and privacy rules are written twice; do after F9-US6 | 1 US |
+| TE9 | Blog authoring module for Stories and Projects ([#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)); speculative, may merge into F4-US3 | Slug, tag and timestamp rules are in the controller | 0.5 US |
 
-Enablers total 5 US (60 hours) and are in addition to the 53 US of product features.
+Enablers total 8.5 US (102 hours) and are in addition to the 53 US of product features. TE6 to TE9 and the F7-US1 design task come from the architecture review of 2026-10-06; each has a spec in GitHub Issues and ranks ahead of feature work where its dependencies allow.
 
 ## 7. Risks and open decisions
 
