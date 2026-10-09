@@ -202,13 +202,14 @@ Owns the public contact form. Source: `Modules/Contact/`. It keeps no durable da
 
 | Piece | File | Notes |
 | --- | --- | --- |
-| Registration | `ContactModule.cs` | Binds `ContactOptions`; singletons for the token store and abuse guard |
-| Endpoints | `Controllers/ContactController.cs` | `POST /api/contact` (emails the link to the sender), `POST /api/contact/verify` (body `{token}`; the emailed link opens the client page `/contact/verify#token=...`) |
+| Registration | `ContactModule.cs` | Binds `ContactOptions`; singletons for the token store and abuse guard; the module interface `IContactSubmissionService` |
+| Module interface | `Services/IContactSubmissionService.cs`, implemented by `Services/ContactSubmissionService.cs` | `SubmitAsync(message, clientKey)` and `VerifyAsync(token)` return outcomes (`ContactSubmitStatus`, `ContactVerifyStatus`). It owns the order of checks, discarding a Pending message when the link cannot be sent, restoring it after a failed delivery (remembering that Gustavo was already notified), and the logging policy |
+| Endpoints | `Controllers/ContactController.cs` | Maps outcomes to status codes only. `POST /api/contact` (emails the link to the sender), `POST /api/contact/verify` (body `{token}`; the emailed link opens the client page `/contact/verify#token=...`) |
 | Abuse guard | `Services/ContactSubmissionAbuseGuard.cs` | Thread-safe sliding windows in two separate bounded stores: per socket IP, and per submitted address (stored only as a SHA-256 hash, case-insensitive). Configured under `Contact:RateLimit` |
 | Pending store | `Services/ContactVerificationService.cs` | In-memory, 30-minute lifetime, single use, removed on use or expiry |
 | Delivery | `Services/ContactEmailDeliveryService.cs` | Three MailerSend templates through `IMailerSendClient`: the confirm link to the sender, then the notice to Gustavo, then the receipt to the sender. Template ids come from `Contact:Templates`; the variables each template needs are in `Models/ContactEmailTemplateVariables.cs` and pinned by `ContactEmailTemplateTests` |
 
-Validation on `POST /api/contact`: honeypot field `website` must be empty, all four fields required, `reason` must be `Work or collaboration` or `Personal note`, email must be well formed, then the rate limit applies (HTTP 429 before any token is created). Logs carry the reason and a client key, never the sender's address or the message body.
+Validation on `POST /api/contact` (performed by `ContactSubmissionService`, which the controller calls): honeypot field `website` must be empty, all four fields required, `reason` must be `Work or collaboration` or `Personal note`, email must be well formed, then the rate limit applies (HTTP 429 before any token is created). Logs carry the reason and a client key, never the sender's address or the message body.
 
 ### 3.6 Blog module
 
@@ -306,7 +307,7 @@ The link is emailed to the submitted address and never returned to the browser, 
 sequenceDiagram
     autonumber
     participant B as Angular client
-    participant C as ContactController
+    participant C as ContactController (maps outcomes; the module in `ContactSubmissionService` runs the steps below)
     participant G as AbuseGuard
     participant V as VerificationService (memory)
     participant D as DeliveryService
@@ -526,12 +527,12 @@ Delete the module folder, its registration line in `Program.cs`, its tests, and 
 | Level | Location | What it covers |
 | --- | --- | --- |
 | Integration (host in memory) | `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTests.cs`, `AuthApiFactory.cs` | Login, CSRF, cookie flags, lockout, expiry, registration, verification, authorization, rate limit. The factory swaps in an in-memory SQLite connection and a test mail sink. |
-| Unit and service | `AdminProvisioningTests.cs`, `ContactFeatureTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry), honeypot, log privacy; pinned table and index names so existing databases keep working |
+| Unit and service | `AdminProvisioningTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
 | Client | `*.spec.ts` beside components | Header sign-in link; verify-email page does not post until confirmed |
 
-Test doubles: `TestAccountEmailSender` captures verification links; `StubContactEmailDeliveryService` and `StubContactVerificationService` replace contact collaborators; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
+Test doubles: `TestAccountEmailSender` captures verification links; `StubContactEmailDeliveryService` replaces the contact mail transport; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
 
-Current result (2026-10-01): 20 API tests and 2 client tests pass. Not covered: contact controller end to end through HTTP, blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
+Current result (2026-10-09): 44 API tests pass (the client suite was not re-run). Not covered: blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
 
 ## 11. Known gaps and technical debt
 

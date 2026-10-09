@@ -171,7 +171,7 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
 | F3-US3: administrator recovery command | Ready | Operator-only reset command approved 2026-10-02 |
 | TE1 to TE3 | Proposed | See section 6 |
-| TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | Ready | From the architecture review 2026-10-06; behavior-preserving, spec published with `ready-for-agent` |
+| TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | In Progress | Implemented 2026-10-09: 44 API tests pass (all request-level contact tests unchanged); awaiting review and Gustavo's confirmation of the estimate |
 
 ### Sprint log
 
