@@ -145,7 +145,7 @@ flowchart TB
 | `Shared/Persistence/PersistenceServiceCollectionExtensions` | `AddSharedPersistence`: registers SQLite and resolves a relative database path against the content root, so the working directory never matters | `Program.cs` |
 | `Shared/Persistence/DatabaseInitializer` | First `IModuleInitializer`: runs `EnsureCreated` | startup |
 | `Shared/Modules/IModuleInitializer` | A module's startup hook (for example, create roles). Run in registration order after the database exists. | Accounts, Persistence |
-| `Shared/Modules/IModuleCommand` | A module's operator command-line entry point. If one handles the arguments, the web host does not start. | Accounts (`admin provision`) |
+| `Shared/Modules/IModuleCommand` | A module's operator command-line entry point. If one handles the arguments, the web host does not start. | Accounts (`admin provision`, `admin reset-password`) |
 | `Shared/Email/ISmtpMailSender` | The only class that talks to SMTP. Returns `false` and logs only the exception type on failure. | Accounts, Contact |
 | `Shared/Email/IMailerSendClient` | The only class that talks to the MailerSend HTTP API. Sends one templated email (template id plus variables). Returns `false` and logs only the HTTP status code on failure. | Contact |
 | `Shared/Hosting/AddTrustedProxyHeaders` | Forwarded-header trust from configuration | `Program.cs` |
@@ -445,6 +445,7 @@ Set development secrets with `dotnet user-secrets` from `src/GooseWebsite.Api` (
 | Run all .NET tests | `dotnet test GooseWebsite.slnx -p:SkipClientBuild=true` |
 | Run client tests | `npm test -- --watch=false --browsers=ChromeHeadless` |
 | Provision an administrator | `dotnet run --project src/GooseWebsite.Api -- admin provision` |
+| Reset an administrator's password | `dotnet run --project src/GooseWebsite.Api -- admin reset-password` (existing administrators only; ends their sessions and clears any lockout) |
 | Container stack | `docker compose up --build -d` (site at `https://localhost`) |
 
 The API project's `BuildClient` target runs `npm run build` before every build unless `-p:SkipClientBuild=true` is passed. Some integration tests request `/verify-email` and expect the SPA fallback, so build the client at least once first.

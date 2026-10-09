@@ -5,7 +5,7 @@
 
 This document is the high-level technical specification of GooseWebsite, organized as a Scrum plan. It answers three questions: what are we building technically, in what order, and how do we know each piece is finished.
 
-| Document | Role |
+  Document   Role |
 | --- | --- |
 | [goal.md](./goal.md) | Why the project exists, in plain language. The ultimate goal. |
 | **project.md** (this file) | Technical scope and the Scrum roadmap. |

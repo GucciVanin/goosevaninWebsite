@@ -66,7 +66,9 @@ public static class AccountsModule
         services.AddScoped<AdminProvisioningService>();
         services.AddTransient<IAccountEmailSender, SmtpAccountEmailSender>();
         services.AddScoped<IModuleInitializer, AccountRoleInitializer>();
+        services.AddScoped<AdminPasswordResetService>();
         services.AddSingleton<IModuleCommand, AdminProvisioningCommand>();
+        services.AddSingleton<IModuleCommand, AdminPasswordResetCommand>();
         return services;
     }
 
@@ -96,6 +98,11 @@ public static class AccountsModule
 
         services.Configure<DataProtectionTokenProviderOptions>(options =>
             options.TokenLifespan = TimeSpan.FromHours(24));
+
+        // Check the security stamp on every request so a password reset ends open sessions at once
+        // instead of after the default 30 minutes.
+        services.Configure<SecurityStampValidatorOptions>(options =>
+            options.ValidationInterval = TimeSpan.Zero);
     }
 
     private static void AddRateLimiting(IServiceCollection services)

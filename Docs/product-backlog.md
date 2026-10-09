@@ -273,7 +273,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F3-US3: Recover Administrator Access
 
-**Status:** Ready (approach approved 2026-10-02: operator-only reset command)  
+**Status:** In Progress (approach approved 2026-10-02: operator-only reset command; implemented 2026-10-09, awaiting review)  
 **Release:** R1  
 **Estimate:** 1 US (12 hours), proposed 2026-10-01  
 **Goal:** As a site administrator who has lost a password, I can regain access through an operator-authorized path without any public recovery endpoint.
@@ -286,9 +286,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Add an operator-only module command (same `IModuleCommand` mechanism as `admin provision`) that resets one existing administrator's password.
-- [ ] Update the security stamp on reset so existing cookies stop working.
-- [ ] Test the success, unknown-account, and Reader-account paths, and record the approach in the F3 design note.
+- [x] Add an operator-only module command (same `IModuleCommand` mechanism as `admin provision`) that resets one existing administrator's password.
+- [x] Update the security stamp on reset so existing cookies stop working. The cookie's security stamp is now checked on every request (it was every 30 minutes), so a reset ends open sessions at once.
+- [x] Test the success, unknown-account, and Reader-account paths, and record the approach in the F3 design note.
+
+**Implementation evidence (2026-10-09):** `AdminPasswordResetTests` (5 tests) pass with the full suite (49 tests): reset changes only that administrator's password and ends its open session while another administrator is unaffected (test 1); an unknown email and a Reader account are refused and nothing changes (test 2); a password that breaks the 12-character policy is rejected and the old one keeps working; a locked-out administrator can sign in after a reset; the command rejects any extra argument. Acceptance test 3 is met by construction: the command reads the password interactively without echo, takes no password argument, and prints only a fixed success or failure message. The reset also clears any lockout so a locked-out administrator can sign in with the new password.
 
 ### User Story F3-US4: Recover Reader Passwords
 
