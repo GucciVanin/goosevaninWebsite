@@ -179,7 +179,7 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | F3-US3: administrator recovery command | Done | Implemented and approved 2026-10-12 (`admin reset-password`); 49 API tests pass; reviewed for standards and spec |
 | TE1: EF Core migrations replacing `EnsureCreated` | In Progress | Implemented 2026-10-12: 54 API tests pass; a copy of the local development database was adopted on startup; awaiting review and approval |
 | TE2: CI pipeline | In Progress | Workflow added 2026-10-12; all three jobs green on pull request #9 (the first run caught a `Tests`/`tests` folder-case mismatch on Linux, fixed by renaming the folder to `tests`); awaiting approval |
-| TE3 | Proposed | See section 6 |
+| TE3: dependency hygiene | In Progress | Implemented 2026-10-12: NU1903 resolved by pinning the patched SQLite engine (`dotnet list package --vulnerable` is clean; 55 API tests pass); `npm audit` fell from 12 findings (2 critical) to 6 high, all in the Karma test-runner chain (dev only, accepted and tracked in architecture.md section 11); Angular updated to 20.3.33 and the CLI to 20.3.39; CI green on pull request #10 (client tests on the regenerated lockfile, API tests, Docker build); awaiting approval |
 | TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | Done | Implemented and approved 2026-10-09: 44 API tests pass, all request-level contact tests unchanged; reviewed for standards and spec |
 
 ### Sprint log
