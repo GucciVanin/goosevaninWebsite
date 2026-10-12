@@ -12,9 +12,10 @@ public static class ContactModule
     public static IServiceCollection AddContactModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ContactOptions>(configuration.GetSection(ContactOptions.SectionName));
-        services.AddSingleton<IContactVerificationService, ContactVerificationService>();
-        services.AddSingleton<IContactSubmissionAbuseGuard, ContactSubmissionAbuseGuard>();
+        services.AddSingleton<ContactVerificationService>();
+        services.AddSingleton<ContactSubmissionAbuseGuard>();
         services.AddTransient<IContactEmailDeliveryService, ContactEmailDeliveryService>();
+        services.AddTransient<IContactSubmissionService, ContactSubmissionService>();
         return services;
     }
 }

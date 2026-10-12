@@ -76,9 +76,11 @@ Provide a maintenance-only provisioning command executed by an authorized deploy
 4. Create the target account with `EmailConfirmed = true` because an authorized operator is provisioning a known administrator, then assign the `Admin` role.
 5. Report success/failure without printing credentials or unnecessary personal data.
 
-There is no HTTP endpoint for bootstrap, promotion, or administrator registration. A failed partial operation must be safe to rerun only after the operator has inspected and corrected the state; it must not grant privileges to an arbitrary existing reader. Each administrator is a distinct account, and every account created by the authorized provisioning operation receives the `Admin` role. If Gustavo's account needs recovery, the proposed R1 path is another explicitly authorized, interactive operator command that resets only the selected existing administrator's password and never creates or promotes an account. Confirm this recovery choice before F3-US1 is marked `Ready`.
+There is no HTTP endpoint for bootstrap, promotion, or administrator registration. A failed partial operation must be safe to rerun only after the operator has inspected and corrected the state; it must not grant privileges to an arbitrary existing reader. Each administrator is a distinct account, and every account created by the authorized provisioning operation receives the `Admin` role. If Gustavo's account needs recovery, the R1 path (confirmed 2026-10-02, implemented in F3-US3) is `admin reset-password`, an explicitly authorized, interactive operator command that resets only the selected existing administrator's password and never creates or promotes an account. It changes the security stamp, and the cookie is checked against it on every request, so open sessions end at once; it also clears any lockout. An unknown email and a Reader account get the same refusal.
 
 The R1 command is available as `dotnet run --project src/GooseWebsite.Api -- admin provision` during development and `dotnet GooseWebsite.Api.dll admin provision` in deployment. Password and confirmation are read interactively without echo and are never command-line arguments. Startup creates the `Admin` role if missing but does not create a user or seed content.
+
+Recovery uses the same pattern: `dotnet run --project src/GooseWebsite.Api -- admin reset-password` during development and `dotnet GooseWebsite.Api.dll admin reset-password` in deployment. The new password and its confirmation are read without echo and are never arguments or output.
 
 ## API contract
 

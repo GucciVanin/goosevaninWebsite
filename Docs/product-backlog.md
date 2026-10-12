@@ -273,7 +273,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F3-US3: Recover Administrator Access
 
-**Status:** Ready (approach approved 2026-10-02: operator-only reset command)  
+**Status:** In Progress (approach approved 2026-10-02: operator-only reset command; implemented 2026-10-09, awaiting review)  
 **Release:** R1  
 **Estimate:** 1 US (12 hours), proposed 2026-10-01  
 **Goal:** As a site administrator who has lost a password, I can regain access through an operator-authorized path without any public recovery endpoint.
@@ -286,9 +286,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Add an operator-only module command (same `IModuleCommand` mechanism as `admin provision`) that resets one existing administrator's password.
-- [ ] Update the security stamp on reset so existing cookies stop working.
-- [ ] Test the success, unknown-account, and Reader-account paths, and record the approach in the F3 design note.
+- [x] Add an operator-only module command (same `IModuleCommand` mechanism as `admin provision`) that resets one existing administrator's password.
+- [x] Update the security stamp on reset so existing cookies stop working. The cookie's security stamp is now checked on every request (it was every 30 minutes), so a reset ends open sessions at once.
+- [x] Test the success, unknown-account, and Reader-account paths, and record the approach in the F3 design note.
+
+**Implementation evidence (2026-10-09):** `AdminPasswordResetTests` (5 tests) pass with the full suite (49 tests): reset changes only that administrator's password and ends its open session while another administrator is unaffected (test 1); an unknown email and a Reader account are refused and nothing changes (test 2); a password that breaks the 12-character policy is rejected and the old one keeps working; a locked-out administrator can sign in after a reset; the command rejects any extra argument. Acceptance test 3 is met by construction: the command reads the password interactively without echo, takes no password argument, and prints only a fixed success or failure message. The reset also clears any lockout so a locked-out administrator can sign in with the new password.
 
 ### User Story F3-US4: Recover Reader Passwords
 
@@ -571,6 +573,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
+- [ ] First, decide what the persistence interface promises: named operations per intent, no composable queries returned to callers, and the Blog repository seam removed unless a second implementation appears. Spec: [#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3) (architecture review 2026-10-06). Revisit the 2 US estimate once decided.
 - [ ] Record the sanitization and access-rule decisions above in this backlog.
 - [ ] Implement a single filter step inside `DatabaseService` that every read and write passes through, with sanitization and access checks as separate, individually testable parts.
 - [ ] Provide the caller context (the current user and role) to the gateway without modules passing it by hand.
@@ -892,6 +895,8 @@ These are technical/product-detail choices not settled in the interview. Record 
 | 2026-10-02 | Added F8 (Member Profiles, R3) at Gustavo's request: users have a profile other users can view; basic details such as hobbies, profession, and location are optional and can be skipped at creation. Stories F8-US1 to F8-US3 proposed at 5 US total. | Extends R3 from 8 US to 13 US and the total from 34 US to 39 US. Visibility (signed-in only versus public), field list, and storage location are recorded as decisions to confirm before the stories are Ready. |
 | 2026-10-02 | `DatabaseService` is the intended single gateway for all database reads and writes and was restored as such; modules keep their query logic but never use the context or Identity managers directly. It performs no sanitization or access checks yet, so story F7-US1 was added (2 US, Sprint 2, before the editor). | Keeps cross-cutting safeguards in one place as features grow. Raises totals from 32 US to 34 US; R1 is now 22 US. |
 | 2026-10-01 | Implemented F3-US2 ahead of its planned R3 release at Gustavo's request; retained R3 as the intended public-release stage. | Adds reader email verification, generic registration/resend responses, confirmed-email sign-in, and a live verified-reader policy. `Auth:ReaderRegistration:Enabled` defaults off and must be explicitly enabled for the R3 Production release; Development opts in. Reader password recovery remains a separate R3 follow-up and production SMTP delivery requires deployment verification. |
+| 2026-10-09 | TE6: the Contact module now exposes `IContactSubmissionService`; the separate interfaces for the token store and abuse guard were removed (both are used only inside the module), and `IContactEmailDeliveryService` stays as the outbound seam that tests replace. | One adapter does not justify a seam (architecture review 2026-10-06). Controller tests that built `ContactController` by hand moved to `ContactSubmissionModuleTests`. |
+| 2026-10-09 | Added the architecture-review work as technical enablers in `project.md`: TE6 Contact submission module (Sprint 1, [#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)), TE7 Reader account registration (Sprint 2, [#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)), TE8 one Mail module (Sprint 6, after F9-US6, [#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)), TE9 blog authoring (decided at the start of Sprint 3, [#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)); the persistence interface design became the first task of F7-US1 ([#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3)). Added `CONTEXT.md`; Verification means a person proving control of an email address by clicking the Verification link. | Refactors rank ahead of feature work where dependencies allow (Gustavo, 2026-10-09). Enabler estimates are proposed and need confirmation; enablers rise from 5 US to 8.5 US. TE8 stays after F9-US6 because the dependency would force a redesign. |
 
 ## Progress Summary
 

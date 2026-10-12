@@ -5,7 +5,7 @@ using GooseWebsite.Api.Modules.Contact.Models;
 namespace GooseWebsite.Api.Modules.Contact.Services;
 
 // Holds pending contact messages until one-time email verification succeeds.
-public sealed class ContactVerificationService : IContactVerificationService
+public sealed class ContactVerificationService
 {
     private static readonly TimeSpan VerificationLifetime = TimeSpan.FromMinutes(30);
     private readonly ConcurrentDictionary<string, ContactMessageVerification> _pending = new();

@@ -14,9 +14,9 @@ public sealed class AdminProvisioningCommand(IServiceScopeFactory scopeFactory) 
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var provisioner = scope.ServiceProvider.GetRequiredService<AdminProvisioningService>();
-        var email = Prompt("Administrator email: ");
-        var password = PromptSecret("Password: ");
-        var confirmation = PromptSecret("Confirm password: ");
+        var email = ConsolePrompt.Text("Administrator email: ");
+        var password = ConsolePrompt.Secret("Password: ");
+        var confirmation = ConsolePrompt.Secret("Confirm password: ");
         if (!string.Equals(password, confirmation, StringComparison.Ordinal))
         {
             Console.Error.WriteLine("Passwords do not match.");
@@ -34,41 +34,5 @@ public sealed class AdminProvisioningCommand(IServiceScopeFactory scopeFactory) 
 
         Console.WriteLine("Administrator account provisioned.");
         return true;
-    }
-
-    private static string Prompt(string label)
-    {
-        Console.Write(label);
-        return Console.ReadLine()?.Trim() ?? string.Empty;
-    }
-
-    private static string PromptSecret(string label)
-    {
-        Console.Write(label);
-        var value = new System.Text.StringBuilder();
-        while (true)
-        {
-            var key = Console.ReadKey(intercept: true);
-            if (key.Key == ConsoleKey.Enter)
-            {
-                Console.WriteLine();
-                return value.ToString();
-            }
-
-            if (key.Key == ConsoleKey.Backspace)
-            {
-                if (value.Length > 0)
-                {
-                    value.Length--;
-                }
-
-                continue;
-            }
-
-            if (!char.IsControl(key.KeyChar))
-            {
-                value.Append(key.KeyChar);
-            }
-        }
     }
 }
