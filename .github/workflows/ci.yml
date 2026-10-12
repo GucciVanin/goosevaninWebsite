@@ -1,0 +1,62 @@
+name: CI
+
+# Stops a regression from merging: builds the client, runs both test suites, and builds the Docker image.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client:
+    name: Client build and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/GooseWebsite.Client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.15.0
+          cache: npm
+          cache-dependency-path: src/GooseWebsite.Client/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --watch=false --browsers=ChromeHeadless
+      # The API tests expect the built client in the API's wwwroot.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-build
+          path: src/GooseWebsite.Api/wwwroot
+          retention-days: 1
+
+  api:
+    name: API build and tests
+    needs: client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: client-build
+          path: src/GooseWebsite.Api/wwwroot
+      - run: dotnet build GooseWebsite.slnx -c Release -p:SkipClientBuild=true
+      - run: dotnet test GooseWebsite.slnx -c Release --no-build -p:SkipClientBuild=true
+
+  docker:
+    name: Docker image builds
+    needs: [client, api]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag goosewebsite:ci .
