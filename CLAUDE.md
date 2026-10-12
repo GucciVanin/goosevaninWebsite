@@ -52,6 +52,7 @@ Build the client at least once before running the .NET tests; some tests expect 
 7. **Do not mark a story Done from reading code.** Run its acceptance tests, record the evidence in `Docs/product-backlog.md`, and follow the Definition of Done in `Docs/project.md`.
 8. **Keep documents in step with code.** Structural or contract changes update `Docs/architecture.md` in the same change. Scope or status changes update the backlog and the decision log.
 9. Use "Gustavo" or "Gustavo Couto Vanin" in public-facing text, not "the owner". Do not publish his age, exact location, or invented credentials.
+10. **One commit per user story (or enabler), one pull request per feature.** Fold a story's code, tests, docs, and status updates into its single commit. See `Docs/project.md` section 3.5.
 
 ## Known gaps to keep in mind
 
