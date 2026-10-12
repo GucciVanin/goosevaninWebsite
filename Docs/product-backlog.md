@@ -273,7 +273,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F3-US3: Recover Administrator Access
 
-**Status:** In Progress (approach approved 2026-10-02: operator-only reset command; implemented 2026-10-09, awaiting review)  
+**Status:** Done (approach approved 2026-10-02: operator-only reset command; implemented 2026-10-09; approved 2026-10-12)  
 **Release:** R1  
 **Estimate:** 1 US (12 hours), proposed 2026-10-01  
 **Goal:** As a site administrator who has lost a password, I can regain access through an operator-authorized path without any public recovery endpoint.

@@ -55,6 +55,12 @@ dotnet run --project src/GooseWebsite.Api -- admin provision
 
 It prompts for an email and a masked password.
 
+If an administrator loses their password, reset it on the host (existing administrators only; their open sessions end):
+
+```powershell
+dotnet run --project src/GooseWebsite.Api -- admin reset-password
+```
+
 ## Test
 
 ```powershell

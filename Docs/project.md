@@ -169,7 +169,7 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | --- | --- | --- |
 | F2-US2: email the verification link, remove token and URL from the response, add confirmation page | Done | Verified end to end 2026-10-06; see the story |
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
-| F3-US3: administrator recovery command | Ready | Operator-only reset command approved 2026-10-02 |
+| F3-US3: administrator recovery command | Done | Implemented and approved 2026-10-12 (`admin reset-password`); 49 API tests pass; reviewed for standards and spec |
 | TE1 to TE3 | Proposed | See section 6 |
 | TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | Done | Implemented and approved 2026-10-09: 44 API tests pass, all request-level contact tests unchanged; reviewed for standards and spec |
 
