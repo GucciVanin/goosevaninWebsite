@@ -528,12 +528,14 @@ Delete the module folder, its registration line in `Program.cs`, its tests, and 
 | Level | Location | What it covers |
 | --- | --- | --- |
 | Integration (host in memory) | `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTests.cs`, `AuthApiFactory.cs` | Login, CSRF, cookie flags, lockout, expiry, registration, verification, authorization, rate limit. The factory swaps in an in-memory SQLite connection and a test mail sink. |
-| Unit and service | `AdminProvisioningTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
+| Unit and service | `AdminProvisioningTests.cs`, `AdminPasswordResetTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `DatabaseInitializerTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
 | Client | `*.spec.ts` beside components | Header sign-in link; verify-email page does not post until confirmed |
 
 Test doubles: `TestAccountEmailSender` captures verification links; `StubContactEmailDeliveryService` replaces the contact mail transport; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
 
-Current result (2026-10-09): 44 API tests pass (the client suite was not re-run). Not covered: blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
+Continuous integration (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: the client build and tests, then the API build and tests against that built client, then a Docker image build. Make the three jobs required checks on `main` in the repository settings so a failing run blocks the merge.
+
+Current result (2026-10-12): 54 API tests pass (the client suite is run by CI). Not covered: blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
 
 ## 11. Known gaps and technical debt
 
@@ -546,5 +548,4 @@ Each item is also tracked in [project.md](./project.md) or the backlog.
 | `DatabaseService` applies no input sanitization or access checks yet | `Shared/Persistence/DatabaseService.cs` | Safeguards must be repeated by callers until added | F7-US1 |
 | No reader display-name update, password reset, or administrator recovery | Accounts | Recovery paths missing | F3-US3, F3-US4 |
 | `SQLitePCLRaw.lib.e_sqlite3` advisory warning (NU1903) | `GooseWebsite.Api.csproj` | Known vulnerability in a transitive package | TE3 |
-| No CI | repository | Regressions are not caught automatically | TE2 |
 | Blog HTTP behavior and browser-level contact flow lack tests | `tests/` | Contact API behavior is covered by `ContactVerificationApiTests`; the rest is not | TE5 |

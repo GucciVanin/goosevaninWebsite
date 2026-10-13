@@ -178,7 +178,8 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
 | F3-US3: administrator recovery command | Done | Implemented and approved 2026-10-12 (`admin reset-password`); 49 API tests pass; reviewed for standards and spec |
 | TE1: EF Core migrations replacing `EnsureCreated` | In Progress | Implemented 2026-10-12: 54 API tests pass; a copy of the local development database was adopted on startup; awaiting review and approval |
-| TE2, TE3 | Proposed | See section 6 |
+| TE2: CI pipeline | In Progress | Workflow added 2026-10-12; all three jobs green on pull request #9 (the first run caught a `Tests`/`tests` folder-case mismatch on Linux, fixed by renaming the folder to `tests`); awaiting approval |
+| TE3 | Proposed | See section 6 |
 | TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | Done | Implemented and approved 2026-10-09: 44 API tests pass, all request-level contact tests unchanged; reviewed for standards and spec |
 
 ### Sprint log
