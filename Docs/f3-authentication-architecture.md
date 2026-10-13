@@ -9,7 +9,7 @@
 | Reader display-name update (`PATCH /api/auth/me`) | Not implemented |
 | Reader password reset (`forgot` / `reset`) | Not implemented; story F3-US4 |
 | Administrator recovery command | Not implemented; story F3-US3 |
-| EF Core migrations replacing `EnsureCreated` | Not implemented; enabler TE1 in [project.md](./project.md) |
+| EF Core migrations replacing `EnsureCreated` | Implemented 2026-10-12 (enabler TE1 in [project.md](./project.md)) |
 
 **Deviations from the proposals below:** the password minimum is 12 characters as proposed (it was 8 until 2026-10-02) and lockout is 5 attempts for 15 minutes; the verification link carries its token in the URL fragment; registration, resend, and verification share one fixed-window limit of 5 requests per client IP per 10 minutes. Treat the "Decisions to confirm" table as still open for Gustavo.
 

@@ -6,7 +6,7 @@ using Xunit;
 
 namespace GooseWebsite.Api.Tests;
 
-// Guards table and index names, because the schema is created by EnsureCreated and existing databases cannot be altered.
+// Guards table and index names, because renaming them would orphan the data in existing databases.
 public sealed class SchemaCompatibilityTests
 {
     [Fact]

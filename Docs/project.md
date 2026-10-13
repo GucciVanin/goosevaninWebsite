@@ -103,6 +103,13 @@ A durable contact inbox, public posting by anyone other than administrators, ana
 5. The change follows the module conventions and, if structure or contracts changed, [architecture.md](./architecture.md) is updated in the same change.
 6. Backlog status, estimate, and decision log are updated.
 
+### 3.5 Delivery workflow (decided by Gustavo 2026-10-12)
+
+- **One commit per user story.** A story's code, tests, documentation, and its status and evidence updates go in a single commit, so the history reads as one line per story and a story can be reverted whole. A technical enabler (TE) is committed the same way, one commit per enabler. Do not add separate "mark Done" or "fix docs" commits for a story; amend or fold them into that story's commit before the pull request is opened.
+- **One pull request per feature.** All the commits of a feature (F1 to F9) go in one pull request, opened when the feature's stories are ready for review, from a branch named for the feature (for example `f4-private-editor`). The pull request lists its stories and links their specs. Enablers that exist for no single feature (for example TE1 to TE3) each get their own pull request; enablers that serve one feature travel in that feature's pull request.
+- **Order of work inside a feature.** Stories land in the order the roadmap gives; each is reviewed (standards and spec) before its commit, and its acceptance tests pass before its status becomes `Done`.
+- **Status changes need approval.** A story or enabler moves to `Done` only after Gustavo approves it; until then it stays `In Progress` with the evidence recorded.
+
 ## 4. Roadmap
 
 ### 4.1 Releases
@@ -169,8 +176,9 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | --- | --- | --- |
 | F2-US2: email the verification link, remove token and URL from the response, add confirmation page | Done | Verified end to end 2026-10-06; see the story |
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
-| F3-US3: administrator recovery command | Ready | Operator-only reset command approved 2026-10-02 |
-| TE1 to TE3 | Proposed | See section 6 |
+| F3-US3: administrator recovery command | Done | Implemented and approved 2026-10-12 (`admin reset-password`); 49 API tests pass; reviewed for standards and spec |
+| TE1: EF Core migrations replacing `EnsureCreated` | In Progress | Implemented 2026-10-12: 54 API tests pass; a copy of the local development database was adopted on startup; awaiting review and approval |
+| TE2, TE3 | Proposed | See section 6 |
 | TE6: deepen the Contact submission flow ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | Done | Implemented and approved 2026-10-09: 44 API tests pass, all request-level contact tests unchanged; reviewed for standards and spec |
 
 ### Sprint log

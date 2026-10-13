@@ -143,7 +143,7 @@ flowchart TB
 | `Shared/Persistence/DatabaseService` | **The single gateway for every database read and write.** Generic entity access (`Read<T>`, `ReadForUpdate<T>`, `FindAsync<T>`, `Add`, `Remove`, `SaveChangesAsync`) plus the account store (users, roles). Modules never use `ApplicationDbContext`, `UserManager`, or `RoleManager` directly. Input sanitization and access checks are not implemented yet (F7-US1); this class is where they will go. | Accounts, Blog |
 | `Shared/Persistence/ApplicationDbContext` | The EF Core context behind the gateway. Applies every `IEntityTypeConfiguration<T>` found in the assembly. | `DatabaseService` only |
 | `Shared/Persistence/PersistenceServiceCollectionExtensions` | `AddSharedPersistence`: registers SQLite and resolves a relative database path against the content root, so the working directory never matters | `Program.cs` |
-| `Shared/Persistence/DatabaseInitializer` | First `IModuleInitializer`: runs `EnsureCreated` | startup |
+| `Shared/Persistence/DatabaseInitializer` | First `IModuleInitializer`: applies EF Core migrations, adopting a database that `EnsureCreated` made earlier | startup |
 | `Shared/Modules/IModuleInitializer` | A module's startup hook (for example, create roles). Run in registration order after the database exists. | Accounts, Persistence |
 | `Shared/Modules/IModuleCommand` | A module's operator command-line entry point. If one handles the arguments, the web host does not start. | Accounts (`admin provision`, `admin reset-password`) |
 | `Shared/Email/ISmtpMailSender` | The only class that talks to SMTP. Returns `false` and logs only the exception type on failure. | Accounts, Contact |
@@ -271,7 +271,7 @@ erDiagram
 
 Identity also creates its standard claim, login, and token tables; they are omitted here. Contact messages are **not** stored. The pending verification dictionary exists only in process memory.
 
-The schema is created with `EnsureCreated`. It cannot change an existing database, so the first schema change (expected with F4) must be preceded by enabler TE1 (migrations).
+The schema is built by EF Core migrations (`Shared/Persistence/Migrations/`), applied at startup by `DatabaseInitializer`. A database created before migrations existed (by `EnsureCreated`) has no migration history; the initializer records the first migration (`InitialCreate`) as applied and leaves its data alone. The baseline assumes that database matches the model as of `InitialCreate`; if the key tables are missing, startup stops with an error instead of adopting it. Copy `goosewebsite.db` before the first start of a version that applies a migration to real data. Add a change with `dotnet dotnet-ef migrations add <Name> --project src/GooseWebsite.Api --output-dir Shared/Persistence/Migrations` (the tool is pinned in `dotnet-tools.json`; run `dotnet tool restore` once). `DatabaseInitializerTests` fails if the model and the migrations disagree.
 
 ## 5. Key flows
 
@@ -513,7 +513,7 @@ Each item is a defect that a code review found in this repository. Check new cod
 6. Add one line to `Program.cs`: `builder.Services.AddCommentsModule();`.
 7. Add tests in `tests/GooseWebsite.Api.Tests/`. Add a client feature under `app/features/comments/`.
 8. Update this document (sections 3, 4, and the matrix) and the backlog evidence.
-9. Until TE1 lands, a new table needs the migration work first; `EnsureCreated` will not add it to an existing database.
+9. A new table or column needs a migration (see section 4); commit the generated migration files with the change.
 
 ### Change a feature
 
@@ -541,7 +541,6 @@ Each item is also tracked in [project.md](./project.md) or the backlog.
 
 | Gap | Where | Consequence | Tracked as |
 | --- | --- | --- | --- |
-| `EnsureCreated` instead of migrations | `Shared/Persistence/DatabaseInitializer.cs` | No safe schema evolution | TE1 |
 | Pending contact messages are in process memory | `ContactVerificationService` | Lost on restart; single instance only | Accepted for R1 |
 | Blog section ships hard-coded sample posts, the "selected work" section is placeholder, and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
 | `DatabaseService` applies no input sanitization or access checks yet | `Shared/Persistence/DatabaseService.cs` | Safeguards must be repeated by callers until added | F7-US1 |
