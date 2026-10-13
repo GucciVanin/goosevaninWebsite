@@ -10,14 +10,14 @@ using GooseWebsite.Api.Shared.Persistence;
 
 namespace GooseWebsite.Api.Modules.Accounts.Controllers;
 
-// Centralizes identity endpoints so authentication policy stays consistent.
+// Centralizes identity endpoints so authentication policy stays consistent. Reader registration and
+// Verification rules live in IReaderAccountService; this controller maps their outcomes to responses.
 [ApiController]
 [Route("api/auth")]
 public sealed class AuthController(
     DatabaseService database,
     SignInManager<ApplicationUser> signInManager,
-    IAccountEmailSender accountEmailSender,
-    IConfiguration configuration,
+    IReaderAccountService readers,
     IPasswordHasher<ApplicationUser> passwordHasher,
     IAntiforgery antiforgery) : ControllerBase
 {
@@ -31,8 +31,6 @@ public sealed class AuthController(
     private static readonly Lazy<string> DummyPasswordHash = new(() =>
         new PasswordHasher<ApplicationUser>().HashPassword(DummyUser, Guid.NewGuid().ToString("N")));
 
-    private bool IsReaderRegistrationEnabled => configuration.GetValue("Auth:ReaderRegistration:Enabled", false);
-
     [AllowAnonymous]
     [HttpGet("csrf")]
     public IActionResult GetCsrfToken()
@@ -45,7 +43,7 @@ public sealed class AuthController(
     [HttpGet("reader-registration")]
     public IActionResult GetReaderRegistrationAvailability()
     {
-        return Ok(new { enabled = IsReaderRegistrationEnabled });
+        return Ok(new { enabled = readers.RegistrationEnabled });
     }
 
     [AllowAnonymous]
@@ -82,44 +80,13 @@ public sealed class AuthController(
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
-        if (!IsReaderRegistrationEnabled)
-        {
-            return NotFound();
-        }
-
         // Every outcome below answers identically so callers cannot probe which emails exist.
-        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.DisplayName))
+        return await readers.RegisterAsync(request, ModelState.IsValid) switch
         {
-            return Ok(new { message = "Please check your email to confirm your account." });
-        }
-
-        var email = request.Email.Trim();
-        if (await database.FindUserByEmailAsync(email) is not null)
-        {
-            return Ok(new { message = VerificationPendingMessage });
-        }
-
-        var user = new ApplicationUser
-        {
-            UserName = email,
-            Email = email,
-            DisplayName = request.DisplayName.Trim(),
-            EmailConfirmed = false
+            ReaderRegistrationOutcome.Disabled => NotFound(),
+            ReaderRegistrationOutcome.InvalidInput => Ok(new { message = "Please check your email to confirm your account." }),
+            _ => Ok(new { message = VerificationPendingMessage })
         };
-
-        if (!(await database.CreateUserAsync(user, request.Password)).Succeeded)
-        {
-            return Ok(new { message = VerificationPendingMessage });
-        }
-
-        if (!(await database.AddUserToRoleAsync(user, AccountRoles.Reader)).Succeeded)
-        {
-            await database.DeleteUserAsync(user);
-            return Ok(new { message = VerificationPendingMessage });
-        }
-
-        await SendVerificationEmailAsync(user);
-        return Ok(new { message = VerificationPendingMessage });
     }
 
     [AllowAnonymous]
@@ -128,14 +95,7 @@ public sealed class AuthController(
     [HttpPost("verification/resend")]
     public async Task<IActionResult> ResendEmailVerification(ResendEmailVerificationRequest request)
     {
-        var user = await database.FindUserByEmailAsync(request.Email.Trim());
-        if (user is not null
-            && !user.EmailConfirmed
-            && await database.IsUserInRoleAsync(user, AccountRoles.Reader))
-        {
-            await SendVerificationEmailAsync(user);
-        }
-
+        await readers.ResendVerificationAsync(request.Email);
         return Ok(new { message = VerificationPendingMessage });
     }
 
@@ -145,21 +105,10 @@ public sealed class AuthController(
     [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail(VerifyEmailRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.Token))
-        {
-            return Ok(new { message = InvalidVerificationMessage });
-        }
-
-        var user = await database.FindUserByIdAsync(request.UserId);
-        if (user is null || user.EmailConfirmed)
-        {
-            return Ok(new { message = InvalidVerificationMessage });
-        }
-
-        var result = await database.ConfirmUserEmailAsync(user, request.Token);
+        var verified = await readers.VerifyEmailAsync(request.UserId, request.Token);
         return Ok(new
         {
-            message = result.Succeeded ? "Your email address has been verified." : InvalidVerificationMessage
+            message = verified ? "Your email address has been verified." : InvalidVerificationMessage
         });
     }
 
@@ -185,14 +134,4 @@ public sealed class AuthController(
 
     private void BurnDummyPasswordWork(string password) =>
         _ = passwordHasher.VerifyHashedPassword(DummyUser, DummyPasswordHash.Value, password);
-
-    private async Task SendVerificationEmailAsync(ApplicationUser user)
-    {
-        var token = await database.GenerateUserEmailConfirmationTokenAsync(user);
-        var publicBaseUrl = configuration["PublicBaseUrl"]?.TrimEnd('/') ?? "https://localhost";
-
-        // The token travels in the URL fragment so it is never sent in the initial HTTP request.
-        var verificationUrl = $"{publicBaseUrl}/verify-email#userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
-        await accountEmailSender.SendVerificationEmailAsync(user.Email!, user.DisplayName, verificationUrl);
-    }
 }

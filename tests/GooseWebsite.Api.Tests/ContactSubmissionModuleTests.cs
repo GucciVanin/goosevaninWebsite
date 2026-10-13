@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using GooseWebsite.Api.Modules.Contact.Contracts;
 using GooseWebsite.Api.Modules.Contact.Models;
 using GooseWebsite.Api.Modules.Contact.Services;
+using GooseWebsite.Api.Shared.Hosting;
 using Xunit;
 
 namespace GooseWebsite.Api.Tests;
@@ -27,7 +28,7 @@ public sealed class ContactSubmissionModuleTests
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings ?? []).Build();
         return new ContactSubmissionService(
-            new ContactVerificationService(NullLogger<ContactVerificationService>.Instance, configuration),
+            new ContactVerificationService(NullLogger<ContactVerificationService>.Instance, new PublicLinkBuilder(configuration)),
             delivery,
             new ContactSubmissionAbuseGuard(configuration),
             logger ?? NullLogger<ContactSubmissionService>.Instance);

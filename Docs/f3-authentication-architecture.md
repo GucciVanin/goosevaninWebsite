@@ -56,7 +56,7 @@ Use only these server-managed roles:
 | Role | Assignment | Authorization use |
 | --- | --- | --- |
 | `Admin` | An explicit operator-authorized provisioning operation only | Private editor and other administrator-only APIs |
-| `Reader` | Assigned by the server after a reader registration is created | Reader account classification; never implies verified status |
+| `Reader` | Assigned by the server after a reader registration is created (rules in `IReaderAccountService`; if the role cannot be assigned the new account is removed again) | Reader account classification; never implies verified status |
 
 `EmailConfirmed` is the source of truth for reader verification. The `VerifiedReader` authorization policy must check the persisted user state rather than trusting a client field or a potentially stale cookie claim. The policy requires an authenticated `Reader` and a currently confirmed email. F6 comment endpoints must use this policy. F4 endpoints must use `AdminOnly`; `[Authorize]` alone is insufficient.
 
