@@ -2,18 +2,30 @@ using System.Text;
 
 namespace GooseWebsite.Api.Modules.Accounts.Services;
 
-// Reads operator input from the console. Secrets are never echoed, never taken from arguments.
-internal static class ConsolePrompt
+// Reads operator input. At a terminal, secrets are masked as they are typed. When input is piped in (a
+// script), answers are read line by line from standard input. Secrets are never taken from arguments.
+internal sealed class ConsolePrompt(TextReader? input = null)
 {
-    public static string Text(string label)
+    private readonly TextReader? _pipedInput = input ?? (Console.IsInputRedirected ? Console.In : null);
+
+    // Windows PowerShell 5.1 puts a UTF-8 byte-order mark in front of text piped to a program; it is not part of the answer.
+    private string? ReadLine() => (_pipedInput is null ? Console.ReadLine() : _pipedInput.ReadLine())?.TrimStart('\uFEFF');
+
+    public string Text(string label)
     {
         Console.Write(label);
-        return Console.ReadLine()?.Trim() ?? string.Empty;
+        return ReadLine()?.Trim() ?? string.Empty;
     }
 
-    public static string Secret(string label)
+    public string Secret(string label)
     {
         Console.Write(label);
+        if (_pipedInput is not null)
+        {
+            Console.WriteLine();
+            return ReadLine()?.TrimEnd('\r', '\n') ?? string.Empty;
+        }
+
         var value = new StringBuilder();
         while (true)
         {

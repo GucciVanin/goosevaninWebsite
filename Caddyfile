@@ -1,3 +1,6 @@
 {$SITE_DOMAIN:localhost} {
+    # Tell browsers to use HTTPS only. The lifetime is short by default so a local machine is not pinned
+    # to HTTPS for a year; set HSTS_MAX_AGE (seconds) in .env once the site has a real domain.
+    header Strict-Transport-Security "max-age={$HSTS_MAX_AGE:300}"
     reverse_proxy web:8888
 }

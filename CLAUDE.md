@@ -23,6 +23,15 @@ Gustavo Couto Vanin's personal website: a public profile, a verified contact for
 - **Deployment:** Docker; Caddy reverse proxy in `docker-compose.yml`
 - **Tests:** xUnit (`tests/GooseWebsite.Api.Tests`), Jasmine/Karma (client)
 
+## The only environment (decided by Gustavo 2026-10-14)
+
+The site is not deployed anywhere. **The Docker container stack on Gustavo's machine (`docker compose`, project `goosewebsite`) is the only environment where the running site exists, and it is a testing environment.** There is no production data to protect. Everything done in a session targets it, in this order:
+
+1. **GitHub Actions CI is the first check.** It is real and must be kept working: push the branch and wait for the pull request's checks (`gh pr checks`).
+2. **Then deploy to the container and verify there**, for everything that needs a running container (runtime tests, health checks).
+
+The goal (enabler TE10) is a deterministic one-command verification: restart the container after a code change and it runs the unit tests (.NET, Angular), the runtime tests of every available feature, and the health checks, with a log line per test. Until TE10 lands, verify manually against the container and say so. See `Docs/project.md` section 3.6.
+
 ## Commands
 
 ```bash

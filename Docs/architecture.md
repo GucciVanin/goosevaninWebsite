@@ -431,6 +431,7 @@ Configuration binds in this order of precedence, last wins: `appsettings.json`, 
 | `Contact:RateLimit:MaxRequestsPerWindow`, `WindowMinutes`, `MaxTrackedClients`, `MaxRequestsPerRecipient` | Contact abuse guard | 5, 10, 10000, 2 |
 | `Auth:ReaderRegistration:Enabled` | Reader registration endpoints | `false`; `true` in Development |
 | `PublicBaseUrl` | Base for links in emails. Verification links for both Contact and Accounts are built by `Shared/Hosting/PublicLinkBuilder` (values go in the URL fragment); the Contact email also reads it for the plain site address and logo URL | `https://localhost` |
+| `HSTS_MAX_AGE` | Seconds of the `Strict-Transport-Security` header sent by Caddy. Short by default so a local browser is not pinned to HTTPS; raise it once the site has a real domain | `300` |
 | `DataProtection:KeysPath` | Cookie-key folder; must persist across restarts | `data-protection-keys` next to the project |
 | `ForwardedHeaders:KnownProxies:N` | Trusted proxy IP addresses | none |
 
@@ -536,7 +537,22 @@ Test doubles: `TestAccountEmailSender` captures verification links; `StubContact
 
 Continuous integration (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: the client build and tests, then the API build and tests against that built client, then a Docker image build. Make the three jobs required checks on `main` in the repository settings so a failing run blocks the merge.
 
-Current result (2026-10-13): 61 API tests pass (the client suite is run by CI). Not covered: blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
+### Container verification (TE10)
+
+`scripts/verify.ps1` is the one command that verifies a change on the container stack (the only environment, see `Docs/project.md` section 3.6). It runs, in order: the CI gate (waits for the pull request's GitHub Actions checks; `-SkipCi` skips it), a backup and reset of the stack's data volume, a rebuild and restart of the containers (waiting for the health check), the seed (two test administrators created through `admin provision`, then `admin reset-password` and its refusals, with the answers piped on standard input), and finally the `verify` Compose service (image `Dockerfile.verify`: .NET SDK, Node, Chrome).
+
+| Piece | Location | Notes |
+| --- | --- | --- |
+| Orchestrator | `scripts/verify.ps1` | Exit 0 only if everything passed; exit 2 means it stopped before verifying (CI red, no pull request, unhealthy stack) |
+| Stages | `verify/stages/NN-*.sh` | Sourced in name order and always run to the end: `10-unit-dotnet` (xUnit), `20-unit-angular` (Karma in headless Chrome, `karma.conf.js`), `30-runtime`. A new stack (React) is one more script |
+| Runtime tests | `verify/runtime/NN-*.sh` | One file per feature: health, HTTPS (redirect, HSTS, certificate), pages, contact (refusals only), mail provider authorization (read-only call, no email sent), authentication, blog, reader registration state, operator commands and startup migrations. A new feature adds a file here |
+| Helpers | `verify/lib.sh` | `check`, `check_contains`, `skip`, and HTTP helpers that go through Caddy over HTTPS |
+| Results | `verify-results/` (git-ignored) | `latest.log` (one line per test), `latest.json`, raw `unit-*.out`, `ops.log`, `web.log`, and the last three data backups |
+| Test credentials | `.env.verify` (copied from `.env.verify.example`) | Test-only values; the stack's data is reset on every run |
+
+The run never sends an email: the contact form is only given requests it refuses, and the mail provider check is a read-only authorization call that prints no key. The data left in place after a run is the final state of the tests. The first run of this suite found a real defect (sign-out did not end the session on the server), now fixed under F3-US1.
+
+Current result (2026-10-14): 157 checks pass (70 .NET, 5 Angular, 82 runtime). Not covered: the rendered content of the Angular pages and the other browser-level acceptance tests (320 px, keyboard, contrast); see enabler TE5.
 
 ## 11. Known gaps and technical debt
 

@@ -3,8 +3,10 @@ using GooseWebsite.Api.Shared.Modules;
 namespace GooseWebsite.Api.Modules.Accounts.Services;
 
 // Owns the interactive console workflow (admin reset-password) for restoring administrator access.
-public sealed class AdminPasswordResetCommand(IServiceScopeFactory scopeFactory) : IModuleCommand
+public sealed class AdminPasswordResetCommand(IServiceScopeFactory scopeFactory, TextReader? input = null) : IModuleCommand
 {
+    private readonly ConsolePrompt prompt = new(input);
+
     public async Task<bool> TryRunAsync(string[] args)
     {
         if (args.Length != 2 || args[0] != "admin" || args[1] != "reset-password")
@@ -14,9 +16,9 @@ public sealed class AdminPasswordResetCommand(IServiceScopeFactory scopeFactory)
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var resetter = scope.ServiceProvider.GetRequiredService<AdminPasswordResetService>();
-        var email = ConsolePrompt.Text("Administrator email: ");
-        var password = ConsolePrompt.Secret("New password: ");
-        var confirmation = ConsolePrompt.Secret("Confirm new password: ");
+        var email = prompt.Text("Administrator email: ");
+        var password = prompt.Secret("New password: ");
+        var confirmation = prompt.Secret("Confirm new password: ");
         if (!string.Equals(password, confirmation, StringComparison.Ordinal))
         {
             Console.Error.WriteLine("Passwords do not match.");
