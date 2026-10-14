@@ -30,6 +30,8 @@ if (await app.TryRunModuleCommandAsync(args))
     return;
 }
 
+app.UseExceptionHandler();
+app.UseUnitOfWork();
 app.UseForwardedHeaders();
 app.Use(async (context, next) =>
 {

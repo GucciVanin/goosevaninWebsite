@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using GooseWebsite.Api.Shared.Modules;
@@ -23,6 +24,14 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
         services.AddScoped<DatabaseService>();
+
+        // The safeguards (F7-US1): who is calling, one unit of work per request, and plain answers to refusals.
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentCaller, HttpCurrentCaller>();
+        services.Configure<MvcOptions>(options => options.Filters.Add<UnitOfWorkFilter>());
+        services.AddExceptionHandler<DataSafeguardExceptionHandler>();
+        services.AddProblemDetails();
+
         services.AddScoped<IModuleInitializer, DatabaseInitializer>();
         return services;
     }

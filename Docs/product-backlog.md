@@ -489,6 +489,8 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a verified reader, I can add a comment to a project or story and see it appear immediately under my display name.
 
+**Decided 2026-10-14:** a comment is limited to 500 characters. Declare it in the Comment entity's access rule (`IsUserText(comment => comment.Text, maxLength: 500)`), so longer text is rejected by the persistence module and never stored.
+
 **Acceptance tests:**
 
 1. Given a verified reader submits a valid comment on a published project or story, when submission succeeds, then the comment appears on that item without Gustavo's approval.
@@ -554,16 +556,22 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F7-US1: Apply Safeguards in the Database Gateway
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-14, awaiting approval)  
 **Release:** R1  
-**Estimate:** 2 US (24 hours), proposed 2026-10-02 and confirmed by Gustavo; scheduled for Sprint 2  
+**Estimate:** 2.5 US (30 hours): 2 US confirmed 2026-10-02, raised on 2026-10-14 when the one-click-one-unit-of-work guarantee was added; scheduled for Sprint 2  
 **Goal:** As Gustavo, I want every database operation to be checked in one place, so a feature cannot store unsanitized input or read or change data the caller is not allowed to.
 
-**Current state (2026-10-02):** `Shared/Persistence/DatabaseService.cs` is the single gateway and all modules use it. It performs **no** sanitization and **no** access checks yet, so each controller still validates for itself.
+**Previous state (2026-10-02):** `DatabaseService` was the single gateway but performed no sanitization and no access checks, so each controller validated for itself.
 
 **Decided 2026-10-02:** user-written text is normalized on save (trimmed, control characters stripped), input over the field limits is rejected with a clear error, and text is always rendered as plain text.
 
-**Decisions to record before this story is Ready:** whether access rules are declared per entity (for example an attribute or a per-entity policy) or per operation; and how a rejected operation is reported to callers.
+**Decided 2026-10-14 (with Gustavo):**
+- The safeguards sit beneath `DatabaseService`: modules keep writing their own queries, but EF read filters and a save interceptor make the rules unavoidable (generic access stays; named operations per intent were rejected because they would turn the gateway into a growing catch-all).
+- Access rules are declared **per entity**, next to its mapping, and an architecture test fails when an entity declares none. Blog posts: everybody reads published posts, only administrators read drafts and write. Identity tables and users: system-managed (written by the Identity managers, including for anonymous visitors).
+- A refused write throws a typed exception mapped in one place to 403 (not allowed) or 400 (text not acceptable) with fixed messages; hidden rows look like a 404; logs never contain values.
+- The caller is the signed-in user from the request (the existing session cookie, unchanged); code outside a request is the system. Rotating per-TLS-session tokens were discussed and are **not** part of this story (authentication is unchanged).
+- User text is trimmed and cleaned of control characters (line breaks and tabs stay). **No length limit on blog posts** (only Gustavo writes); a display name is limited to 100; **comments will be limited to 500 characters** (recorded on F6-US1).
+- **One click is one unit of work:** if any part of a request fails, nothing it saved persists. A failure status that is not an exception (a 401 after a wrong password) still commits, so the failed-attempt counter keeps counting.
 
 **Acceptance tests:**
 
@@ -575,15 +583,17 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] First, decide what the persistence interface promises: named operations per intent, no composable queries returned to callers, and the Blog repository seam removed unless a second implementation appears. Spec: [#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3) (architecture review 2026-10-06). Revisit the 2 US estimate once decided.
-- [ ] Record the sanitization and access-rule decisions above in this backlog.
-- [ ] Implement a single filter step inside `DatabaseService` that every read and write passes through, with sanitization and access checks as separate, individually testable parts.
-- [ ] Provide the caller context (the current user and role) to the gateway without modules passing it by hand.
-- [ ] Add the architecture test that fails when a module bypasses the gateway.
-- [ ] Test rejected, normalized, and allowed operations for the blog and account paths; assert stored data and logs.
-- [ ] Update `architecture.md` section 3.2 and the conventions.
+- [x] First, decide what the persistence interface promises: named operations per intent, no composable queries returned to callers, and the Blog repository seam removed unless a second implementation appears. Spec: [#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3) (architecture review 2026-10-06). Revisit the 2 US estimate once decided.
+- [x] Record the sanitization and access-rule decisions above in this backlog.
+- [x] Implement the safeguards beneath `DatabaseService` (read filters from each entity's `EntityAccessRule<T>`, a save interceptor for write access and text, and the unit of work), as separate, individually testable parts.
+- [x] Provide the caller context (the current user and role) without modules passing it by hand (`ICurrentCaller`).
+- [x] Add the architecture test that fails when a module bypasses the gateway or an entity has no access rule.
+- [x] Test rejected, normalized, and allowed operations for the blog and account paths; assert stored data and logs.
+- [x] Update `architecture.md` section 3.2 and the conventions.
 
-**Feature estimate:** 2 US (24 hours)
+**Implementation evidence (2026-10-14):** `DataSafeguardsTests`, `UnitOfWorkTests` and `DataAccessArchitectureTests` (25 tests) pass with the full suite (95 API tests): anonymous and Reader callers see only published posts and cannot add, change or delete one (nothing changes, acceptance test 2); administrators and the system can (test 3); text is trimmed and control characters are stripped with line breaks kept, an over-limit display name is rejected and not stored (test 1); logs name the entity and the kind of refusal and never the title or body (test 5); a request that throws after saving leaves nothing behind, and a later refused step rolls back the earlier step of the same click; a 401 still keeps what it saved; a refusal the action catches still fails the click; a save made outside an action is committed or rolled back by the middleware, and a client that disconnects does not undo a finished click; the read filter follows each context's caller (two contexts with different callers, built from the same model); no source file outside `Shared/Persistence` mentions the context, the Identity managers, `IgnoreQueryFilters`, `ExecuteUpdate`, `ExecuteDelete`, `FromSql` or `ExecuteSql`, and every entity declares a rule (test 4). Breaking the unit of work or the read filter on purpose made 12+ tests fail. The container verification run exercises the same paths against the real stack.
+
+**Feature estimate:** 2.5 US (30 hours)
 
 ## Feature F8: Member Profiles
 
@@ -897,6 +907,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 | 2026-10-02 | Added F8 (Member Profiles, R3) at Gustavo's request: users have a profile other users can view; basic details such as hobbies, profession, and location are optional and can be skipped at creation. Stories F8-US1 to F8-US3 proposed at 5 US total. | Extends R3 from 8 US to 13 US and the total from 34 US to 39 US. Visibility (signed-in only versus public), field list, and storage location are recorded as decisions to confirm before the stories are Ready. |
 | 2026-10-02 | `DatabaseService` is the intended single gateway for all database reads and writes and was restored as such; modules keep their query logic but never use the context or Identity managers directly. It performs no sanitization or access checks yet, so story F7-US1 was added (2 US, Sprint 2, before the editor). | Keeps cross-cutting safeguards in one place as features grow. Raises totals from 32 US to 34 US; R1 is now 22 US. |
 | 2026-10-01 | Implemented F3-US2 ahead of its planned R3 release at Gustavo's request; retained R3 as the intended public-release stage. | Adds reader email verification, generic registration/resend responses, confirmed-email sign-in, and a live verified-reader policy. `Auth:ReaderRegistration:Enabled` defaults off and must be explicitly enabled for the R3 Production release; Development opts in. Reader password recovery remains a separate R3 follow-up and production SMTP delivery requires deployment verification. |
+| 2026-10-14 | F7-US1 designed with Gustavo and implemented: safeguards beneath `DatabaseService` (EF read filters and a save interceptor driven by a per-entity `EntityAccessRule<T>`), the caller is the signed-in user from the request, text is normalized with no limit on blog posts and a 500-character limit for comments (F6-US1), and one click is one unit of work. Estimate raised from 2 to 2.5 US. TE10 approved (pull request merged). | The earlier idea of named operations per intent was dropped for the generic-with-guards design after the code showed only the Blog repository used generic access. Rotating per-TLS-session tokens were discussed and left out: authentication is unchanged. |
 | 2026-10-13 | TE1, TE2 and TE3 approved (their pull requests merged). TE7: Reader registration, resend and email Verification now live behind `IReaderAccountService` and every public link is built by one `PublicLinkBuilder`. Fixed a defect found by the new module test: when the Reader role did not exist, Identity threw, the half-created account stayed, and the caller got a server error; it is now removed and the answer stays neutral. | The module is the one place for the anti-enumeration rule. Behavior otherwise unchanged; request-level tests pass unchanged. |
 | 2026-10-14 | TE10: `scripts/verify.ps1` verifies the container stack in one command (CI gate, backup and reset of the data, rebuild, seed, .NET and Angular tests, runtime tests of every feature, one log line per test). Decisions with Gustavo: the container stack is the only environment; each run resets the stack's data and leaves the final state; the mail provider is checked with a read-only authorization call and no email is sent; the administrator commands read answers from standard input; HSTS is added in Caddy with a short default lifetime. The first run found that signing out did not revoke the session cookie (fixed under F3-US1). | Replaces manual runtime checks. Enabler total rises from 8.5 to 10.3 US. |
 | 2026-10-12 | TE1: the schema is now built by EF Core migrations (`InitialCreate`) applied at startup. A database made by `EnsureCreated` is adopted by recording `InitialCreate` as applied; startup stops with an error if its key tables are missing. Tooling: `dotnet-ef` pinned in `dotnet-tools.json` and the `Microsoft.EntityFrameworkCore.Design` package (build-time only). F3-US3 marked Done. | Unblocks F4 and F7 schema changes. The adoption assumes an existing database matches the model as of `InitialCreate`; copy the database file before the first deployment that migrates real data. |
@@ -913,9 +924,9 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | Proposed | 0 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
-| F7 Centralized Data Access Safeguards | R1 | 2 US / 24 hours | Proposed | 0 of 1 |
+| F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | In Progress | 0 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53 US / 636 hours** | **In Progress** | **6 of 30** |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **6 of 30** |
 
-By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.
+By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

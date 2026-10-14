@@ -53,7 +53,7 @@ Build the client at least once before running the .NET tests; some tests expect 
 ## Rules for working in this repository
 
 1. **Follow the module conventions** in `Docs/architecture.md` section 8. Keep a feature's controllers, contracts, domain, and services inside its module. Do not add a dependency that points the wrong way (section 3.1).
-2. **All database reads and writes go through `DatabaseService`** (`Shared/Persistence`). Modules keep their query logic but never inject `ApplicationDbContext`, `UserManager`, or `RoleManager`. Sanitization and access checks are planned there (story F7-US1).
+2. **All database reads and writes go through `DatabaseService`** (`Shared/Persistence`). Modules keep their query logic but never inject `ApplicationDbContext`, `UserManager`, or `RoleManager`. Sanitization, access rules and one-click-one-unit-of-work are applied beneath it (story F7-US1): declare an `EntityAccessRule<T>` next to every new entity.
 3. **Add features as modules.** One `Add<Name>Module` extension, one line in `Program.cs`. Startup work goes in an `IModuleInitializer`, operator commands in an `IModuleCommand`.
 4. **Never put secrets in the repository.** This includes `appsettings*.json`, this file, docs, tests, and logs. SMTP settings (`Email:Smtp:*`) and `Contact:RecipientEmail` come from `dotnet user-secrets` (id `goosewebsite-api`) in development and from environment variables or `.env` in Docker.
 5. **Authorization is enforced in the API.** Use the policies in `AuthorizationPolicies` and `[ValidateAntiForgeryToken]` on cookie-authenticated writes. Never accept roles or user ids from a request.

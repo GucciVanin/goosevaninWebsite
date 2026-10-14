@@ -38,7 +38,8 @@ public sealed class BlogPostRepository(DatabaseService database) : IBlogPostRepo
     public Task<BlogPost?> GetByIdWithAuthorAsync(int id) =>
         database.ReadForUpdate<BlogPost>().Include(post => post.Author).SingleOrDefaultAsync(post => post.Id == id);
 
-    public Task<BlogPost?> FindByIdAsync(int id) => database.FindAsync<BlogPost>(id);
+    public Task<BlogPost?> FindByIdAsync(int id) =>
+        database.ReadForUpdate<BlogPost>().SingleOrDefaultAsync(post => post.Id == id);
 
     public Task<bool> SlugExistsAsync(string slug) => database.Read<BlogPost>().AnyAsync(post => post.Slug == slug);
 

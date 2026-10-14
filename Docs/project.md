@@ -184,7 +184,8 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | Item | Status | Notes |
 | --- | --- | --- |
 | F2-US2: email the verification link, remove token and URL from the response, add confirmation page | Done | Verified end to end 2026-10-06; see the story |
-| TE10: one-command container verification ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12)) | In Progress | Implemented 2026-10-14: `scripts/verify.ps1` runs 157 checks (70 .NET, 5 Angular, 82 runtime), all passing; a broken check makes it fail and the CI gate stops it; found and led to the F3-US1 sign-out fix; awaiting approval |
+| TE10: one-command container verification ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12)) | Done | Implemented 2026-10-14 and approved 2026-10-14 (pull request merged): `scripts/verify.ps1` runs 182 checks (95 .NET, 5 Angular, 82 runtime), all passing; a broken check makes it fail and the CI gate stops it; found and led to the F3-US1 sign-out fix; awaiting approval |
+| F7-US1: safeguards beneath the database gateway ([#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3)) | In Progress | Implemented 2026-10-14 (Sprint 2): 95 API tests pass; read filters, write access, text normalization, one click = one unit of work; awaiting review and approval |
 | F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; the HTTPS runtime checks (redirect, HSTS, certificate, cookie flags) now run in every container verification (TE10) |
 | F3-US3: administrator recovery command | Done | Implemented and approved 2026-10-12 (`admin reset-password`); 49 API tests pass; reviewed for standards and spec |
 | TE1: EF Core migrations replacing `EnsureCreated` | Done | Implemented 2026-10-12: 54 API tests pass; a copy of the local development database was adopted on startup; awaiting review and approval |
@@ -216,7 +217,7 @@ Enablers are work that is not a product feature but that the features depend on.
 | TE9 | Blog authoring module for Stories and Projects ([#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)); speculative, may merge into F4-US3 | Slug, tag and timestamp rules are in the controller | 0.5 US |
 | TE10 | One-command container verification: unit tests of every stack, runtime tests of every feature, health checks, one log line per test ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12)). Highest priority | The container is the only environment, and nothing verified a change there | 1.8 US |
 
-Enablers total 10.3 US (124 hours) and are in addition to the 53 US of product features. TE6 to TE9 and the F7-US1 design task come from the architecture review of 2026-10-06; each has a spec in GitHub Issues and ranks ahead of feature work where its dependencies allow.
+Enablers total 10.3 US (124 hours) and are in addition to the 53.5 US of product features. TE6 to TE9 and the F7-US1 design task come from the architecture review of 2026-10-06; each has a spec in GitHub Issues and ranks ahead of feature work where its dependencies allow.
 
 ## 7. Risks and open decisions
 
@@ -224,7 +225,6 @@ Enablers total 10.3 US (124 hours) and are in addition to the 53 US of product f
 | --- | --- | --- |
 | SMTP credentials were committed to `appsettings.json` and `CLAUDE.md` before 2026-10-01 | Anyone with the repository or a copy can send mail as the sender | Rotate the MailerSend key and password; the values in git history stay exposed if a repository is ever created from earlier copies |
 | Pending contact messages live in memory | Lost on restart; works only with one instance | Acceptable for R1 (matches the no-inbox decision); revisit if the site scales out |
-| `DatabaseService` has no input sanitization or access checks yet | Every caller must remember its own checks | Sprint 2, F7-US1 |
 | The logo and inspiration image for the redesign (F9) were supplied on 2026-10-02, but the hero illustration file and the GitHub and LinkedIn URLs are still missing; the logo is a raster PNG inside an SVG | F9-US1 and F9-US3 cannot be Ready without them | Gustavo to provide the remaining items before Sprint 4 |
 | The redesign is built after the editor, so F4 screens are first built in the current look | Some rework in F9-US5 | Accepted by Gustavo (design after R1 features, before launch); keep editor styles on shared tokens where possible |
 | Accessibility is verified after the redesign rather than during it | A late finding could delay R1 | F9-US7 is a launch gate; run the automated scan (TE5) early in F9 |

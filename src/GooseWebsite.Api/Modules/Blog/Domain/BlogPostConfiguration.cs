@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GooseWebsite.Api.Modules.Blog.Domain;
 
-// Discovered by ApplicationDbContext, so the blog owns its table mapping.
+// Discovered by the persistence module, so the blog owns its table mapping (its access rule is BlogPostAccessRule).
 public sealed class BlogPostConfiguration : IEntityTypeConfiguration<BlogPost>
 {
     public void Configure(EntityTypeBuilder<BlogPost> builder)
