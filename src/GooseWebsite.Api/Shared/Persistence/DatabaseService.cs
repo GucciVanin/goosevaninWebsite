@@ -80,6 +80,9 @@ public sealed class DatabaseService(
         return result;
     }
 
+    /// <summary>Invalidates every session cookie issued to the user so far (they are checked against the stamp).</summary>
+    public Task<IdentityResult> RotateSecurityStampAsync(ApplicationUser user) => users.UpdateSecurityStampAsync(user);
+
     public Task<bool> RoleExistsAsync(string role) => roles.RoleExistsAsync(role);
 
     public Task<IdentityResult> CreateRoleAsync(string role) => roles.CreateAsync(new IdentityRole(role));
