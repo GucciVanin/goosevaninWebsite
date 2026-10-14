@@ -43,6 +43,7 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthEndpoint();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 

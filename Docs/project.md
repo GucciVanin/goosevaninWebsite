@@ -102,6 +102,7 @@ A durable contact inbox, public posting by anyone other than administrators, ana
 4. No secrets, personal data, or message content are added to code, config, or logs.
 5. The change follows the module conventions and, if structure or contracts changed, [architecture.md](./architecture.md) is updated in the same change.
 6. Backlog status, estimate, and decision log are updated.
+7. A new feature adds its runtime checks to `verify/runtime/` (one file per feature) and the whole `scripts/verify.ps1` run passes on the container (see section 3.6).
 
 ### 3.5 Delivery workflow (decided by Gustavo 2026-10-12)
 
@@ -109,6 +110,14 @@ A durable contact inbox, public posting by anyone other than administrators, ana
 - **One pull request per feature.** All the commits of a feature (F1 to F9) go in one pull request, opened when the feature's stories are ready for review, from a branch named for the feature (for example `f4-private-editor`). The pull request lists its stories and links their specs. Enablers that exist for no single feature (for example TE1 to TE3) each get their own pull request; enablers that serve one feature travel in that feature's pull request.
 - **Order of work inside a feature.** Stories land in the order the roadmap gives; each is reviewed (standards and spec) before its commit, and its acceptance tests pass before its status becomes `Done`.
 - **Status changes need approval.** A story or enabler moves to `Done` only after Gustavo approves it; until then it stays `In Progress` with the evidence recorded.
+
+### 3.6 Verification environment (decided by Gustavo 2026-10-14)
+
+- **One running environment:** the Docker container stack on Gustavo's machine is the only place the running site exists and is a testing environment. Nothing is deployed, so there is no production to protect.
+- **Two checks, in order.** (1) GitHub Actions CI (TE2) is the first check and is maintained like any other part of the product; push the branch and wait for the pull request's checks. (2) Then the code is deployed to the container and everything that needs a running container (runtime tests, health checks) is verified there. CI does not replace the container, and the container does not replace CI.
+- **Verification means restarting the container.** After a code change, the agent rebuilds and restarts the stack and reads the results. Enabler TE10 makes that one deterministic command that runs the unit tests of every stack (.NET, Angular, later React), the runtime tests of every feature that exists, and the health checks, and logs each test. TE10 has the highest priority because it speeds up and sharpens every later story.
+- **Run it:** `scripts/verify.ps1` (add `-SkipCi` for a branch with no pull request yet). In order it checks the pull request's CI, backs up and resets the stack's data, rebuilds and restarts the containers, provisions two test administrators and exercises the operator commands, then runs the verification container: the .NET tests, the Angular tests, and the runtime tests of every feature. Every test logs one line (`PASS`/`FAIL`/`SKIP`, stage, name, milliseconds); results are in `verify-results/latest.log` and `latest.json`, and the data is left in place afterwards. The run ends with a summary and a non-zero exit code if anything failed.
+- **Adding to it:** a new feature adds a file under `verify/runtime/`; a new stack (React) adds a script under `verify/stages/`. Details in `Docs/architecture.md` section 10.
 
 ## 4. Roadmap
 
@@ -158,7 +167,7 @@ Gustavo confirmed on 2026-10-02 a capacity of about 6 US (72 hours) per sprint a
 | --- | --- | --- | --- |
 | 0 (done, 2026-10-01) | The project is ready to grow | Modular restructure, rename to GooseWebsite, secrets out of config, goal/project/architecture documents | n/a |
 | 1 | Contact is truly verified and R1 sign-in is closed out | F2-US2 remaining work (email the link, stop returning it, confirmation page); F3-US1 close-out (production HTTPS runtime checks); F3-US3 administrator recovery; TE1 EF Core migrations; TE2 CI pipeline; TE3 dependency hygiene; TE6 Contact submission module ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | about 6 US |
-| 2 | Data access is safe by default, and the editor is protected | F7-US1 database access safeguards (sanitization and access checks in `DatabaseService`); F4-US2 secure administrator editor; TE7 Reader account registration ([#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)). F7-US1 starts with the persistence interface design ([#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3)) | 5 US |
+| 2 | Data access is safe by default, and the editor is protected | TE10 container verification ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12), first and highest priority); F7-US1 database access safeguards (sanitization and access checks in `DatabaseService`); F4-US2 secure administrator editor; TE7 Reader account registration ([#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)). F7-US1 starts with the persistence interface design ([#3](https://github.com/GucciVanin/goosevaninWebsite/issues/3)) | 5 US |
 | 3 | Gustavo can manage and write content | TE9 decision on a blog authoring module ([#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)), made before F4-US3; F4-US1 editor workspace; F4-US3 stories | about 5.5 US |
 | 4 | Content can be managed; the new brand foundation exists | F4-US4 projects; F4-US5 image upload; F9-US1 brand and design tokens (needs Gustavo's logo SVG and inspiration image) | 6 US |
 | 5 | The new design covers the shell and home page | F9-US2 site shell; F9-US3 home page redesign | 5 US |
@@ -175,7 +184,8 @@ Fill in dates and owners at Sprint Planning. Statuses use the backlog vocabulary
 | Item | Status | Notes |
 | --- | --- | --- |
 | F2-US2: email the verification link, remove token and URL from the response, add confirmation page | Done | Verified end to end 2026-10-06; see the story |
-| F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; only deployment evidence remains |
+| TE10: one-command container verification ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12)) | In Progress | Implemented 2026-10-14: `scripts/verify.ps1` runs 157 checks (70 .NET, 5 Angular, 82 runtime), all passing; a broken check makes it fail and the CI gate stops it; found and led to the F3-US1 sign-out fix; awaiting approval |
+| F3-US1: record production HTTPS runtime checks | In Progress | All implementation tasks are checked; the HTTPS runtime checks (redirect, HSTS, certificate, cookie flags) now run in every container verification (TE10) |
 | F3-US3: administrator recovery command | Done | Implemented and approved 2026-10-12 (`admin reset-password`); 49 API tests pass; reviewed for standards and spec |
 | TE1: EF Core migrations replacing `EnsureCreated` | Done | Implemented 2026-10-12: 54 API tests pass; a copy of the local development database was adopted on startup; awaiting review and approval |
 | TE2: CI pipeline | Done | Workflow added 2026-10-12; all three jobs green on pull request #9 (the first run caught a `Tests`/`tests` folder-case mismatch on Linux, fixed by renaming the folder to `tests`); approved 2026-10-13 (pull request merged) |
@@ -204,8 +214,9 @@ Enablers are work that is not a product feature but that the features depend on.
 | TE7 | Deepen Reader account registration and share one public-link builder ([#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)) | Registration rules sit in the controller; F3-US4 would copy them | 1 US |
 | TE8 | One Mail module replacing the SMTP and MailerSend seams ([#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)) | The same failure and privacy rules are written twice; do after F9-US6 | 1 US |
 | TE9 | Blog authoring module for Stories and Projects ([#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)); speculative, may merge into F4-US3 | Slug, tag and timestamp rules are in the controller | 0.5 US |
+| TE10 | One-command container verification: unit tests of every stack, runtime tests of every feature, health checks, one log line per test ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12)). Highest priority | The container is the only environment, and nothing verified a change there | 1.8 US |
 
-Enablers total 8.5 US (102 hours) and are in addition to the 53 US of product features. TE6 to TE9 and the F7-US1 design task come from the architecture review of 2026-10-06; each has a spec in GitHub Issues and ranks ahead of feature work where its dependencies allow.
+Enablers total 10.3 US (124 hours) and are in addition to the 53 US of product features. TE6 to TE9 and the F7-US1 design task come from the architecture review of 2026-10-06; each has a spec in GitHub Issues and ranks ahead of feature work where its dependencies allow.
 
 ## 7. Risks and open decisions
 

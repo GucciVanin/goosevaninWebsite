@@ -1,0 +1,43 @@
+# Verification image (TE10): runs the unit tests of every stack, then the runtime tests against the running
+# stack. Started by scripts/verify.ps1 through the `verify` Compose profile; it is not the application image.
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+# Chrome comes from Google's repository: the Ubuntu base image only has a snap stub for Chromium, which cannot run
+# in a container. (Chrome is amd64 only, like Docker Desktop on this machine.)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl jq ca-certificates gnupg \
+    && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node, the same version as the application image's client build.
+COPY --from=node:22.15.0-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22.15.0-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
+
+ENV CHROME_BIN=/usr/bin/google-chrome-stable \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1
+
+WORKDIR /src
+
+# Dependencies first, so source changes do not reinstall them.
+COPY src/GooseWebsite.Client/package*.json src/GooseWebsite.Client/
+RUN cd src/GooseWebsite.Client && npm ci
+
+COPY Directory.Build.props GooseWebsite.slnx ./
+COPY src/GooseWebsite.Api/GooseWebsite.Api.csproj src/GooseWebsite.Api/
+COPY tests/GooseWebsite.Api.Tests/GooseWebsite.Api.Tests.csproj tests/GooseWebsite.Api.Tests/
+RUN dotnet restore GooseWebsite.slnx
+
+COPY src src
+COPY tests tests
+# The API tests expect the built client in the API's wwwroot.
+RUN cd src/GooseWebsite.Client && npm run build
+
+COPY verify /verify
+# Scripts checked out with Windows line endings must still run under bash.
+RUN find /verify -name '*.sh' -exec sed -i 's/\r$//' {} +
+CMD ["bash", "/verify/run.sh"]

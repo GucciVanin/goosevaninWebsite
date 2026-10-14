@@ -1,0 +1,16 @@
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/node_modules
+**/.angular
+**/dist
+**/.env
+**/.env.verify
+**/secrets.json
+verify-results
+certs
+src/GooseWebsite.Api/Data
+src/GooseWebsite.Api/data-protection-keys
+src/GooseWebsite.Api/wwwroot
