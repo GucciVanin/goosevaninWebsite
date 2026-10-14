@@ -48,7 +48,7 @@ public sealed class HealthEndpointTests
             .Options;
         await using var context = new ApplicationDbContext(options);
 
-        var result = await HealthEndpoint.CheckAsync(context, CancellationToken.None);
+        var result = await HealthEndpoint.CheckAsync(new DatabaseService(context, null!, null!), CancellationToken.None);
 
         var json = Assert.IsType<JsonHttpResult<HealthEndpoint.HealthReport>>(result);
         Assert.Equal(StatusCodes.Status503ServiceUnavailable, json.StatusCode);

@@ -11,8 +11,9 @@ namespace GooseWebsite.Api.Shared.Persistence;
 /// directly (how to ask), so cross-cutting safeguards have exactly one place to live.
 /// </summary>
 /// <remarks>
-/// Planned safeguards (input sanitization, access checks) are tracked as story F7-US1 in the
-/// product backlog. Add them here, not in callers, so they apply to every module.
+/// The safeguards (story F7-US1) are not in this class but beneath it, where no caller can switch them off:
+/// the read filters and the write interceptor of <see cref="ApplicationDbContext"/>, driven by each entity's
+/// <see cref="EntityAccessRule{T}"/>. A module declares a rule next to its entity and keeps its own queries.
 /// </remarks>
 public sealed class DatabaseService(
     ApplicationDbContext context,
@@ -27,14 +28,17 @@ public sealed class DatabaseService(
     /// <summary>A tracked query, for loading an entity that will be modified and saved.</summary>
     public IQueryable<T> ReadForUpdate<T>() where T : class => context.Set<T>();
 
-    public async Task<T?> FindAsync<T>(params object[] keyValues) where T : class =>
-        await context.Set<T>().FindAsync(keyValues);
+    // There is deliberately no Find-by-key: it would skip the read filters. Use ReadForUpdate and filter by key.
 
     public void Add<T>(T entity) where T : class => context.Set<T>().Add(entity);
 
     public void Remove<T>(T entity) where T : class => context.Set<T>().Remove(entity);
 
     public Task SaveChangesAsync() => context.SaveChangesAsync();
+
+    /// <summary>True when the database answers; used by the health check.</summary>
+    public Task<bool> CanConnectAsync(CancellationToken cancellationToken = default) =>
+        context.Database.CanConnectAsync(cancellationToken);
 
     // ---- Account store (users and roles) ----
 

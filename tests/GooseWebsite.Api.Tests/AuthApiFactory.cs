@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
@@ -26,15 +27,24 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
     private readonly TimeSpan? _cookieLifetime;
     private readonly TimeSpan? _confirmationTokenLifetime;
     private readonly bool _readerRegistrationEnabled;
+    private readonly ICurrentCaller? _callerOverride;
+    private readonly bool _includeProbeControllers;
+
+    /// <summary>Every log message the host writes, for tests that assert what is (not) logged.</summary>
+    public CapturingLoggerProvider Logs { get; } = new();
 
     public AuthApiFactory(
         TimeSpan? cookieLifetime = null,
         TimeSpan? confirmationTokenLifetime = null,
-        bool readerRegistrationEnabled = true)
+        bool readerRegistrationEnabled = true,
+        ICurrentCaller? callerOverride = null,
+        bool includeProbeControllers = false)
     {
         _cookieLifetime = cookieLifetime;
         _confirmationTokenLifetime = confirmationTokenLifetime;
         _readerRegistrationEnabled = readerRegistrationEnabled;
+        _callerOverride = callerOverride;
+        _includeProbeControllers = includeProbeControllers;
         _connection.Open();
     }
 
@@ -49,6 +59,19 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(_connection));
+            services.AddSingleton<ILoggerProvider>(Logs);
+            if (_callerOverride is not null)
+            {
+                services.RemoveAll<ICurrentCaller>();
+                services.AddSingleton(_callerOverride);
+            }
+
+            if (_includeProbeControllers)
+            {
+                // Adds the probe controllers of this test project (UnitOfWorkProbeController) to the host.
+                services.AddControllersWithViews().AddApplicationPart(typeof(AuthApiFactory).Assembly);
+            }
+
             services.RemoveAll<IContactEmailDeliveryService>();
             services.AddSingleton<StubContactEmailDeliveryService>();
             services.AddSingleton<IContactEmailDeliveryService>(provider => provider.GetRequiredService<StubContactEmailDeliveryService>());

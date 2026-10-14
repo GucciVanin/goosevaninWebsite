@@ -18,12 +18,12 @@ public static class HealthEndpoint
         return endpoints;
     }
 
-    public static async Task<IResult> CheckAsync(ApplicationDbContext context, CancellationToken cancellationToken)
+    public static async Task<IResult> CheckAsync(DatabaseService database, CancellationToken cancellationToken)
     {
         bool databaseAnswers;
         try
         {
-            databaseAnswers = await context.Database.CanConnectAsync(cancellationToken);
+            databaseAnswers = await database.CanConnectAsync(cancellationToken);
         }
         catch (Exception)
         {

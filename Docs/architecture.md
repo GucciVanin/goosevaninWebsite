@@ -134,14 +134,14 @@ flowchart TB
 - `Program.cs` may reference every module; modules never reference `Program`.
 - **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Blog** depends on `Shared` and on `Accounts` (for the author entity and the authorization policy names). Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
 - `Shared` never references a module, with one deliberate exception: `ApplicationDbContext` and `DatabaseService` know `ApplicationUser` from Accounts, because Identity shares the database. Every other module table is discovered through `IEntityTypeConfiguration<T>` without `Shared` naming it.
-- **All database reads and writes go through `DatabaseService`.** A module keeps its own query logic in a service or repository (what to ask for) but calls the gateway (how to ask). Never inject `ApplicationDbContext`, `UserManager`, or `RoleManager` into a module class other than Identity registration. This keeps sanitization and access checks in one place as features grow.
+- **All database reads and writes go through `DatabaseService`.** A module keeps its own query logic in a service or repository (what to ask for) but calls the gateway (how to ask). Never inject `ApplicationDbContext`, `UserManager`, or `RoleManager` into a module class other than Identity registration. The sanitization, access rules and one-click-one-unit-of-work guarantee (F7-US1) are applied beneath the gateway, so they hold for every module; declare an `EntityAccessRule<T>` next to every new entity (see section 4).
 
 ### 3.2 Shared layer
 
 | Component | What it does | Used by |
 | --- | --- | --- |
-| `Shared/Persistence/DatabaseService` | **The single gateway for every database read and write.** Generic entity access (`Read<T>`, `ReadForUpdate<T>`, `FindAsync<T>`, `Add`, `Remove`, `SaveChangesAsync`) plus the account store (users, roles). Modules never use `ApplicationDbContext`, `UserManager`, or `RoleManager` directly. Input sanitization and access checks are not implemented yet (F7-US1); this class is where they will go. | Accounts, Blog |
-| `Shared/Persistence/ApplicationDbContext` | The EF Core context behind the gateway. Applies every `IEntityTypeConfiguration<T>` found in the assembly. | `DatabaseService` only |
+| `Shared/Persistence/DatabaseService` | **The single gateway for every database read and write.** Generic entity access (`Read<T>`, `ReadForUpdate<T>`, `Add`, `Remove`, `SaveChangesAsync`, `CanConnectAsync`) plus the account store (users, roles). There is no find-by-key, because it would skip the read filters. Modules never use `ApplicationDbContext`, `UserManager`, or `RoleManager` directly (an architecture test enforces it). The safeguards live beneath it, in the context. | Accounts, Blog |
+| `Shared/Persistence/ApplicationDbContext` | The EF Core context behind the gateway. Applies every `IEntityTypeConfiguration<T>` found in the assembly, builds each entity's read filter from its `EntityAccessRule<T>`, and runs `DataSafeguardsInterceptor` on every save. | `DatabaseService` only |
 | `Shared/Persistence/PersistenceServiceCollectionExtensions` | `AddSharedPersistence`: registers SQLite and resolves a relative database path against the content root, so the working directory never matters | `Program.cs` |
 | `Shared/Persistence/DatabaseInitializer` | First `IModuleInitializer`: applies EF Core migrations, adopting a database that `EnsureCreated` made earlier | startup |
 | `Shared/Modules/IModuleInitializer` | A module's startup hook (for example, create roles). Run in registration order after the database exists. | Accounts, Persistence |
@@ -273,6 +273,19 @@ erDiagram
 Identity also creates its standard claim, login, and token tables; they are omitted here. Contact messages are **not** stored. The pending verification dictionary exists only in process memory.
 
 The schema is built by EF Core migrations (`Shared/Persistence/Migrations/`), applied at startup by `DatabaseInitializer`. A database created before migrations existed (by `EnsureCreated`) has no migration history; the initializer records the first migration (`InitialCreate`) as applied and leaves its data alone. The baseline assumes that database matches the model as of `InitialCreate`; if the key tables are missing, startup stops with an error instead of adopting it. Copy `goosewebsite.db` before the first start of a version that applies a migration to real data. Add a change with `dotnet dotnet-ef migrations add <Name> --project src/GooseWebsite.Api --output-dir Shared/Persistence/Migrations` (the tool is pinned in `dotnet-tools.json`; run `dotnet tool restore` once). `DatabaseInitializerTests` fails if the model and the migrations disagree.
+
+### Data access safeguards (F7-US1)
+
+The rules are beneath `DatabaseService`, in `Shared/Persistence`, where no caller can switch them off. Each entity declares an `EntityAccessRule<T>` next to its mapping (found by assembly scan, like the configurations); an architecture test fails if an entity has none or if a module mentions the context, the Identity managers, `IgnoreQueryFilters`, `ExecuteUpdate`, `ExecuteDelete`, `FromSql` or `ExecuteSql` (the set-based and raw-SQL calls would skip the write checks).
+
+| Piece | Behavior |
+| --- | --- |
+| Caller (`ICurrentCaller`) | For a web request: the signed-in user from the session cookie (`Anonymous`, `Authenticated` Reader, `Administrator`). Outside a request (startup, migrations, operator commands): `System`. Modules never pass identity by hand |
+| Read | A rule can name the rows everybody may read (`VisibleWhen`). Administrators and the system read all rows. Blog posts: everybody reads published posts, drafts only administrators. Implemented as an EF query filter, so every query obeys it |
+| Write | `WriteAccess.Administrator` (blog posts), `Anyone` (Identity tables and users: written by the Identity managers, including for anonymous visitors who register or fail a sign-in), `System`. A refused write throws `DataAccessDeniedException`; no rule at all is refused for everyone but the system |
+| Text | Properties declared `IsUserText` are trimmed and cleaned of control characters (line breaks and tabs stay); a declared `maxLength` rejects longer text with `DataRejectedException`. Blog posts have no limit (only Gustavo writes); a user's display name is limited to 100; comments will be limited to 500 (F6-US1) |
+| Answers | `DataSafeguardExceptionHandler` maps the exceptions to 403 and 400 with fixed messages that never echo what was submitted. Hidden rows simply do not exist for the caller (a draft is a 404). Logs carry the kind of refusal, the entity and the caller kind, never values |
+| One click, one unit of work | The first save inside a web request opens a transaction; `UnitOfWorkFilter` commits it when the action finishes normally and rolls it back when the action throws (a refused write included), so nothing from a failed click persists. An answer with a failure status (a 401 after a wrong password) is not an exception: the failed-attempt counter it saved is kept. A refused or failed save marks the click failed even if the code caught the exception and answered normally. `UnitOfWorkMiddleware` completes saves made outside an action (middleware, minimal endpoints). Commit and rollback ignore a client that disconnects |
 
 ## 5. Key flows
 
@@ -477,7 +490,7 @@ flowchart LR
 
 - **Layout:** one module per feature under `Modules/<Name>/`, folders as in section 2. Namespaces match folders (`GooseWebsite.Api.Modules.<Name>.<Folder>`).
 - **Registration:** every module exposes exactly one `Add<Name>Module(...)` extension and is wired by one line in `Program.cs`. Startup work goes in an `IModuleInitializer`; operator commands go in an `IModuleCommand`.
-- **Persistence:** entities and their `IEntityTypeConfiguration<T>` live in the owning module. Query logic lives in an interface in the module's `Services/`, and every read or write goes through `DatabaseService`. Controllers and modules do not use the context or Identity managers directly. Add a generic method to `DatabaseService` rather than bypassing it.
+- **Persistence:** entities and their `IEntityTypeConfiguration<T>` live in the owning module. Query logic lives in an interface in the module's `Services/`, and every read or write goes through `DatabaseService`. Controllers and modules do not use the context or Identity managers directly. Add a generic method to `DatabaseService` rather than bypassing it, and declare the entity's `EntityAccessRule<T>` in the same module.
 - **Contracts:** never return an entity from an endpoint. Use a request and response type in `Contracts/` with validation attributes. Never bind privilege-bearing fields (role, `EmailConfirmed`, ids of other users) from a request.
 - **Authorization:** protect every write with a policy from `AuthorizationPolicies`, not bare `[Authorize]`, and add `[ValidateAntiForgeryToken]` to cookie-authenticated mutations.
 - **Configuration:** bind settings to an options class (see `SmtpOptions`, `ContactOptions`). Do not read `IConfiguration` ad hoc in new code, and never hard-code addresses or credentials.
@@ -509,7 +522,7 @@ Each item is a defect that a code review found in this repository. Check new cod
 
 1. Create `Modules/Comments/` with `Controllers/`, `Contracts/`, `Domain/`, `Services/` as needed.
 2. Add the entity and a `CommentConfiguration : IEntityTypeConfiguration<Comment>` in `Domain/`. `ApplicationDbContext` finds it automatically.
-3. Put the module's query logic behind `ICommentRepository` in `Services/`; it reads and writes only through `DatabaseService`.
+3. Declare `CommentAccessRule : EntityAccessRule<Comment>` next to the entity (who writes, which rows everyone may read, which properties are user text and their limits); an architecture test fails without it. Put the module's query logic behind `ICommentRepository` in `Services/`; it reads and writes only through `DatabaseService`.
 4. Protect endpoints with `AuthorizationPolicies.VerifiedReader` (and CSRF on writes). Do not copy role checks.
 5. Create `CommentsModule.cs` with `AddCommentsModule(...)` that registers the services (and an `IModuleInitializer` if needed).
 6. Add one line to `Program.cs`: `builder.Services.AddCommentsModule();`.
@@ -552,7 +565,7 @@ Continuous integration (`.github/workflows/ci.yml`) runs on every pull request a
 
 The run never sends an email: the contact form is only given requests it refuses, and the mail provider check is a read-only authorization call that prints no key. The data left in place after a run is the final state of the tests. The first run of this suite found a real defect (sign-out did not end the session on the server), now fixed under F3-US1.
 
-Current result (2026-10-14): 157 checks pass (70 .NET, 5 Angular, 82 runtime). Not covered: the rendered content of the Angular pages and the other browser-level acceptance tests (320 px, keyboard, contrast); see enabler TE5.
+Current result (2026-10-14): 182 checks pass (95 .NET, 5 Angular, 82 runtime). Not covered: the rendered content of the Angular pages and the other browser-level acceptance tests (320 px, keyboard, contrast); see enabler TE5.
 
 ## 11. Known gaps and technical debt
 
@@ -562,7 +575,6 @@ Each item is also tracked in [project.md](./project.md) or the backlog.
 | --- | --- | --- | --- |
 | Pending contact messages are in process memory | `ContactVerificationService` | Lost on restart; single instance only | Accepted for R1 |
 | Blog section ships hard-coded sample posts, the "selected work" section is placeholder, and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
-| `DatabaseService` applies no input sanitization or access checks yet | `Shared/Persistence/DatabaseService.cs` | Safeguards must be repeated by callers until added | F7-US1 |
 | No reader display-name update, password reset, or administrator recovery | Accounts | Recovery paths missing | F3-US3, F3-US4 |
 | `npm audit` reports 6 high findings, all in the Karma test runner chain (`karma`, `karma-jasmine`, `karma-jasmine-html-reporter`, `braces`, `chokidar`) and `@angular/build` through it | `src/GooseWebsite.Client` | Development and CI only: the packages never ship to the browser or the image. The only suggested fix is a downgrade to Karma 4, so it is not applied | Replace Karma with the test runner Angular supports next (revisit with the Angular 21 upgrade) |
 | `GooseWebsite.Api.csproj` pins `SQLitePCLRaw.lib.e_sqlite3` 2.1.13 | `GooseWebsite.Api.csproj` | Overrides the vulnerable transitive 2.1.11 (CVE-2025-6965); `SqliteVersionTests` fails if the engine is older than SQLite 3.50.2 | Remove the pin when `Microsoft.EntityFrameworkCore.Sqlite` ships a patched engine |
