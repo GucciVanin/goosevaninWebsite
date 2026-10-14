@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // AddControllersWithViews (not AddControllers) registers the filter behind [ValidateAntiForgeryToken].
 builder.Services.AddControllersWithViews();
 builder.Services.AddTrustedProxyHeaders(builder.Configuration);
+builder.Services.AddSingleton<PublicLinkBuilder>();
 builder.Services.AddSharedPersistence(builder.Configuration, builder.Environment);
 builder.Services.AddSmtpEmail(builder.Configuration);
 builder.Services.AddMailerSendEmail(builder.Configuration);

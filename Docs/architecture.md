@@ -181,6 +181,7 @@ Owns identity, sessions, and authorization. Source: `Modules/Accounts/`.
 | Endpoints | `Controllers/AuthController.cs` | See the table below |
 | Role seeding | `Services/AccountRoleInitializer.cs` | Creates missing roles at startup, never users |
 | Admin provisioning | `Services/AdminProvisioningService.cs`, `AdminProvisioningCommand.cs` | Interactive operator command; refuses existing accounts; never promotes a user |
+| Reader accounts | `Services/IReaderAccountService.cs`, `ReaderAccountService.cs` | Registration, resend and email Verification return neutral outcomes (the controller maps them), so nothing reveals whether an address has an account. A role assignment that fails (or throws because the role is missing) removes the new account again |
 | Verification email | `Services/IAccountEmailSender.cs`, `SmtpAccountEmailSender.cs` | Separate from contact delivery on purpose |
 
 Security settings in force: unique email, password minimum 12 characters with no composition rule, lockout after 5 failures for 15 minutes, email confirmation required to sign in, confirmation token lifetime 24 hours, cookie `goosewebsite.auth` (HttpOnly, SameSite=Lax, Secure always in Production, 30-minute sliding expiry, not persistent), antiforgery cookie `goosewebsite.csrf` with header `X-CSRF-TOKEN`. Cookie events return 401 and 403 rather than redirecting.
@@ -349,7 +350,7 @@ sequenceDiagram
     participant R as Reader
     participant B as Angular client
     participant A as AuthController
-    participant M as SmtpAccountEmailSender
+    participant M as SmtpAccountEmailSender (called by ReaderAccountService)
 
     R->>B: display name, email, password
     B->>A: POST /api/auth/register (CSRF, rate limited)
@@ -429,7 +430,7 @@ Configuration binds in this order of precedence, last wins: `appsettings.json`, 
 | `Contact:RecipientEmail` | Inbox for verified contact messages | empty; delivery is skipped |
 | `Contact:RateLimit:MaxRequestsPerWindow`, `WindowMinutes`, `MaxTrackedClients`, `MaxRequestsPerRecipient` | Contact abuse guard | 5, 10, 10000, 2 |
 | `Auth:ReaderRegistration:Enabled` | Reader registration endpoints | `false`; `true` in Development |
-| `PublicBaseUrl` | Base for links in emails | `https://localhost` |
+| `PublicBaseUrl` | Base for links in emails. Verification links for both Contact and Accounts are built by `Shared/Hosting/PublicLinkBuilder` (values go in the URL fragment); the Contact email also reads it for the plain site address and logo URL | `https://localhost` |
 | `DataProtection:KeysPath` | Cookie-key folder; must persist across restarts | `data-protection-keys` next to the project |
 | `ForwardedHeaders:KnownProxies:N` | Trusted proxy IP addresses | none |
 
@@ -535,7 +536,7 @@ Test doubles: `TestAccountEmailSender` captures verification links; `StubContact
 
 Continuous integration (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: the client build and tests, then the API build and tests against that built client, then a Docker image build. Make the three jobs required checks on `main` in the repository settings so a failing run blocks the merge.
 
-Current result (2026-10-12): 54 API tests pass (the client suite is run by CI). Not covered: blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
+Current result (2026-10-13): 61 API tests pass (the client suite is run by CI). Not covered: blog endpoints, and every browser-level acceptance test (320 px, keyboard, contrast); see enabler TE5.
 
 ## 11. Known gaps and technical debt
 

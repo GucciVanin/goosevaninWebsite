@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using GooseWebsite.Api.Modules.Contact.Contracts;
 using GooseWebsite.Api.Modules.Contact.Models;
 using GooseWebsite.Api.Modules.Contact.Services;
+using GooseWebsite.Api.Shared.Hosting;
 using Xunit;
 
 namespace GooseWebsite.Api.Tests;
@@ -95,7 +96,7 @@ public sealed class ContactFeatureTests
     [Fact]
     public void ContactVerificationService_LetsOnlyOneOfManyConcurrentVerificationsSucceed()
     {
-        var service = new ContactVerificationService(NullLogger<ContactVerificationService>.Instance, new ConfigurationBuilder().Build());
+        var service = new ContactVerificationService(NullLogger<ContactVerificationService>.Instance, new PublicLinkBuilder(new ConfigurationBuilder().Build()));
         var token = service.CreateVerification(new ContactMessage { Name = "A", Email = "a@example.test", Reason = "Personal note", Message = "m" }).Token;
         var successes = 0;
 

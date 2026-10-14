@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using GooseWebsite.Api.Modules.Contact.Contracts;
 using GooseWebsite.Api.Modules.Contact.Models;
+using GooseWebsite.Api.Shared.Hosting;
 
 namespace GooseWebsite.Api.Modules.Contact.Services;
 
@@ -10,12 +11,12 @@ public sealed class ContactVerificationService
     private static readonly TimeSpan VerificationLifetime = TimeSpan.FromMinutes(30);
     private readonly ConcurrentDictionary<string, ContactMessageVerification> _pending = new();
     private readonly ILogger<ContactVerificationService> _logger;
-    private readonly string _publicBaseUrl;
+    private readonly PublicLinkBuilder _links;
 
-    public ContactVerificationService(ILogger<ContactVerificationService> logger, IConfiguration configuration)
+    public ContactVerificationService(ILogger<ContactVerificationService> logger, PublicLinkBuilder links)
     {
         _logger = logger;
-        _publicBaseUrl = configuration["PublicBaseUrl"]?.TrimEnd('/') ?? "https://localhost";
+        _links = links;
     }
 
     public ContactVerificationToken CreateVerification(ContactMessage message)
@@ -27,8 +28,7 @@ public sealed class ContactVerificationService
             .Replace("/", "_")
             .TrimEnd('=');
 
-        // The token travels in the URL fragment so it is never sent in the initial HTTP request.
-        var verificationUrl = $"{_publicBaseUrl}/contact/verify#token={Uri.EscapeDataString(token)}";
+        var verificationUrl = _links.FragmentLink("/contact/verify", ("token", token));
         var pendingMessage = new ContactMessageVerification(
             message.Name,
             message.Email,
