@@ -168,7 +168,15 @@ public sealed class AuthController(
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
+        // Clearing the browser's cookie is not enough: a copy captured earlier would still work. Rotating the
+        // security stamp ends every session issued before now (the stamp is checked on each request).
+        var user = await database.GetUserAsync(User);
         await signInManager.SignOutAsync();
+        if (user is not null)
+        {
+            await database.RotateSecurityStampAsync(user);
+        }
+
         return NoContent();
     }
 
