@@ -214,17 +214,23 @@ Validation on `POST /api/contact` (performed by `ContactSubmissionService`, whic
 
 ### 3.6 Blog module
 
-Owns posts. Source: `Modules/Blog/`. It is the seed for Stories and Projects (F4, F5).
+Owns stories (the product name; the code keeps its historical "blog post" name, table `BlogPosts` and route `/api/blog`). Source: `Modules/Blog/`. A story body is Markdown, shown safely; drafts are never public.
 
 | Endpoint | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/blog?search&category&page&pageSize` | public | Published posts only; page size clamped to 50 |
-| `GET /api/blog/{slug}` | public | One published post |
-| `POST /api/blog` | `AdminOnly`, CSRF | Create; records the author and generates a collision-safe slug |
-| `PUT /api/blog/{id}` | `AdminOnly`, CSRF | Update |
-| `DELETE /api/blog/{id}` | `AdminOnly`, CSRF | Delete |
+| `GET /api/blog?search&category&page&pageSize` | public | Published stories only, newest publication date first; page size clamped to 50 |
+| `GET /api/blog/{slug}` | public | One published story (a draft is a 404) |
+| `GET /api/editor/stories` | `AdminOnly` | The workspace list: every story, drafts included, without the body |
+| `GET /api/editor/stories/{id}` | `AdminOnly` | One story in full, drafts included (the preview source) |
+| `POST /api/editor/stories` | `AdminOnly`, CSRF | Create a **draft** (always a draft, whatever the request says); records the author and makes a unique slug |
+| `PUT /api/editor/stories/{id}` | `AdminOnly`, CSRF | Save edits. Never publishes or unpublishes, never changes the slug; may set the publication date |
+| `POST /api/editor/stories/{id}/publish` | `AdminOnly`, CSRF | Publish once: needs an excerpt and text; records the publication date if there is none; repeating changes nothing |
+| `POST /api/editor/stories/{id}/unpublish` | `AdminOnly`, CSRF | Return to draft, keeping the publication date |
+| `DELETE /api/editor/stories/{id}` | `AdminOnly`, CSRF | Delete for good |
 
-`BlogController` depends on `IBlogPostRepository` (implemented by `BlogPostRepository`), which holds the blog's query logic and performs every read and write through `DatabaseService`. The table mapping is in `Domain/BlogPostConfiguration.cs`.
+`BlogController` (public reads) and `StoryEditorController` (everything that changes or lists drafts) are thin: the rules live in `IBlogAuthoringService` (`BlogAuthoringService`, TE9), which returns an outcome (`Succeeded`, `NotFound`, `Invalid` with the failing fields) that the controller maps to a response. The service owns: the slug (made from the title with letters and digits only, accents dropped, `story` when nothing is left, numeric suffix on a collision, never changed afterwards so links stay stable), the tags (trimmed, no empty tags, no duplicates that differ only in case, no commas inside a tag), the timestamps, and the rules for publishing. Saving a draft needs only a title; publishing needs an excerpt and text. Query logic is in `IBlogPostRepository` (`BlogPostRepository`), which reads and writes only through `DatabaseService`; the access rule (everybody reads published stories, administrators read drafts and write, no length limit) is `Domain/BlogPostAccessRule.cs` and the table mapping `Domain/BlogPostConfiguration.cs`. Stories published before `PublishedAtUtc` existed received their creation date in the `AddStoryPublishedAt` migration.
+
+In the client (`app/features/editor/`, loaded on demand so visitors never download it) `StoryFormPage` is the form: save draft, preview (Markdown rendered by `markdown-it` with raw HTML off), publish, return to draft, with the status written in words.
 
 ### 3.7 Authorization matrix
 
@@ -423,7 +429,7 @@ flowchart TD
 | Folder | Holds |
 | --- | --- |
 | `app/features/auth/` | `api/` (AuthApi with CSRF handling), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
-| `app/features/editor/` | The secured editor shell (`EditorPage`), `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
+| `app/features/editor/` | The editor workspace (`EditorPage`: stories with status filter, title search and confirmed deletion), the story form (`pages/story-form-page`), `StoryApi`, `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
 | `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
 | `app/features/home/` | The home page and its sections: `hero`, `selected-work`, `approach`, `toolkit` |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles |

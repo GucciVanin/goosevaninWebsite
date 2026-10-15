@@ -325,7 +325,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US1: Navigate and Manage Content in the Editor
 
-**Status:** Proposed  
+**Status:** In Progress (stories part implemented 2026-10-15, awaiting approval; the Projects half arrives with F4-US4)  
 **Estimate:** 3 US (36 hours)  
 **Goal:** As Gustavo, I can use a private editor workspace to find and manage my projects and stories without editing source files.
 
@@ -339,15 +339,15 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
-- [ ] Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
-- [ ] Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
-- [ ] Apply the compact, task-focused visual direction with responsive layout, keyboard operation, visible focus, and non-color-only state labels.
-- [ ] Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
+- [x] (Stories now; the Projects switch is completed with F4-US4 in Sprint 4) Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
+- [x] (Stories) Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
+- [x] (Stories) Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
+- [x] Apply the compact, task-focused visual direction with responsive layout, keyboard operation, visible focus, and non-color-only state labels.
+- [x] (Stories; narrow-viewport and keyboard flow are covered by the browser tests, TE5) Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
 
 ### User Story F4-US2: Secure the Administrator Editor
 
-**Status:** In Progress (implemented 2026-10-15, awaiting approval)  
+**Status:** Done (implemented 2026-10-15; approved 2026-10-15, pull request merged)  
 **Estimate:** 2 US (24 hours), kept as the budget on 2026-10-15; the actual effort is about 1.2 US because the API was already protected  
 **Goal:** As a provisioned administrator, I can access content management; visitors and reader accounts cannot use administrator-only actions.
 **Decided 2026-10-15 (with Gustavo):**
@@ -374,9 +374,15 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US3: Manage Stories as Drafts
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-15, awaiting approval)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can create and edit a story with the agreed fields, preview it, and publish it explicitly.
+**Decided 2026-10-15 (with Gustavo; TE9 folded in as the first step):**
+- Saving never publishes. **Publish** and **Return to draft** are explicit actions; a new story is always a draft; publishing is idempotent (publishing again changes nothing). The first publish records the **publication date**, which Gustavo may change afterwards (for example to backdate an older story); it is kept when the story returns to draft.
+- A draft can be saved with only a title; **publishing needs an excerpt and the story text**. A save without a title, or a tag containing a comma, is refused with the field named, and nothing is stored.
+- The story body is **Markdown**, shown with raw HTML switched off (`markdown-it`); the preview renders it and labels a draft "not public". Cover images and the Projects switch wait for Sprint 4 (F4-US5, F4-US4), so the "optional cover image" part of acceptance test 1 is completed there.
+- The editor API moved to `/api/editor/stories` (everything admin-only, CSRF on writes); `/api/blog` keeps only the public reads. The code names (`BlogPost`, table `BlogPosts`) stay for now and are renamed together with F5.
+- The authoring rules live in `IBlogAuthoringService` (TE9): the slug is fixed once created (letters and digits only, accents dropped, numeric suffix on a collision), tags are trimmed and de-duplicated by case, and timestamps are set in one place. The leftover API limits on title, excerpt and category were removed (blog text has no length limit).
 
 **Acceptance tests:**
 
@@ -387,9 +393,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Implement story data fields and server-side validation for required content and publication state.
-- [ ] Implement Gustavo's editor forms for create/edit, draft save, preview, and explicit publish.
-- [ ] Test field persistence, invalid input, preview rendering, draft privacy, and publish state transitions through API and UI checks.
+- [x] Implement story data fields and server-side validation for required content and publication state (the authoring service; a `PublishedAtUtc` column added by the `AddStoryPublishedAt` migration).
+- [x] Implement Gustavo's editor forms for create/edit, draft save, preview, and explicit publish (`StoryFormPage`).
+- [x] Test field persistence, invalid input, preview rendering, draft privacy, and publish state transitions through API and UI checks.
+
+**Implementation evidence (2026-10-15):** `StoryEditorApiTests` (API, 19 cases) reopens a saved story with every field equal (acceptance test 1), shows a draft is a 404 for the public and absent from the public list while the editor can open it to preview, and an anonymous caller gets 401 (test 2); saving edits does not publish and keeps the slug, publishing makes the story public once and publishing again changes neither the date nor the update time, and a draft without an excerpt or text cannot be published and stays a draft (test 3); a save without a title and a tag containing a comma are refused with the field named (test 4); the publication date can be set, a story can return to draft keeping its date, the public list is ordered by publication date, slugs are unique and made from letters and digits, and deletion removes a story for good. The migration test shows a database made before migrations existed keeps its data and gives an already-published story a publication date. Client specs cover the form (open, save as draft with tags split on commas, update without publishing, publish after saving, refusals shown by field, preview with the draft label, Return to draft) and the Markdown renderer (formatting works; raw HTML and `javascript:` or `data:` links never render). The container run exercises the same flows against the real stack.
 
 ### User Story F4-US4: Manage Projects as Drafts
 
@@ -914,6 +922,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 | 2026-10-02 | Added F8 (Member Profiles, R3) at Gustavo's request: users have a profile other users can view; basic details such as hobbies, profession, and location are optional and can be skipped at creation. Stories F8-US1 to F8-US3 proposed at 5 US total. | Extends R3 from 8 US to 13 US and the total from 34 US to 39 US. Visibility (signed-in only versus public), field list, and storage location are recorded as decisions to confirm before the stories are Ready. |
 | 2026-10-02 | `DatabaseService` is the intended single gateway for all database reads and writes and was restored as such; modules keep their query logic but never use the context or Identity managers directly. It performs no sanitization or access checks yet, so story F7-US1 was added (2 US, Sprint 2, before the editor). | Keeps cross-cutting safeguards in one place as features grow. Raises totals from 32 US to 34 US; R1 is now 22 US. |
 | 2026-10-01 | Implemented F3-US2 ahead of its planned R3 release at Gustavo's request; retained R3 as the intended public-release stage. | Adds reader email verification, generic registration/resend responses, confirmed-email sign-in, and a live verified-reader policy. `Auth:ReaderRegistration:Enabled` defaults off and must be explicitly enabled for the R3 Production release; Development opts in. Reader password recovery remains a separate R3 follow-up and production SMTP delivery requires deployment verification. |
+| 2026-10-15 | F4-US2 approved (merged). F4-US3 designed with Gustavo and implemented, with TE9 folded in: saving never publishes, Publish and Return to draft are explicit, the publication date is automatic at first publish and editable, the body is Markdown shown safely, publishing needs an excerpt and text while a draft needs only a title, the editor API moved to `/api/editor/stories`, and the leftover API length limits on blog text were removed. Cover images and the Projects switch are deferred to Sprint 4 (F4-US5, F4-US4). | The old save request carried an `isPublished` flag, so editing could publish by accident; the explicit actions remove that. The code keeps its `BlogPost` names until F5. |
 | 2026-10-15 | F7-US1 approved (merged). F4-US2 implemented with Gustavo's decisions: a secured `/editor` shell behind a guard, one interceptor for CSRF tokens and expired sessions, a full API access matrix, and an architecture test that every controller write action declares who may call it. The estimate stays 2 US as the budget; the actual is about 1.2 US. | The API was already protected, so the work is the client shell and the guard rails that keep future endpoints from shipping open. |
 | 2026-10-14 | F7-US1 designed with Gustavo and implemented: safeguards beneath `DatabaseService` (EF read filters and a save interceptor driven by a per-entity `EntityAccessRule<T>`), the caller is the signed-in user from the request, text is normalized with no limit on blog posts and a 500-character limit for comments (F6-US1), and one click is one unit of work. Estimate raised from 2 to 2.5 US. TE10 approved (pull request merged). | The earlier idea of named operations per intent was dropped for the generic-with-guards design after the code showed only the Blog repository used generic access. Rotating per-TLS-session tokens were discussed and left out: authentication is unchanged. |
 | 2026-10-13 | TE1, TE2 and TE3 approved (their pull requests merged). TE7: Reader registration, resend and email Verification now live behind `IReaderAccountService` and every public link is built by one `PublicLinkBuilder`. Fixed a defect found by the new module test: when the Reader role did not exist, Identity threw, the half-created account stayed, and the caller got a server error; it is now removed and the answer stays neutral. | The module is the one place for the anti-enumeration rule. Behavior otherwise unchanged; request-level tests pass unchanged. |
@@ -929,12 +938,12 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F1 Public Profile | R1 | 2 US / 24 hours | Done | 2 of 2 |
 | F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
 | F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 2 of 4 |
-| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | Proposed | 0 of 5 |
+| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | In Progress | 1 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **8 of 30** |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **9 of 30** |
 
 By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

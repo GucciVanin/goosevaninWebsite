@@ -23,12 +23,16 @@ public sealed class BlogPostRepository(DatabaseService database) : IBlogPostRepo
         }
 
         return await query
-            .OrderByDescending(post => post.CreatedAtUtc)
+            .OrderByDescending(post => post.PublishedAtUtc ?? post.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(post => post.Author)
             .ToListAsync();
     }
+
+    // Every story, drafts included (the read filter shows drafts to administrators only), most recently changed first.
+    public async Task<IReadOnlyList<BlogPost>> GetAllForEditorAsync() =>
+        await database.Read<BlogPost>().OrderByDescending(post => post.UpdatedAtUtc).ToListAsync();
 
     public Task<BlogPost?> GetPublishedBySlugAsync(string slug) =>
         database.Read<BlogPost>()

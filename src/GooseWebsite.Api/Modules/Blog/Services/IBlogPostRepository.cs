@@ -7,6 +7,7 @@ public interface IBlogPostRepository
 {
     Task<IReadOnlyList<BlogPost>> GetPublishedAsync(string? search, string? category, int page, int pageSize);
     Task<BlogPost?> GetPublishedBySlugAsync(string slug);
+    Task<IReadOnlyList<BlogPost>> GetAllForEditorAsync();
     Task<BlogPost?> GetByIdWithAuthorAsync(int id);
     Task<BlogPost?> FindByIdAsync(int id);
     Task<bool> SlugExistsAsync(string slug);

@@ -1,47 +1,162 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthApi } from '../auth/api/auth-api';
+import { StoryApi } from './api/story-api';
+import { StorySummary } from './models/story';
 
-// The administrator's private editor. This is the secured shell (F4-US2); the story and project workspace
-// is added by the next stories, so nothing here pretends to manage content yet.
+type StatusFilter = 'all' | 'draft' | 'published';
+
+// Gustavo's workspace: every story with its state in words, filtered by status and searched by title.
+// Projects join this list in F4-US4.
 @Component({
   selector: 'app-editor-page',
-  imports: [RouterLink],
+  imports: [FormsModule, RouterLink],
   template: `
     <main class="editor-page">
       <a class="back-link" routerLink="/">Back to Gustavo's site</a>
-      <section class="editor-panel" aria-labelledby="editor-title">
+      <header>
         <p class="eyebrow">Private</p>
         <h1 id="editor-title">Editor</h1>
         @if (name(); as administrator) {
           <p class="status" role="status">Signed in as {{ administrator }} (Administrator).</p>
         }
-        <p class="intro">
-          Stories and projects will be managed here. Drafts stay private until you publish them.
-        </p>
-        <p class="status">Status: the content workspace has not been built yet.</p>
-        <a class="secondary" routerLink="/sign-in">Account and sign out</a>
+        <div class="top-actions">
+          <a class="primary" routerLink="/editor/stories/new">New story</a>
+          <a class="secondary" routerLink="/sign-in">Account and sign out</a>
+        </div>
+      </header>
+
+      <section aria-labelledby="stories-title">
+        <h2 id="stories-title">Stories</h2>
+
+        <div class="filters">
+          <label for="story-search">Search by title</label>
+          <input id="story-search" type="search" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+
+          <label for="story-status">Show</label>
+          <select id="story-status" [ngModel]="filter()" (ngModelChange)="filter.set($event)">
+            <option value="all">All stories</option>
+            <option value="draft">Drafts</option>
+            <option value="published">Published</option>
+          </select>
+        </div>
+
+        @if (message()) {
+          <p class="notice" role="status">{{ message() }}</p>
+        }
+
+        @if (loadFailed()) {
+          <p class="notice" role="alert">The stories could not be loaded. Reload the page to try again.</p>
+        } @else if (!loaded()) {
+          <p class="notice" role="status">Loading stories...</p>
+        } @else if (stories().length === 0) {
+          <p class="notice">There are no stories yet. Use "New story" to write the first one.</p>
+        } @else if (visible().length === 0) {
+          <p class="notice">No story matches. Clear the search or show all stories.</p>
+        } @else {
+          <ul class="story-list">
+            @for (story of visible(); track story.id) {
+              <li>
+                <div class="row">
+                  <a class="title" [routerLink]="['/editor/stories', story.id]">{{ story.title }}</a>
+                  <span class="state" [class.published]="story.isPublished">{{ story.isPublished ? 'Published' : 'Draft' }}</span>
+                  <span class="meta">Updated {{ story.updatedAtUtc.slice(0, 10) }}</span>
+                </div>
+                <div class="row-actions">
+                  <a [routerLink]="['/editor/stories', story.id]">Edit</a>
+                  @if (pendingDelete() === story.id) {
+                    <span class="confirm" role="alert">Delete "{{ story.title }}" for good?</span>
+                    <button type="button" class="danger" (click)="confirmDelete(story)">Yes, delete</button>
+                    <button type="button" (click)="pendingDelete.set(null)">Keep it</button>
+                  } @else {
+                    <button type="button" (click)="pendingDelete.set(story.id)">Delete</button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
       </section>
     </main>
   `,
   styles: `
     :host { display: block; min-height: 100vh; background: var(--paper); color: var(--ink); }
-    .editor-page { box-sizing: border-box; margin: 0 auto; max-width: 960px; min-height: 100vh; padding: 40px 24px; }
+    .editor-page { box-sizing: border-box; margin: 0 auto; max-width: 960px; min-height: 100vh; padding: 40px 24px 80px; }
     .back-link { color: var(--accent-soft); font: 12px var(--mono); }
-    .editor-panel { margin: clamp(48px, 12vh, 110px) 0 0; max-width: 640px; }
-    .eyebrow { color: var(--accent-soft); font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
-    h1 { font: 500 clamp(2rem, 7vw, 3.5rem)/1.1 var(--display); margin: 14px 0; }
-    .intro, .status { color: var(--muted); line-height: 1.6; }
-    .secondary { border: 1px solid var(--line); color: var(--ink); display: inline-block; margin-top: 20px; padding: 12px 20px; text-decoration: none; }
-    a:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 4px; }
+    .eyebrow { color: var(--accent-soft); font: 11px var(--mono); letter-spacing: .12em; margin: 28px 0 0; text-transform: uppercase; }
+    h1 { font: 500 clamp(2rem, 7vw, 3.5rem)/1.1 var(--display); margin: 10px 0; }
+    h2 { font: 500 1.5rem var(--display); margin: 36px 0 12px; }
+    .status, .notice, .meta { color: var(--muted); font: 13px var(--mono); line-height: 1.6; }
+    .top-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .primary { background: var(--accent); color: #071013; display: inline-block; font-weight: 600; padding: 12px 20px; text-decoration: none; }
+    .secondary { border: 1px solid var(--line); color: var(--ink); display: inline-block; padding: 12px 20px; text-decoration: none; }
+    .filters { display: grid; gap: 8px; grid-template-columns: 1fr; }
+    @media (min-width: 640px) { .filters { align-items: end; grid-template-columns: 2fr 1fr; } .filters label { grid-row: 1; } .filters label[for="story-status"] { grid-column: 2; } .filters input { grid-row: 2; } .filters select { grid-column: 2; grid-row: 2; } }
+    label { color: var(--muted); font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    input, select { background: #eef1e8; border: 1px solid var(--line); border-radius: 0; box-sizing: border-box; color: #172622; font: 16px var(--body); min-height: 44px; padding: 8px 12px; width: 100%; }
+    .story-list { list-style: none; margin: 20px 0 0; padding: 0; }
+    .story-list li { border-top: 1px solid var(--line); padding: 14px 0; }
+    .row { align-items: baseline; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+    .title { color: var(--ink); font: 500 1.2rem var(--display); overflow-wrap: anywhere; }
+    .state { border: 1px solid var(--line); font: 11px var(--mono); letter-spacing: .08em; padding: 2px 8px; text-transform: uppercase; }
+    .state.published { border-color: var(--accent-soft); color: var(--accent-soft); }
+    .row-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
+    .row-actions a { color: var(--accent-soft); padding: 10px 0; }
+    button { background: transparent; border: 1px solid var(--line); color: var(--ink); cursor: pointer; font: 600 14px var(--body); min-height: 44px; padding: 8px 16px; }
+    button.danger { background: var(--accent); border-color: var(--accent); color: #071013; }
+    .confirm { font-size: 14px; overflow-wrap: anywhere; }
+    a:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
   `,
 })
 export class EditorPage implements OnInit {
   protected readonly name = signal('');
+  protected readonly stories = signal<StorySummary[]>([]);
+  protected readonly loaded = signal(false);
+  protected readonly loadFailed = signal(false);
+  protected readonly message = signal('');
+  protected readonly search = signal('');
+  protected readonly filter = signal<StatusFilter>('all');
+  protected readonly pendingDelete = signal<number | null>(null);
 
-  constructor(private readonly auth: AuthApi) {}
+  protected readonly visible = computed(() => {
+    const term = this.search().trim().toLowerCase();
+    const filter = this.filter();
+    return this.stories().filter(
+      (story) =>
+        (filter === 'all' || (filter === 'published') === story.isPublished) && (term === '' || story.title.toLowerCase().includes(term)),
+    );
+  });
+
+  constructor(
+    private readonly auth: AuthApi,
+    private readonly api: StoryApi,
+  ) {}
 
   ngOnInit(): void {
     this.auth.getCurrentUser().subscribe({ next: (user) => this.name.set(user.displayName) });
+    this.api.list().subscribe({
+      next: (stories) => {
+        this.stories.set(stories);
+        this.loaded.set(true);
+      },
+      error: () => this.loadFailed.set(true),
+    });
+  }
+
+  // Deleting needs the explicit second click; the story is removed only once the API says it is gone.
+  protected confirmDelete(story: StorySummary): void {
+    this.message.set('');
+    this.api.remove(story.id).subscribe({
+      next: () => {
+        this.stories.update((all) => all.filter((item) => item.id !== story.id));
+        this.pendingDelete.set(null);
+        this.message.set(`Deleted "${story.title}".`);
+      },
+      error: () => {
+        this.pendingDelete.set(null);
+        this.message.set(`"${story.title}" could not be deleted. Try again.`);
+      },
+    });
   }
 }
