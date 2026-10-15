@@ -429,7 +429,7 @@ flowchart TD
 | Folder | Holds |
 | --- | --- |
 | `app/features/auth/` | `api/` (AuthApi with CSRF handling), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
-| `app/features/editor/` | The secured editor shell (`EditorPage`), `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
+| `app/features/editor/` | The editor workspace (`EditorPage`: stories with status filter, title search and confirmed deletion), the story form (`pages/story-form-page`), `StoryApi`, `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
 | `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
 | `app/features/home/` | The home page and its sections: `hero`, `selected-work`, `approach`, `toolkit` |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles |

@@ -325,7 +325,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US1: Navigate and Manage Content in the Editor
 
-**Status:** Proposed  
+**Status:** In Progress (stories part implemented 2026-10-15, awaiting approval; the Projects half arrives with F4-US4)  
 **Estimate:** 3 US (36 hours)  
 **Goal:** As Gustavo, I can use a private editor workspace to find and manage my projects and stories without editing source files.
 
@@ -339,11 +339,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
-- [ ] Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
-- [ ] Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
-- [ ] Apply the compact, task-focused visual direction with responsive layout, keyboard operation, visible focus, and non-color-only state labels.
-- [ ] Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
+- [x] (Stories now; the Projects switch is completed with F4-US4 in Sprint 4) Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
+- [x] (Stories) Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
+- [x] (Stories) Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
+- [x] Apply the compact, task-focused visual direction with responsive layout, keyboard operation, visible focus, and non-color-only state labels.
+- [x] (Stories; narrow-viewport and keyboard flow are covered by the browser tests, TE5) Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
 
 ### User Story F4-US2: Secure the Administrator Editor
 
