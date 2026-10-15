@@ -18,6 +18,8 @@ export const routes: Routes = [
       { path: '', loadComponent: () => import('./features/editor/editor-page').then((m) => m.EditorPage) },
       { path: 'stories/new', loadComponent: () => import('./features/editor/pages/story-form-page').then((m) => m.StoryFormPage) },
       { path: 'stories/:id', loadComponent: () => import('./features/editor/pages/story-form-page').then((m) => m.StoryFormPage) },
+      { path: 'projects/new', loadComponent: () => import('./features/editor/pages/project-form-page').then((m) => m.ProjectFormPage) },
+      { path: 'projects/:id', loadComponent: () => import('./features/editor/pages/project-form-page').then((m) => m.ProjectFormPage) },
     ],
   },
   { path: 'access-denied', loadComponent: () => import('./features/editor/access-denied-page').then((m) => m.AccessDeniedPage) },

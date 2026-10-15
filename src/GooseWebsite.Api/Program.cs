@@ -1,5 +1,6 @@
 using GooseWebsite.Api.Modules.Accounts;
 using GooseWebsite.Api.Modules.Blog;
+using GooseWebsite.Api.Modules.Projects;
 using GooseWebsite.Api.Modules.Contact;
 using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Hosting;
@@ -20,6 +21,7 @@ builder.Services.AddMailerSendEmail(builder.Configuration);
 
 builder.Services.AddAccountsModule(builder.Configuration, builder.Environment);
 builder.Services.AddBlogModule();
+builder.Services.AddProjectsModule();
 builder.Services.AddContactModule(builder.Configuration);
 
 var app = builder.Build();

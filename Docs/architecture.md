@@ -72,7 +72,8 @@ GooseWebsite/
 │   │   ├── Modules/                  One folder per feature (section 3)
 │   │   │   ├── Accounts/
 │   │   │   ├── Blog/
-│   │   │   └── Contact/
+│   │   │   ├── Contact/
+│   │   │   └── Projects/
 │   │   ├── Shared/                   Cross-cutting infrastructure (section 3.2)
 │   │   │   ├── Email/  Hosting/  Modules/  Persistence/
 │   │   ├── Data/                     SQLite file for local development (git-ignored)
@@ -132,7 +133,7 @@ flowchart TB
 ```
 
 - `Program.cs` may reference every module; modules never reference `Program`.
-- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Blog** depends on `Shared` and on `Accounts` (for the author entity and the authorization policy names). Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
+- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Blog** and **Projects** depend on `Shared` and on `Accounts` (for the author entity and the authorization policy names); they do not depend on each other. Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
 - `Shared` never references a module, with one deliberate exception: `ApplicationDbContext` and `DatabaseService` know `ApplicationUser` from Accounts, because Identity shares the database. Every other module table is discovered through `IEntityTypeConfiguration<T>` without `Shared` naming it.
 - **All database reads and writes go through `DatabaseService`.** A module keeps its own query logic in a service or repository (what to ask for) but calls the gateway (how to ask). Never inject `ApplicationDbContext`, `UserManager`, or `RoleManager` into a module class other than Identity registration. The sanitization, access rules and one-click-one-unit-of-work guarantee (F7-US1) are applied beneath the gateway, so they hold for every module; declare an `EntityAccessRule<T>` next to every new entity (see section 4).
 
@@ -231,6 +232,20 @@ Owns stories (the product name; the code keeps its historical "blog post" name, 
 `BlogController` (public reads) and `StoryEditorController` (everything that changes or lists drafts) are thin: the rules live in `IBlogAuthoringService` (`BlogAuthoringService`, TE9), which returns an outcome (`Succeeded`, `NotFound`, `Invalid` with the failing fields) that the controller maps to a response. The service owns: the slug (made from the title with letters and digits only, accents dropped, `story` when nothing is left, numeric suffix on a collision, never changed afterwards so links stay stable), the tags (trimmed, no empty tags, no duplicates that differ only in case, no commas inside a tag), the timestamps, and the rules for publishing. Saving a draft needs only a title; publishing needs an excerpt and text. Query logic is in `IBlogPostRepository` (`BlogPostRepository`), which reads and writes only through `DatabaseService`; the access rule (everybody reads published stories, administrators read drafts and write, no length limit) is `Domain/BlogPostAccessRule.cs` and the table mapping `Domain/BlogPostConfiguration.cs`. Stories published before `PublishedAtUtc` existed received their creation date in the `AddStoryPublishedAt` migration.
 
 In the client (`app/features/editor/`, loaded on demand so visitors never download it) `StoryFormPage` is the form: save draft, preview (Markdown rendered by `markdown-it` with raw HTML off), publish, return to draft, with the status written in words.
+
+### 3.6a Projects module
+
+Owns projects (title, overview in Markdown, Gustavo's contribution, technologies, optional demo and source links). Source: `Modules/Projects/`. It follows the same pattern as stories: drafts are never public, saving never publishes, and publishing is explicit.
+
+| Method and path | Who | What |
+| --- | --- | --- |
+| `GET /api/projects`, `GET /api/projects/{slug}` | Everyone | Published projects only (a draft is a 404) |
+| `GET /api/editor/projects`, `GET /api/editor/projects/{id}` | Administrator | List (summaries) and open any project, drafts included |
+| `POST /api/editor/projects`, `PUT /api/editor/projects/{id}` | Administrator + CSRF | Create or save; always leaves the state as it was (new = draft) |
+| `POST /api/editor/projects/{id}/publish`, `.../unpublish` | Administrator + CSRF | Explicit state changes; publishing needs an overview and is idempotent |
+| `DELETE /api/editor/projects/{id}` | Administrator + CSRF | Removes the project |
+
+`IProjectAuthoringService` owns the rules (title required; links optional but only absolute `http` or `https` addresses; technologies trimmed, de-duplicated by case, no commas; slug from `Shared/Text/Slug` fixed at creation with a numeric suffix on a collision; publication date set at first publish). Queries are in `IProjectRepository`; the access rule is `Domain/ProjectAccessRule.cs`; table `Projects` (migration `AddProjects`). The client has `ProjectFormPage` and `ProjectApi` beside the story ones, and the workspace (`EditorPage`) switches between the two lists.
 
 ### 3.7 Authorization matrix
 

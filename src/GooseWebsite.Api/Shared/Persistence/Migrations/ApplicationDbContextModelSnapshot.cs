@@ -141,6 +141,64 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                     b.ToTable("BlogPosts", (string)null);
                 });
 
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Projects.Domain.Project", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Contribution")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DemoUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Overview")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Technologies")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Projects", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -270,6 +328,17 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                 });
 
             modelBuilder.Entity("GooseWebsite.Api.Modules.Blog.Domain.BlogPost", b =>
+                {
+                    b.HasOne("GooseWebsite.Api.Modules.Accounts.Domain.ApplicationUser", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Projects.Domain.Project", b =>
                 {
                     b.HasOne("GooseWebsite.Api.Modules.Accounts.Domain.ApplicationUser", "Author")
                         .WithMany()

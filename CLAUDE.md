@@ -16,7 +16,7 @@ Gustavo Couto Vanin's personal website: a public profile, a verified contact for
 
 ## Tech stack
 
-- **Backend:** ASP.NET Core on .NET 10, modular monolith (`src/GooseWebsite.Api/Modules/{Accounts,Blog,Contact}` over `Shared/`)
+- **Backend:** ASP.NET Core on .NET 10, modular monolith (`src/GooseWebsite.Api/Modules/{Accounts,Blog,Contact,Projects}` over `Shared/`)
 - **Database:** SQLite through EF Core, with ASP.NET Core Identity (file `Data/goosewebsite.db` in development)
 - **Frontend:** Angular 20, standalone components and signals, SCSS (`src/GooseWebsite.Client`). It builds into `src/GooseWebsite.Api/wwwroot`.
 - **Email:** SMTP through `ISmtpMailSender` (MailerSend today)

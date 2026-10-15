@@ -1,5 +1,4 @@
-using System.Globalization;
-using System.Text;
+using GooseWebsite.Api.Shared.Text;
 using GooseWebsite.Api.Modules.Blog.Contracts;
 using GooseWebsite.Api.Modules.Blog.Domain;
 
@@ -170,31 +169,5 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
         return slug;
     }
 
-    // "Same Title!" -> "same-title"; accents are dropped, anything else becomes one hyphen, and an empty result is "story".
-    internal static string Slugify(string title)
-    {
-        var slug = new StringBuilder();
-        var lastWasHyphen = true;
-        foreach (var character in title.Normalize(NormalizationForm.FormD))
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark)
-            {
-                continue;
-            }
-
-            if (char.IsAsciiLetterOrDigit(character))
-            {
-                slug.Append(char.ToLowerInvariant(character));
-                lastWasHyphen = false;
-            }
-            else if (!lastWasHyphen)
-            {
-                slug.Append('-');
-                lastWasHyphen = true;
-            }
-        }
-
-        var result = slug.ToString().Trim('-');
-        return result.Length == 0 ? "story" : result;
-    }
+    internal static string Slugify(string title) => Slug.From(title, "story");
 }

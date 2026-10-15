@@ -325,7 +325,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US1: Navigate and Manage Content in the Editor
 
-**Status:** In Progress (stories part implemented 2026-10-15, awaiting approval; the Projects half arrives with F4-US4)  
+**Status:** In Progress (stories part approved 2026-10-15, pull request merged; the Projects switch implemented 2026-10-16, awaiting approval)  
 **Estimate:** 3 US (36 hours)  
 **Goal:** As Gustavo, I can use a private editor workspace to find and manage my projects and stories without editing source files.
 
@@ -339,11 +339,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [x] (Stories now; the Projects switch is completed with F4-US4 in Sprint 4) Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
-- [x] (Stories) Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
-- [x] (Stories) Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
+- [x] Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
+- [x] Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
+- [x] Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
 - [x] Apply the compact, task-focused visual direction with responsive layout, keyboard operation, visible focus, and non-color-only state labels.
-- [x] (Stories; narrow-viewport and keyboard flow are covered by the browser tests, TE5) Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
+- [x] (Narrow-viewport and keyboard flow are covered by the browser tests, TE5) Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
 
 ### User Story F4-US2: Secure the Administrator Editor
 
@@ -374,7 +374,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US3: Manage Stories as Drafts
 
-**Status:** In Progress (implemented 2026-10-15, awaiting approval)  
+**Status:** Done (implemented 2026-10-15; approved 2026-10-15, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can create and edit a story with the agreed fields, preview it, and publish it explicitly.
 **Decided 2026-10-15 (with Gustavo; TE9 folded in as the first step):**
@@ -401,9 +401,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US4: Manage Projects as Drafts
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can create and edit a project with its overview, my contribution, tools, images, and demo/source links.
+
+**Decided 2026-10-16 (with Gustavo):** Projects are their own module (`Modules/Projects`, table `Projects`, editor API `/api/editor/projects`, public reads `/api/projects`), built the same way as stories: a draft is private, saving never publishes, Publish and Return to draft are explicit, the publication date is set at the first publish and editable, and the overview is Markdown shown safely. A draft needs only a title; publishing needs an overview. Demo and source links are optional and must be web addresses (`http` or `https`); anything else, such as `javascript:`, is refused with the field named. Images arrive with F4-US5.
 
 **Acceptance tests:**
 
@@ -414,10 +416,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Implement project data fields and server-side validation, including URL validation for optional external links.
-- [ ] Implement Gustavo's editor forms for create/edit, draft save, preview, and explicit publish.
-- [ ] Test project field persistence, invalid URLs, preview rendering, draft privacy, and publish transitions through API and UI checks.
+- [x] Implement project data fields and server-side validation, including URL validation for optional external links.
+- [x] Implement Gustavo's editor forms for create/edit, draft save, preview, and explicit publish.
+- [x] Test project field persistence, invalid URLs, preview rendering, draft privacy, and publish transitions through API and UI checks.
 
+
+**Implementation evidence (2026-10-16):** `ProjectEditorApiTests` (API) reopen a saved project with every field equal (acceptance test 1), show a draft is a 404 for the public and absent from the public list while the editor can open it, and an anonymous caller gets 401 (test 2); saving does not publish, publishing makes the project public once, and publishing again keeps the date (test 3); a missing title, a comma in a technology, a missing overview at publish, and links that are not web addresses are refused with the field named and nothing is stored or published (test 4). Client specs cover the project form and the workspace switch. The container run exercises the same flows (`75-projects.sh`).
 ### User Story F4-US5: Upload Content Images
 
 **Status:** Proposed  
@@ -938,12 +942,12 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F1 Public Profile | R1 | 2 US / 24 hours | Done | 2 of 2 |
 | F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
 | F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 2 of 4 |
-| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | In Progress | 1 of 5 |
+| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | In Progress | 2 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **9 of 30** |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **10 of 30** |
 
 By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

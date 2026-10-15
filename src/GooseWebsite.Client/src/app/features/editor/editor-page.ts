@@ -2,13 +2,17 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthApi } from '../auth/api/auth-api';
+import { ProjectApi } from './api/project-api';
 import { StoryApi } from './api/story-api';
+import { ProjectSummary } from './models/project';
 import { StorySummary } from './models/story';
 
 type StatusFilter = 'all' | 'draft' | 'published';
+type Kind = 'stories' | 'projects';
+type Row = StorySummary | ProjectSummary;
 
-// Gustavo's workspace: every story with its state in words, filtered by status and searched by title.
-// Projects join this list in F4-US4.
+// Gustavo's workspace: stories or projects (a switch chooses), each with its state in words, filtered by status
+// and searched by title.
 @Component({
   selector: 'app-editor-page',
   imports: [FormsModule, RouterLink],
@@ -22,13 +26,17 @@ type StatusFilter = 'all' | 'draft' | 'published';
           <p class="status" role="status">Signed in as {{ administrator }} (Administrator).</p>
         }
         <div class="top-actions">
-          <a class="primary" routerLink="/editor/stories/new">New story</a>
+          <a class="primary" [routerLink]="['/editor', kind(), 'new']">{{ kind() === 'stories' ? 'New story' : 'New project' }}</a>
           <a class="secondary" routerLink="/sign-in">Account and sign out</a>
         </div>
       </header>
 
       <section aria-labelledby="stories-title">
-        <h2 id="stories-title">Stories</h2>
+        <div class="switch" role="group" aria-label="Content type">
+          <button type="button" [attr.aria-pressed]="kind() === 'stories'" (click)="choose('stories')">Stories</button>
+          <button type="button" [attr.aria-pressed]="kind() === 'projects'" (click)="choose('projects')">Projects</button>
+        </div>
+        <h2 id="stories-title">{{ kind() === 'stories' ? 'Stories' : 'Projects' }}</h2>
 
         <div class="filters">
           <label for="story-search">Search by title</label>
@@ -36,7 +44,7 @@ type StatusFilter = 'all' | 'draft' | 'published';
 
           <label for="story-status">Show</label>
           <select id="story-status" [ngModel]="filter()" (ngModelChange)="filter.set($event)">
-            <option value="all">All stories</option>
+            <option value="all">All {{ kind() }}</option>
             <option value="draft">Drafts</option>
             <option value="published">Published</option>
           </select>
@@ -47,24 +55,24 @@ type StatusFilter = 'all' | 'draft' | 'published';
         }
 
         @if (loadFailed()) {
-          <p class="notice" role="alert">The stories could not be loaded. Reload the page to try again.</p>
+          <p class="notice" role="alert">The list could not be loaded. Reload the page to try again.</p>
         } @else if (!loaded()) {
-          <p class="notice" role="status">Loading stories...</p>
+          <p class="notice" role="status">Loading...</p>
         } @else if (stories().length === 0) {
-          <p class="notice">There are no stories yet. Use "New story" to write the first one.</p>
+          <p class="notice">There are no {{ kind() }} yet. Use "{{ kind() === 'stories' ? 'New story' : 'New project' }}" to add the first one.</p>
         } @else if (visible().length === 0) {
-          <p class="notice">No story matches. Clear the search or show all stories.</p>
+          <p class="notice">Nothing matches. Clear the search or show everything.</p>
         } @else {
           <ul class="story-list">
             @for (story of visible(); track story.id) {
               <li>
                 <div class="row">
-                  <a class="title" [routerLink]="['/editor/stories', story.id]">{{ story.title }}</a>
+                  <a class="title" [routerLink]="['/editor', kind(), story.id]">{{ story.title }}</a>
                   <span class="state" [class.published]="story.isPublished">{{ story.isPublished ? 'Published' : 'Draft' }}</span>
                   <span class="meta">Updated {{ story.updatedAtUtc.slice(0, 10) }}</span>
                 </div>
                 <div class="row-actions">
-                  <a [routerLink]="['/editor/stories', story.id]">Edit</a>
+                  <a [routerLink]="['/editor', kind(), story.id]">Edit</a>
                   @if (pendingDelete() === story.id) {
                     <span class="confirm" role="alert">Delete "{{ story.title }}" for good?</span>
                     <button type="button" class="danger" (click)="confirmDelete(story)">Yes, delete</button>
@@ -87,6 +95,9 @@ type StatusFilter = 'all' | 'draft' | 'published';
     .eyebrow { color: var(--accent-soft); font: 11px var(--mono); letter-spacing: .12em; margin: 28px 0 0; text-transform: uppercase; }
     h1 { font: 500 clamp(2rem, 7vw, 3.5rem)/1.1 var(--display); margin: 10px 0; }
     h2 { font: 500 1.5rem var(--display); margin: 36px 0 12px; }
+    .switch { display: flex; margin-top: 28px; }
+    .switch button { flex: 1; max-width: 200px; }
+    .switch button[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #071013; }
     .status, .notice, .meta { color: var(--muted); font: 13px var(--mono); line-height: 1.6; }
     .top-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
     .primary { background: var(--accent); color: #071013; display: inline-block; font-weight: 600; padding: 12px 20px; text-decoration: none; }
@@ -111,7 +122,8 @@ type StatusFilter = 'all' | 'draft' | 'published';
 })
 export class EditorPage implements OnInit {
   protected readonly name = signal('');
-  protected readonly stories = signal<StorySummary[]>([]);
+  protected readonly kind = signal<Kind>('stories');
+  protected readonly stories = signal<Row[]>([]);
   protected readonly loaded = signal(false);
   protected readonly loadFailed = signal(false);
   protected readonly message = signal('');
@@ -130,24 +142,46 @@ export class EditorPage implements OnInit {
 
   constructor(
     private readonly auth: AuthApi,
-    private readonly api: StoryApi,
+    private readonly storyApi: StoryApi,
+    private readonly projectApi: ProjectApi,
   ) {}
 
   ngOnInit(): void {
     this.auth.getCurrentUser().subscribe({ next: (user) => this.name.set(user.displayName) });
-    this.api.list().subscribe({
-      next: (stories) => {
-        this.stories.set(stories);
+    this.load();
+  }
+
+  protected choose(kind: Kind): void {
+    if (kind === this.kind()) {
+      return;
+    }
+
+    this.kind.set(kind);
+    this.search.set('');
+    this.filter.set('all');
+    this.pendingDelete.set(null);
+    this.message.set('');
+    this.load();
+  }
+
+  private load(): void {
+    this.loaded.set(false);
+    this.loadFailed.set(false);
+    this.stories.set([]);
+    const list = this.kind() === 'stories' ? this.storyApi.list() : this.projectApi.list();
+    list.subscribe({
+      next: (rows) => {
+        this.stories.set(rows);
         this.loaded.set(true);
       },
       error: () => this.loadFailed.set(true),
     });
   }
 
-  // Deleting needs the explicit second click; the story is removed only once the API says it is gone.
-  protected confirmDelete(story: StorySummary): void {
+  // Deleting needs the explicit second click; the item is removed only once the API says it is gone.
+  protected confirmDelete(story: Row): void {
     this.message.set('');
-    this.api.remove(story.id).subscribe({
+    (this.kind() === 'stories' ? this.storyApi : this.projectApi).remove(story.id).subscribe({
       next: () => {
         this.stories.update((all) => all.filter((item) => item.id !== story.id));
         this.pendingDelete.set(null);
