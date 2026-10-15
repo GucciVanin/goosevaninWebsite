@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using GooseWebsite.Api.Modules.Contact.Contracts;
 using GooseWebsite.Api.Modules.Contact.Models;
@@ -6,6 +7,8 @@ using GooseWebsite.Api.Modules.Contact.Services;
 namespace GooseWebsite.Api.Modules.Contact.Controllers;
 
 // Translates contact outcomes into HTTP responses; the rules live in the Contact submission module.
+// The contact form is public by design: the sender proves control of their address instead of signing in.
+[AllowAnonymous]
 [ApiController]
 [Route("api/[controller]")]
 public sealed class ContactController(IContactSubmissionService contact) : ControllerBase
