@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthApi } from '../api/auth-api';
 import { AuthenticatedUser } from '../models/authenticated-user';
+import { safeReturnUrl } from '../return-url';
 
 // Keeps sign-in and registration state within the authentication feature boundary.
 @Component({
@@ -110,9 +111,18 @@ export class SignInPage implements OnInit {
   protected readonly sessionNotice = signal('');
   protected readonly isBusy = signal(false);
 
-  constructor(private readonly auth: AuthApi) {}
+  constructor(
+    private readonly auth: AuthApi,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
+  ) {}
 
   ngOnInit(): void {
+    // A request that found the session gone sends the person here; say why, and come back to where they were afterwards.
+    if (this.route.snapshot.queryParamMap.get('reason') === 'session-expired') {
+      this.sessionNotice.set('Your session expired. Sign in again to continue.');
+    }
+
     this.auth.getReaderRegistrationAvailability().subscribe({
       next: ({ enabled }) => this.registrationEnabled.set(enabled),
     });
@@ -120,7 +130,9 @@ export class SignInPage implements OnInit {
       next: (user) => this.user.set(user),
       error: (error: HttpErrorResponse) => {
         if (error.status === 401) {
-          this.sessionNotice.set('You are not currently signed in. Your session may have expired.');
+          if (!this.sessionNotice()) {
+            this.sessionNotice.set('You are not currently signed in. Your session may have expired.');
+          }
         } else {
           this.message.set('Session status could not be checked. Try again.');
         }
@@ -151,6 +163,10 @@ export class SignInPage implements OnInit {
         this.password = '';
         this.user.set(user);
         this.isBusy.set(false);
+        const returnTo = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+        if (returnTo) {
+          void this.router.navigateByUrl(returnTo);
+        }
       },
       error: () => {
         this.message.set('Unable to sign in with those credentials.');

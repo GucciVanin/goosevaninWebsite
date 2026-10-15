@@ -6,6 +6,8 @@ post_body() { jq -cn --arg t "$1" --argjson p "$2" \
 
 # Writes are refused to anonymous callers and to administrators without a CSRF token.
 check "an anonymous caller cannot create a post" 401 "$(post_json "$JAR_DIR/anon.jar" /api/blog "$(post_body 'Anonymous attempt' true)")"
+check "an anonymous caller cannot update a post" 401 "$(send_json "$JAR_DIR/anon.jar" PUT /api/blog/1 "$(post_body 'Anonymous update' true)")"
+check "an anonymous caller cannot delete a post" 401 "$(send_json "$JAR_DIR/anon.jar" DELETE /api/blog/1)"
 check "an administrator without a CSRF token cannot create a post" 400 \
   "$(code_of -b "$ADMIN_JAR" -X POST -H 'Content-Type: application/json' -d "$(post_body 'No CSRF' true)" "$BASE/api/blog")"
 

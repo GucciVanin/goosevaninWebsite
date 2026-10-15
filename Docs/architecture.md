@@ -287,6 +287,12 @@ The rules are beneath `DatabaseService`, in `Shared/Persistence`, where no calle
 | Answers | `DataSafeguardExceptionHandler` maps the exceptions to 403 and 400 with fixed messages that never echo what was submitted. Hidden rows simply do not exist for the caller (a draft is a 404). Logs carry the kind of refusal, the entity and the caller kind, never values |
 | One click, one unit of work | The first save inside a web request opens a transaction; `UnitOfWorkFilter` commits it when the action finishes normally and rolls it back when the action throws (a refused write included), so nothing from a failed click persists. An answer with a failure status (a 401 after a wrong password) is not an exception: the failed-attempt counter it saved is kept. A refused or failed save marks the click failed even if the code caught the exception and answered normally. `UnitOfWorkMiddleware` completes saves made outside an action (middleware, minimal endpoints). Commit and rollback ignore a client that disconnects |
 
+### Editor access (F4-US2)
+
+Who may change content is decided in the API, never in the page. Every blog write carries `[Authorize(Policy = AdminOnly)]` and `[ValidateAntiForgeryToken]`; the data layer refuses a non-administrator write again beneath it (F7-US1). `DataAccessArchitectureTests` fails if any controller write action lacks `[Authorize]` or `[AllowAnonymous]` (the public contact form says `[AllowAnonymous]` on purpose), or if a signed-in write lacks the anti-forgery attribute, so a future endpoint cannot ship open. `EditorAccessTests` runs create, update and delete for an anonymous caller (401), a Reader (403), an expired session (401) and an administrator, and asserts the stored content.
+
+The client mirrors this only to spare people a page they cannot use: `/editor` is behind `editorGuard`, the public header shows an "Editor" link to administrators only, and `sessionInterceptor` handles the CSRF token and the "session expired" case. Sign-in returns to the page the person came from only when `safeReturnUrl` accepts it (a path on this site).
+
 ## 5. Key flows
 
 ### 5.1 Sign-in with CSRF protection
@@ -417,6 +423,8 @@ flowchart TD
 | Folder | Holds |
 | --- | --- |
 | `app/features/auth/` | `api/` (AuthApi with CSRF handling), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
+| `app/features/editor/` | The secured editor shell (`EditorPage`), `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
+| `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
 | `app/features/home/` | The home page and its sections: `hero`, `selected-work`, `approach`, `toolkit` |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles |
 | `app/layout/` | `site-header`, `site-footer` |
@@ -543,8 +551,8 @@ Delete the module folder, its registration line in `Program.cs`, its tests, and 
 | Level | Location | What it covers |
 | --- | --- | --- |
 | Integration (host in memory) | `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTests.cs`, `AuthApiFactory.cs` | Login, CSRF, cookie flags, lockout, expiry, registration, verification, authorization, rate limit. The factory swaps in an in-memory SQLite connection and a test mail sink. |
-| Unit and service | `AdminProvisioningTests.cs`, `AdminPasswordResetTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `DatabaseInitializerTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
-| Client | `*.spec.ts` beside components | Header sign-in link; verify-email page does not post until confirmed |
+| Unit and service | `AdminProvisioningTests.cs`, `EditorAccessTests.cs`, `AdminPasswordResetTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `DatabaseInitializerTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
+| Client | `*.spec.ts` beside components | Header sign-in and Editor links; verify-email page; sign-in page (expired-session notice, safe return address); `editorGuard`; `sessionInterceptor`; `safeReturnUrl` |
 
 Test doubles: `TestAccountEmailSender` captures verification links; `StubContactEmailDeliveryService` replaces the contact mail transport; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
 
@@ -565,7 +573,7 @@ Continuous integration (`.github/workflows/ci.yml`) runs on every pull request a
 
 The run never sends an email: the contact form is only given requests it refuses, and the mail provider check is a read-only authorization call that prints no key. The data left in place after a run is the final state of the tests. The first run of this suite found a real defect (sign-out did not end the session on the server), now fixed under F3-US1.
 
-Current result (2026-10-14): 182 checks pass (95 .NET, 5 Angular, 82 runtime). Not covered: the rendered content of the Angular pages and the other browser-level acceptance tests (320 px, keyboard, contrast); see enabler TE5.
+Current result (2026-10-14): 222 checks pass (108 .NET, 28 Angular, 86 runtime). Not covered: the rendered content of the Angular pages and the other browser-level acceptance tests (320 px, keyboard, contrast); see enabler TE5.
 
 ## 11. Known gaps and technical debt
 

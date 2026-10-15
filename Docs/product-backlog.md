@@ -347,9 +347,14 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US2: Secure the Administrator Editor
 
-**Status:** Proposed  
-**Estimate:** 2 US (24 hours)  
+**Status:** In Progress (implemented 2026-10-15, awaiting approval)  
+**Estimate:** 2 US (24 hours), kept as the budget on 2026-10-15; the actual effort is about 1.2 US because the API was already protected  
 **Goal:** As a provisioned administrator, I can access content management; visitors and reader accounts cannot use administrator-only actions.
+**Decided 2026-10-15 (with Gustavo):**
+- Scope: an `/editor` route behind a guard (a secured shell; the content workspace is F4-US1), one request interceptor that gives every write the CSRF token, a data-driven API access matrix, and an architecture test that every controller write action declares `[Authorize]` or `[AllowAnonymous]` (signed-in writes also need `[ValidateAntiForgeryToken]`), so a future endpoint cannot be left open by forgetting an attribute.
+- Anonymous visitors are sent to sign in and come back to `/editor`; a signed-in Reader sees a plain "You don't have access to this page" page; an administrator gets the editor. The "Editor" link in the public header shows only to administrators and is a convenience: the API enforces access.
+- When the session expires, the write gets a 401 and the person is sent to sign in with the message "Your session expired. Sign in again to continue.", then back to where they were. Keeping unsaved text across that sign-in belongs to F4-US3.
+- A Reader's denial is covered by the .NET tests, not in the container (reader registration is off there and turning it on would send real email).
 
 **Acceptance tests:**
 
@@ -360,10 +365,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Define the authorized administrator provisioning path and authenticated administrator policy for editor routes and APIs.
-- [ ] Gate editor UI and every write endpoint on the same administrator policy.
-- [ ] Keep editor controls compact and task-focused; distinguish draft, preview, save, and publish states with labels and status text, not color alone.
-- [ ] Test anonymous, provisioned-administrator, reader, and expired-session paths; assert HTTP status and database state.
+- [x] Define the authorized administrator provisioning path and authenticated administrator policy for editor routes and APIs (the `AdminOnly` policy and `admin provision`, both from F3; the new architecture test keeps every write endpoint covered).
+- [x] Gate editor UI and every write endpoint on the same administrator policy (route guard for the UI; the API policy and the F7-US1 write rule for the data).
+- [x] Keep editor controls compact and task-focused; distinguish draft, preview, save, and publish states with labels and status text, not color alone (the shell states its status in words; draft, preview and publish controls arrive with F4-US1 and F4-US3).
+- [x] Test anonymous, provisioned-administrator, reader, and expired-session paths; assert HTTP status and database state.
+
+**Implementation evidence (2026-10-15):** `EditorAccessTests` (11 cases) checks create, update and delete for an anonymous caller (401), a signed-in Reader (403), an expired session (401) and a provisioned administrator (success, including a second administrator), and asserts the stored post is unchanged after every refusal (acceptance tests 1, 3 and 4); a missing CSRF token is refused (400). `DataAccessArchitectureTests` fails if any controller write action (including inherited ones and `[AcceptVerbs]`) lacks `[Authorize]` or `[AllowAnonymous]` (it found the contact endpoints and now they say so; a second test proves it sees deliberately flawed controllers) or if a signed-in write lacks `[ValidateAntiForgeryToken]`. Client: `editorGuard` (administrator in; Reader to the no-access page; not signed in to sign-in with a return address; unreadable session never opens the editor), `sessionInterceptor` (CSRF token on every write, never on reads; a 401 on a non-auth API call goes to sign-in with the reason and return address; a wrong password or a 403 does not), `safeReturnUrl` (paths on this site only), the sign-in page (explains an expired session, returns to the page), and the header (Editor link for administrators only). The container run covers anonymous update and delete (401) and the `/editor` and `/access-denied` routes (acceptance test 2 is the administrator's session reaching the editor, covered by the guard's spec).
 
 ### User Story F4-US3: Manage Stories as Drafts
 
@@ -556,7 +563,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F7-US1: Apply Safeguards in the Database Gateway
 
-**Status:** In Progress (implemented 2026-10-14, awaiting approval)  
+**Status:** Done (implemented 2026-10-14; approved 2026-10-15, pull request merged)  
 **Release:** R1  
 **Estimate:** 2.5 US (30 hours): 2 US confirmed 2026-10-02, raised on 2026-10-14 when the one-click-one-unit-of-work guarantee was added; scheduled for Sprint 2  
 **Goal:** As Gustavo, I want every database operation to be checked in one place, so a feature cannot store unsanitized input or read or change data the caller is not allowed to.
@@ -907,6 +914,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 | 2026-10-02 | Added F8 (Member Profiles, R3) at Gustavo's request: users have a profile other users can view; basic details such as hobbies, profession, and location are optional and can be skipped at creation. Stories F8-US1 to F8-US3 proposed at 5 US total. | Extends R3 from 8 US to 13 US and the total from 34 US to 39 US. Visibility (signed-in only versus public), field list, and storage location are recorded as decisions to confirm before the stories are Ready. |
 | 2026-10-02 | `DatabaseService` is the intended single gateway for all database reads and writes and was restored as such; modules keep their query logic but never use the context or Identity managers directly. It performs no sanitization or access checks yet, so story F7-US1 was added (2 US, Sprint 2, before the editor). | Keeps cross-cutting safeguards in one place as features grow. Raises totals from 32 US to 34 US; R1 is now 22 US. |
 | 2026-10-01 | Implemented F3-US2 ahead of its planned R3 release at Gustavo's request; retained R3 as the intended public-release stage. | Adds reader email verification, generic registration/resend responses, confirmed-email sign-in, and a live verified-reader policy. `Auth:ReaderRegistration:Enabled` defaults off and must be explicitly enabled for the R3 Production release; Development opts in. Reader password recovery remains a separate R3 follow-up and production SMTP delivery requires deployment verification. |
+| 2026-10-15 | F7-US1 approved (merged). F4-US2 implemented with Gustavo's decisions: a secured `/editor` shell behind a guard, one interceptor for CSRF tokens and expired sessions, a full API access matrix, and an architecture test that every controller write action declares who may call it. The estimate stays 2 US as the budget; the actual is about 1.2 US. | The API was already protected, so the work is the client shell and the guard rails that keep future endpoints from shipping open. |
 | 2026-10-14 | F7-US1 designed with Gustavo and implemented: safeguards beneath `DatabaseService` (EF read filters and a save interceptor driven by a per-entity `EntityAccessRule<T>`), the caller is the signed-in user from the request, text is normalized with no limit on blog posts and a 500-character limit for comments (F6-US1), and one click is one unit of work. Estimate raised from 2 to 2.5 US. TE10 approved (pull request merged). | The earlier idea of named operations per intent was dropped for the generic-with-guards design after the code showed only the Blog repository used generic access. Rotating per-TLS-session tokens were discussed and left out: authentication is unchanged. |
 | 2026-10-13 | TE1, TE2 and TE3 approved (their pull requests merged). TE7: Reader registration, resend and email Verification now live behind `IReaderAccountService` and every public link is built by one `PublicLinkBuilder`. Fixed a defect found by the new module test: when the Reader role did not exist, Identity threw, the half-created account stayed, and the caller got a server error; it is now removed and the answer stays neutral. | The module is the one place for the anti-enumeration rule. Behavior otherwise unchanged; request-level tests pass unchanged. |
 | 2026-10-14 | TE10: `scripts/verify.ps1` verifies the container stack in one command (CI gate, backup and reset of the data, rebuild, seed, .NET and Angular tests, runtime tests of every feature, one log line per test). Decisions with Gustavo: the container stack is the only environment; each run resets the stack's data and leaves the final state; the mail provider is checked with a read-only authorization call and no email is sent; the administrator commands read answers from standard input; HSTS is added in Caddy with a short default lifetime. The first run found that signing out did not revoke the session cookie (fixed under F3-US1). | Replaces manual runtime checks. Enabler total rises from 8.5 to 10.3 US. |
@@ -920,13 +928,13 @@ These are technical/product-detail choices not settled in the interview. Record 
 | --- | --- | ---: | --- | --- |
 | F1 Public Profile | R1 | 2 US / 24 hours | Done | 2 of 2 |
 | F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
-| F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 1 of 4 |
+| F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 2 of 4 |
 | F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | Proposed | 0 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
-| F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | In Progress | 0 of 1 |
+| F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **6 of 30** |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **8 of 30** |
 
 By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

@@ -67,6 +67,7 @@
 }
 .desktop-nav a,
 .topbar-login,
+.topbar-editor,
 .topbar-cta,
 .footer-links a {
   color: var(--muted);
@@ -80,6 +81,7 @@
 .desktop-nav a.active,
 .topbar-cta:hover,
 .topbar-login:hover,
+.topbar-editor:hover,
 .footer-links a:hover {
   color: var(--ink);
 }
@@ -87,6 +89,8 @@
 .desktop-nav a:focus-visible,
 .topbar-login:focus,
 .topbar-login:focus-visible,
+.topbar-editor:focus,
+.topbar-editor:focus-visible,
 .topbar-cta:focus,
 .topbar-cta:focus-visible,
 .footer-links a:focus,
@@ -114,7 +118,8 @@
   display: flex;
   gap: 22px;
 }
-.topbar-login {
+.topbar-login,
+.topbar-editor {
   color: var(--muted);
 }
 .topbar-cta {

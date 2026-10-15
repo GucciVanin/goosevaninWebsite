@@ -38,7 +38,7 @@ export class App {
 
   private isAuthenticationRoute(url: string): boolean {
     const path = url.split(/[?#]/, 1)[0];
-    return path === '/sign-in' || path === '/verify-email' || path === '/contact/verify';
+    return ['/sign-in', '/verify-email', '/contact/verify', '/editor', '/access-denied'].includes(path);
   }
 
   @HostListener('window:scroll', [])
