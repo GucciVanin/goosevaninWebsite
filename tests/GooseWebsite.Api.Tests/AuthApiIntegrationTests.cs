@@ -112,24 +112,24 @@ public sealed class AuthApiIntegrationTests
         using var factory = new AuthApiFactory();
         await factory.ProvisionAdministratorAsync(AdminEmail, AdminPassword);
         using var client = factory.CreateHttpsClient();
-        var anonymousWrite = await client.PostAsJsonAsync("/api/blog", BlogPost());
+        var anonymousWrite = await client.PostAsJsonAsync("/api/editor/stories", BlogPost());
         Assert.Equal(HttpStatusCode.Unauthorized, anonymousWrite.StatusCode);
 
         var csrf = await GetCsrfTokenAsync(client);
         var login = await PostWithCsrfAsync(client, "/api/auth/login", csrf, new { email = AdminEmail, password = AdminPassword });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
 
-        var missingMutationToken = await client.PostAsJsonAsync("/api/blog", BlogPost());
+        var missingMutationToken = await client.PostAsJsonAsync("/api/editor/stories", BlogPost());
         Assert.Equal(HttpStatusCode.BadRequest, missingMutationToken.StatusCode);
         csrf = await GetCsrfTokenAsync(client);
-        var created = await PostWithCsrfAsync(client, "/api/blog", csrf, BlogPost());
+        var created = await PostWithCsrfAsync(client, "/api/editor/stories", csrf, BlogPost());
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
 
         var logoutCsrf = await GetCsrfTokenAsync(client);
         var logout = await PostWithCsrfAsync(client, "/api/auth/logout", logoutCsrf, new { });
         Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/me")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/blog", BlogPost())).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/editor/stories", BlogPost())).StatusCode);
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public sealed class AuthApiIntegrationTests
         await Task.Delay(1200);
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/me")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/blog", BlogPost())).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/editor/stories", BlogPost())).StatusCode);
     }
 
     [Fact]

@@ -20,6 +20,7 @@ import { AuthApi } from '../auth/api/auth-api';
           Stories and projects will be managed here. Drafts stay private until you publish them.
         </p>
         <p class="status">Status: the content workspace has not been built yet.</p>
+        <a class="primary" routerLink="/editor/stories/new">New story</a>
         <a class="secondary" routerLink="/sign-in">Account and sign out</a>
       </section>
     </main>
@@ -32,6 +33,7 @@ import { AuthApi } from '../auth/api/auth-api';
     .eyebrow { color: var(--accent-soft); font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
     h1 { font: 500 clamp(2rem, 7vw, 3.5rem)/1.1 var(--display); margin: 14px 0; }
     .intro, .status { color: var(--muted); line-height: 1.6; }
+    .primary { background: var(--accent); color: #071013; display: inline-block; font-weight: 600; margin: 20px 12px 0 0; padding: 12px 20px; text-decoration: none; }
     .secondary { border: 1px solid var(--line); color: var(--ink); display: inline-block; margin-top: 20px; padding: 12px 20px; text-decoration: none; }
     a:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 4px; }
   `,

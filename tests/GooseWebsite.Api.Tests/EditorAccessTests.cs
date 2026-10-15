@@ -60,9 +60,11 @@ public sealed class EditorAccessTests
         var csrf = await GetCsrfAsync(client);
         var (method, path, body) = verb switch
         {
-            "create" => (HttpMethod.Post, "/api/blog", PostBody("Created")),
-            "update" => (HttpMethod.Put, $"/api/blog/{id}", PostBody("Changed")),
-            _ => (HttpMethod.Delete, $"/api/blog/{id}", (object?)null)
+            "create" => (HttpMethod.Post, "/api/editor/stories", PostBody("Created")),
+            "update" => (HttpMethod.Put, $"/api/editor/stories/{id}", PostBody("Changed")),
+            "publish" => (HttpMethod.Post, $"/api/editor/stories/{id}/publish", (object?)null),
+            "unpublish" => (HttpMethod.Post, $"/api/editor/stories/{id}/unpublish", (object?)null),
+            _ => (HttpMethod.Delete, $"/api/editor/stories/{id}", (object?)null)
         };
         var request = new HttpRequestMessage(method, path);
         if (body is not null)
@@ -78,6 +80,8 @@ public sealed class EditorAccessTests
     [InlineData("create")]
     [InlineData("update")]
     [InlineData("delete")]
+    [InlineData("publish")]
+    [InlineData("unpublish")]
     public async Task Anonymous_CannotWrite_AndTheStoredContentIsUnchanged(string verb)
     {
         using var factory = new AuthApiFactory();
@@ -94,6 +98,8 @@ public sealed class EditorAccessTests
     [InlineData("create")]
     [InlineData("update")]
     [InlineData("delete")]
+    [InlineData("publish")]
+    [InlineData("unpublish")]
     public async Task AReader_CannotWrite_AndTheStoredContentIsUnchanged(string verb)
     {
         using var factory = new AuthApiFactory();
@@ -112,6 +118,8 @@ public sealed class EditorAccessTests
     [InlineData("create")]
     [InlineData("update")]
     [InlineData("delete")]
+    [InlineData("publish")]
+    [InlineData("unpublish")]
     public async Task AnExpiredSession_CannotWrite_AndTheStoredContentIsUnchanged(string verb)
     {
         using var factory = new AuthApiFactory(cookieLifetime: TimeSpan.FromMilliseconds(400));
@@ -152,9 +160,25 @@ public sealed class EditorAccessTests
         using var client = factory.CreateHttpsClient();
         await SignInAsync(client, AdminEmail);
 
-        var response = await client.PutAsJsonAsync($"/api/blog/{id}", PostBody("No token"));
+        var response = await client.PutAsJsonAsync($"/api/editor/stories/{id}", PostBody("No token"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("Original", (await StoredAsync(factory, id)).Title);
+    }
+
+    [Theory]
+    [InlineData("publish")]
+    [InlineData("unpublish")]
+    public async Task AnAdministratorWithoutTheCsrfToken_CannotChangeWhatIsPublic(string action)
+    {
+        using var factory = new AuthApiFactory();
+        await factory.ProvisionAdministratorAsync(AdminEmail, Password);
+        var (id, _) = await SeedPostAsync(factory);
+        using var client = factory.CreateHttpsClient();
+        await SignInAsync(client, AdminEmail);
+
+        var response = await client.PostAsync($"/api/editor/stories/{id}/{action}", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

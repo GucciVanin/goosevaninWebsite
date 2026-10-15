@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using GooseWebsite.Api.Modules.Blog.Services;
 
 namespace GooseWebsite.Api.Modules.Blog;
@@ -10,7 +11,9 @@ public static class BlogModule
 {
     public static IServiceCollection AddBlogModule(this IServiceCollection services)
     {
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IBlogPostRepository, BlogPostRepository>();
+        services.AddScoped<IBlogAuthoringService, BlogAuthoringService>();
         return services;
     }
 }

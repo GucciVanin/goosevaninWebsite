@@ -24,6 +24,14 @@ _Avoid_: blog post, article (in product language)
 A piece of Gustavo's work presented with his role, tools and outcomes.
 _Avoid_: portfolio item, case
 
+**Draft**:
+A Story that is saved but not published. Only Site administrators can see it; saving never publishes.
+_Avoid_: unpublished post, hidden story
+
+**Published story**:
+A Story Gustavo has explicitly published. It is public and carries a publication date, which he may change and which is kept if the story returns to draft.
+_Avoid_: live post, released story
+
 ### Contact and verification
 
 **Contact submission**:

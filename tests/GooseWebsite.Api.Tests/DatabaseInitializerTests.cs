@@ -1,8 +1,8 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
-using GooseWebsite.Api.Modules.Accounts.Domain;
-using GooseWebsite.Api.Modules.Blog.Domain;
 using GooseWebsite.Api.Shared.Persistence;
 using Xunit;
 
@@ -47,15 +47,23 @@ public sealed class DatabaseInitializerTests
         await using var provider = await CreateProviderAsync(connection);
         await using (var scope = provider.CreateAsyncScope())
         {
+            // A database made before migrations existed has the schema of the first migration and no migration history.
+            // Build exactly that (apply InitialCreate only, then forget the history) and give it a published story.
             var legacy = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await legacy.Database.EnsureCreatedAsync();
-            legacy.Users.Add(new ApplicationUser { Id = "u1", UserName = "a@example.test", NormalizedUserName = "A@EXAMPLE.TEST", DisplayName = "Existing" });
-            legacy.Set<BlogPost>().Add(new BlogPost { Title = "Kept", Slug = "kept", AuthorId = "u1" });
-            await legacy.SaveChangesAsync();
+            await legacy.Database.GetService<IMigrator>().MigrateAsync("20261012182118_InitialCreate");
+            await legacy.Database.ExecuteSqlRawAsync("DROP TABLE \"__EFMigrationsHistory\"");
+            await legacy.Database.ExecuteSqlRawAsync(
+                "INSERT INTO AspNetUsers (Id, UserName, NormalizedUserName, DisplayName, EmailConfirmed, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnabled, AccessFailedCount) " +
+                "VALUES ('u1', 'a@example.test', 'A@EXAMPLE.TEST', 'Existing', 0, 0, 0, 0, 0)");
+            await legacy.Database.ExecuteSqlRawAsync(
+                "INSERT INTO BlogPosts (Title, Slug, Excerpt, Content, Category, Tags, IsPublished, CreatedAtUtc, UpdatedAtUtc, AuthorId) " +
+                "VALUES ('Kept', 'kept', 'e', 'c', 'Notes', '', 1, '2026-01-01 00:00:00', '2026-01-02 00:00:00', 'u1')");
         }
 
         await new DatabaseInitializer().InitializeAsync(provider);
 
+        // Later migrations then run on top, and a story that was already published gets a publication date.
+        Assert.Equal(1L, await CountAsync(connection, "SELECT COUNT(*) FROM BlogPosts WHERE Slug = 'kept' AND PublishedAtUtc = CreatedAtUtc"));
         Assert.Equal(1L, await CountAsync(connection, "SELECT COUNT(*) FROM BlogPosts WHERE Slug = 'kept'"));
         Assert.Equal(1L, await CountAsync(connection, "SELECT COUNT(*) FROM AspNetUsers WHERE Id = 'u1'"));
         Assert.True(await CountAsync(connection, "SELECT COUNT(*) FROM \"__EFMigrationsHistory\"") >= 1);

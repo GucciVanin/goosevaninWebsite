@@ -1,16 +1,24 @@
 import { Routes } from '@angular/router';
-import { AccessDeniedPage } from './features/editor/access-denied-page';
-import { EditorPage } from './features/editor/editor-page';
 import { editorGuard } from './features/editor/editor.guard';
 import { ContactVerifyPage } from './features/contact/contact-verify-page';
 import { SignInPage } from './features/auth/pages/sign-in-page';
 import { VerifyEmailPage } from './features/auth/pages/verify-email-page';
 
 // Centralizes URL ownership so feature pages remain independently maintainable.
+// The editor is loaded on demand, so visitors never download the editor or its Markdown renderer.
 export const routes: Routes = [
   { path: 'sign-in', component: SignInPage },
   { path: 'verify-email', component: VerifyEmailPage },
   { path: 'contact/verify', component: ContactVerifyPage },
-  { path: 'editor', component: EditorPage, canActivate: [editorGuard] },
-  { path: 'access-denied', component: AccessDeniedPage },
+  {
+    path: 'editor',
+    canActivate: [editorGuard],
+    canActivateChild: [editorGuard],
+    children: [
+      { path: '', loadComponent: () => import('./features/editor/editor-page').then((m) => m.EditorPage) },
+      { path: 'stories/new', loadComponent: () => import('./features/editor/pages/story-form-page').then((m) => m.StoryFormPage) },
+      { path: 'stories/:id', loadComponent: () => import('./features/editor/pages/story-form-page').then((m) => m.StoryFormPage) },
+    ],
+  },
+  { path: 'access-denied', loadComponent: () => import('./features/editor/access-denied-page').then((m) => m.AccessDeniedPage) },
 ];
