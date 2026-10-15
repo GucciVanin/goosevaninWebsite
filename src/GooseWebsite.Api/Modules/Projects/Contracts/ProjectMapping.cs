@@ -18,6 +18,8 @@ public static class ProjectMapping
         project.Technologies.Split(',', StringSplitOptions.RemoveEmptyEntries),
         project.DemoUrl,
         project.SourceUrl,
+        project.CoverImage,
+        project.CoverImageAlt,
         project.IsPublished,
         Utc(project.CreatedAtUtc),
         Utc(project.UpdatedAtUtc),

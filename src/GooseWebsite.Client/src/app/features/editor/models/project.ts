@@ -18,6 +18,8 @@ export interface Project extends ProjectSummary {
   technologies: string[];
   demoUrl: string | null;
   sourceUrl: string | null;
+  coverImage: string;
+  coverImageAlt: string;
 }
 
 /** What Gustavo can save. Saving never publishes; that is a separate action. */
@@ -28,5 +30,7 @@ export interface ProjectDraft {
   technologies: string[];
   demoUrl: string | null;
   sourceUrl: string | null;
+  coverImage: string;
+  coverImageAlt: string;
   publishedAtUtc: string | null;
 }

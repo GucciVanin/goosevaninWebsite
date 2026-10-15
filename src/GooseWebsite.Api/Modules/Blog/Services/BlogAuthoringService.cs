@@ -75,6 +75,11 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
             errors["content"] = ["Add the story text before publishing."];
         }
 
+        if (post.CoverImage.Length > 0 && string.IsNullOrWhiteSpace(post.CoverImageAlt))
+        {
+            errors["coverImageAlt"] = ["Describe the cover image before publishing."];
+        }
+
         if (errors.Count > 0)
         {
             return AuthoringResult.Invalid(errors);
@@ -127,6 +132,11 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
             errors["title"] = ["A story needs a title."];
         }
 
+        if (!string.IsNullOrWhiteSpace(request.CoverImage) && !UploadedImageReference.IsValid(request.CoverImage.Trim()))
+        {
+            errors["coverImage"] = ["The cover image must be an image uploaded in the editor."];
+        }
+
         if (request.Tags is not null && request.Tags.Any(tag => tag.Contains(',')))
         {
             errors["tags"] = ["A tag cannot contain a comma."];
@@ -141,6 +151,8 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
         post.Excerpt = request.Excerpt.Trim();
         post.Content = request.Content;
         post.Category = string.IsNullOrWhiteSpace(request.Category) ? "Field notes" : request.Category.Trim();
+        post.CoverImage = request.CoverImage.Trim();
+        post.CoverImageAlt = post.CoverImage.Length == 0 ? string.Empty : request.CoverImageAlt.Trim();
         post.Tags = string.Join(',', CleanTags(request.Tags));
         if (request.PublishedAtUtc is { } publishedAt)
         {

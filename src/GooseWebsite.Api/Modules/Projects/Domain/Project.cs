@@ -19,6 +19,12 @@ public sealed class Project
 
     public string? DemoUrl { get; set; }
     public string? SourceUrl { get; set; }
+    /// <summary>The cover image: an uploaded-image reference ("/uploads/<name>") or empty.</summary>
+    public string CoverImage { get; set; } = string.Empty;
+
+    /// <summary>What the cover image shows, for readers who cannot see it.</summary>
+    public string CoverImageAlt { get; set; } = string.Empty;
+
     public bool IsPublished { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;

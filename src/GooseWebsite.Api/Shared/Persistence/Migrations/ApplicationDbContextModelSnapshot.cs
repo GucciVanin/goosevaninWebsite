@@ -103,6 +103,14 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CoverImage")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverImageAlt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -141,6 +149,34 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                     b.ToTable("BlogPosts", (string)null);
                 });
 
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Media.Domain.ContentImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UploadedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileName")
+                        .IsUnique();
+
+                    b.ToTable("ContentImages", (string)null);
+                });
+
             modelBuilder.Entity("GooseWebsite.Api.Modules.Projects.Domain.Project", b =>
                 {
                     b.Property<int>("Id")
@@ -152,6 +188,14 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Contribution")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverImage")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverImageAlt")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

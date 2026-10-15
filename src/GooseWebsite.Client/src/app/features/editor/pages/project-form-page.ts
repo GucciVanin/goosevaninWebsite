@@ -3,6 +3,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, switchMap, tap } from 'rxjs';
+import { ImageControls } from '../components/image-controls';
 import { ProjectApi } from '../api/project-api';
 import { renderMarkdown } from '../markdown';
 import { Project, ProjectDraft } from '../models/project';
@@ -11,7 +12,7 @@ import { Project, ProjectDraft } from '../models/project';
 // actions and the status is always written out in words. The overview is Markdown, with a safe preview.
 @Component({
   selector: 'app-project-form-page',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, ImageControls, RouterLink],
   template: `
     <main class="project-form">
       <a class="back-link" routerLink="/editor">Back to the editor</a>
@@ -36,6 +37,9 @@ import { Project, ProjectDraft } from '../models/project';
       } @else if (previewing()) {
         <section class="preview-area" aria-label="Preview">
           <p class="banner">{{ isPublished() ? 'Preview of the published project' : 'Draft preview: this project is not public' }}</p>
+          @if (coverImage) {
+            <img class="preview-cover" [src]="coverImage" [alt]="coverImageAlt" />
+          }
           <h2 class="preview-title">{{ title || 'Untitled project' }}</h2>
           <div class="preview" [innerHTML]="previewHtml()"></div>
           @if (contribution) {
@@ -80,6 +84,7 @@ import { Project, ProjectDraft } from '../models/project';
           <label for="project-date">Publication date (optional)</label>
           <input id="project-date" name="publishedDate" type="date" [(ngModel)]="publishedDate" />
         </form>
+        <app-image-controls [(coverImage)]="coverImage" [(coverImageAlt)]="coverImageAlt" (insert)="addToText($event)" />
       }
 
       @if (!loadFailed()) {
@@ -117,6 +122,8 @@ import { Project, ProjectDraft } from '../models/project';
     button:disabled { cursor: wait; opacity: .65; }
     .banner { border: 1px dashed var(--line); color: var(--accent-soft); font: 12px var(--mono); margin: 20px 0 8px; padding: 8px 12px; }
     .preview-title { font: 500 clamp(1.6rem, 5vw, 2.4rem)/1.15 var(--display); margin: 12px 0 6px; }
+    .preview-cover { display: block; max-height: 320px; max-width: 100%; object-fit: contain; }
+    .preview img { max-width: 100%; }
     .preview { line-height: 1.7; max-width: 70ch; }
     .preview a, .preview-area a { color: var(--accent-soft); }
     .tech { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; }
@@ -131,6 +138,8 @@ export class ProjectFormPage implements OnInit {
   protected technologiesText = '';
   protected demoUrl = '';
   protected sourceUrl = '';
+  protected coverImage = '';
+  protected coverImageAlt = '';
   protected publishedDate = '';
   private savedDate = '';
 
@@ -188,6 +197,11 @@ export class ProjectFormPage implements OnInit {
     }
   }
 
+  // An image uploaded for the text goes at the end, on its own line; Gustavo moves it where it belongs.
+  protected addToText(markdown: string): void {
+    this.overview = this.overview.trimEnd() + (this.overview.trim() ? '\n\n' : '') + markdown + '\n';
+  }
+
   protected togglePreview(): void {
     if (!this.previewing()) {
       this.previewHtml.set(renderMarkdown(this.overview));
@@ -237,6 +251,8 @@ export class ProjectFormPage implements OnInit {
     this.technologiesText = project.technologies.join(', ');
     this.demoUrl = project.demoUrl ?? '';
     this.sourceUrl = project.sourceUrl ?? '';
+    this.coverImage = project.coverImage;
+    this.coverImageAlt = project.coverImageAlt;
     this.publishedDate = project.publishedAtUtc ? project.publishedAtUtc.slice(0, 10) : '';
     this.savedDate = this.publishedDate;
     this.isPublished.set(project.isPublished);
@@ -255,6 +271,8 @@ export class ProjectFormPage implements OnInit {
       technologies: this.splitTechnologies(),
       demoUrl: this.demoUrl.trim() || null,
       sourceUrl: this.sourceUrl.trim() || null,
+      coverImage: this.coverImage,
+      coverImageAlt: this.coverImageAlt,
       // Only a date Gustavo changed is sent, so saving a fix keeps the exact time of publication.
       publishedAtUtc: this.publishedDate && this.publishedDate !== this.savedDate ? `${this.publishedDate}T00:00:00Z` : null,
     };

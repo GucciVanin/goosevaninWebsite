@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ImageApi } from '../api/image-api';
 import { ProjectApi } from '../api/project-api';
 import { Project } from '../models/project';
 import { ProjectFormPage } from './project-form-page';
@@ -27,6 +28,8 @@ function project(overrides: Partial<Project> = {}): Project {
     technologies: ['C#', 'Angular'],
     demoUrl: 'https://example.test/demo',
     sourceUrl: null,
+    coverImage: '',
+    coverImageAlt: '',
     isPublished: false,
     createdAtUtc: '2026-10-15T10:00:00Z',
     updatedAtUtc: '2026-10-15T10:00:00Z',
@@ -49,6 +52,7 @@ describe('ProjectFormPage', () => {
       providers: [
         provideRouter([]),
         { provide: ProjectApi, useValue: api },
+        { provide: ImageApi, useValue: {} },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap(id ? { id } : {}) } } },
       ],
     }).compileComponents();

@@ -12,6 +12,8 @@ public sealed class ProjectRequest
     public string[]? Technologies { get; set; }
     public string? DemoUrl { get; set; }
     public string? SourceUrl { get; set; }
+    public string CoverImage { get; set; } = string.Empty;
+    public string CoverImageAlt { get; set; } = string.Empty;
 
     /// <summary>Optional: sets the publication date. The first publish sets it when it is empty.</summary>
     public DateTime? PublishedAtUtc { get; set; }

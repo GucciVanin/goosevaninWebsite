@@ -24,6 +24,10 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly string _dataProtectionPath = Path.Combine(Path.GetTempPath(), $"goosewebsite-auth-{Guid.NewGuid():N}");
+    private readonly string _mediaPath = Path.Combine(Path.GetTempPath(), $"goosewebsite-media-{Guid.NewGuid():N}");
+
+    /// <summary>The folder this factory's application stores uploaded images in.</summary>
+    public string MediaPath => _mediaPath;
     private readonly TimeSpan? _cookieLifetime;
     private readonly TimeSpan? _confirmationTokenLifetime;
     private readonly bool _readerRegistrationEnabled;
@@ -52,6 +56,7 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Production");
         builder.UseSetting("DataProtection:KeysPath", _dataProtectionPath);
+        builder.UseSetting("Media:Directory", _mediaPath);
         builder.UseSetting("Auth:ReaderRegistration:Enabled", _readerRegistrationEnabled.ToString());
         builder.ConfigureTestServices(services =>
         {
@@ -101,6 +106,11 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         if (disposing)
         {
             _connection.Dispose();
+            if (Directory.Exists(_mediaPath))
+            {
+                Directory.Delete(_mediaPath, recursive: true);
+            }
+
             if (Directory.Exists(_dataProtectionPath))
             {
                 Directory.Delete(_dataProtectionPath, recursive: true);

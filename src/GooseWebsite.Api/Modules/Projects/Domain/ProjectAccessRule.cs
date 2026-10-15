@@ -13,5 +13,6 @@ public sealed class ProjectAccessRule : EntityAccessRule<Project>
         IsUserText(project => project.Overview);
         IsUserText(project => project.Contribution);
         IsUserText(project => project.Technologies);
+        IsUserText(project => project.CoverImageAlt);
     }
 }

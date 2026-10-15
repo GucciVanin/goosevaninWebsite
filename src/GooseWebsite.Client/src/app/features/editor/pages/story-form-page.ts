@@ -3,6 +3,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, switchMap, tap } from 'rxjs';
+import { ImageControls } from '../components/image-controls';
 import { StoryApi } from '../api/story-api';
 import { renderMarkdown } from '../markdown';
 import { Story, StoryDraft } from '../models/story';
@@ -11,7 +12,7 @@ import { Story, StoryDraft } from '../models/story';
 // is always written out in words. The body is Markdown, with a safe preview.
 @Component({
   selector: 'app-story-form-page',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, ImageControls, RouterLink],
   template: `
     <main class="story-form">
       <a class="back-link" routerLink="/editor">Back to the editor</a>
@@ -36,6 +37,9 @@ import { Story, StoryDraft } from '../models/story';
       } @else if (previewing()) {
         <section class="preview-area" aria-label="Preview">
           <p class="banner">{{ isPublished() ? 'Preview of the published story' : 'Draft preview: this story is not public' }}</p>
+          @if (coverImage) {
+            <img class="preview-cover" [src]="coverImage" [alt]="coverImageAlt" />
+          }
           <h2 class="preview-title">{{ title || 'Untitled story' }}</h2>
           @if (excerpt) {
             <p class="preview-excerpt">{{ excerpt }}</p>
@@ -62,6 +66,7 @@ import { Story, StoryDraft } from '../models/story';
           <label for="story-content">Story text (Markdown)</label>
           <textarea id="story-content" name="content" class="body" rows="18" [(ngModel)]="content"></textarea>
         </form>
+        <app-image-controls [(coverImage)]="coverImage" [(coverImageAlt)]="coverImageAlt" (insert)="addToText($event)" />
       }
 
       @if (!loadFailed()) {
@@ -99,6 +104,8 @@ import { Story, StoryDraft } from '../models/story';
     button:disabled { cursor: wait; opacity: .65; }
     .banner { border: 1px dashed var(--line); color: var(--accent-soft); font: 12px var(--mono); margin: 20px 0 8px; padding: 8px 12px; }
     .preview-title { font: 500 clamp(1.6rem, 5vw, 2.4rem)/1.15 var(--display); margin: 12px 0 6px; }
+    .preview-cover { display: block; max-height: 320px; max-width: 100%; object-fit: contain; }
+    .preview img { max-width: 100%; }
     .preview-excerpt { color: var(--muted); font-style: italic; line-height: 1.6; }
     .preview { line-height: 1.7; max-width: 70ch; }
     .preview :is(h1, h2, h3) { font-family: var(--display); }
@@ -112,6 +119,8 @@ export class StoryFormPage implements OnInit {
   protected content = '';
   protected category = 'Field notes';
   protected tagsText = '';
+  protected coverImage = '';
+  protected coverImageAlt = '';
   protected publishedDate = '';
   private savedDate = '';
 
@@ -169,6 +178,11 @@ export class StoryFormPage implements OnInit {
     }
   }
 
+  // An image uploaded for the text goes at the end, on its own line; Gustavo moves it where it belongs.
+  protected addToText(markdown: string): void {
+    this.content = this.content.trimEnd() + (this.content.trim() ? '\n\n' : '') + markdown + '\n';
+  }
+
   protected togglePreview(): void {
     if (!this.previewing()) {
       this.previewHtml.set(renderMarkdown(this.content));
@@ -216,6 +230,8 @@ export class StoryFormPage implements OnInit {
     this.content = story.content;
     this.category = story.category;
     this.tagsText = story.tags.join(', ');
+    this.coverImage = story.coverImage;
+    this.coverImageAlt = story.coverImageAlt;
     this.publishedDate = story.publishedAtUtc ? story.publishedAtUtc.slice(0, 10) : '';
     this.savedDate = this.publishedDate;
     this.isPublished.set(story.isPublished);
@@ -228,6 +244,8 @@ export class StoryFormPage implements OnInit {
       excerpt: this.excerpt,
       content: this.content,
       category: this.category,
+      coverImage: this.coverImage,
+      coverImageAlt: this.coverImageAlt,
       tags: this.tagsText.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0),
       // Only a date Gustavo changed is sent, so saving a typo fix keeps the exact time of publication.
       publishedAtUtc: this.publishedDate && this.publishedDate !== this.savedDate ? `${this.publishedDate}T00:00:00Z` : null,

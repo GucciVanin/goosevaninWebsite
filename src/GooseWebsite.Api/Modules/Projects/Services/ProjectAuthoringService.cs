@@ -68,6 +68,11 @@ public sealed class ProjectAuthoringService(IProjectRepository projects, TimePro
             return ProjectResult.Invalid(new Dictionary<string, string[]> { ["overview"] = ["Add an overview before publishing."] });
         }
 
+        if (project.CoverImage.Length > 0 && string.IsNullOrWhiteSpace(project.CoverImageAlt))
+        {
+            return ProjectResult.Invalid(new Dictionary<string, string[]> { ["coverImageAlt"] = ["Describe the cover image before publishing."] });
+        }
+
         var now = clock.GetUtcNow().UtcDateTime;
         project.IsPublished = true;
         project.PublishedAtUtc ??= now;
@@ -120,6 +125,11 @@ public sealed class ProjectAuthoringService(IProjectRepository projects, TimePro
             errors["technologies"] = ["A technology cannot contain a comma."];
         }
 
+        if (!string.IsNullOrWhiteSpace(request.CoverImage) && !UploadedImageReference.IsValid(request.CoverImage.Trim()))
+        {
+            errors["coverImage"] = ["The cover image must be an image uploaded in the editor."];
+        }
+
         if (!IsAcceptableLink(request.DemoUrl))
         {
             errors["demoUrl"] = ["The demo link must be a web address starting with http:// or https://."];
@@ -143,6 +153,8 @@ public sealed class ProjectAuthoringService(IProjectRepository projects, TimePro
         project.Title = request.Title.Trim();
         project.Overview = request.Overview.Trim();
         project.Contribution = request.Contribution.Trim();
+        project.CoverImage = request.CoverImage.Trim();
+        project.CoverImageAlt = project.CoverImage.Length == 0 ? string.Empty : request.CoverImageAlt.Trim();
         project.Technologies = string.Join(',', CleanList(request.Technologies));
         project.DemoUrl = string.IsNullOrWhiteSpace(request.DemoUrl) ? null : request.DemoUrl.Trim();
         project.SourceUrl = string.IsNullOrWhiteSpace(request.SourceUrl) ? null : request.SourceUrl.Trim();

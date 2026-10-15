@@ -14,6 +14,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: Data Source=/data/goosewebsite.db
       DataProtection__KeysPath: /data/keys
+      Media__Directory: /data/uploads
       ForwardedHeaders__KnownProxies__0: 172.30.100.2
       PublicBaseUrl: https://${SITE_DOMAIN:-localhost}
       # SMTP and contact settings come from .env (see .env.example); never commit real values.

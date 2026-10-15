@@ -73,6 +73,7 @@ GooseWebsite/
 │   │   │   ├── Accounts/
 │   │   │   ├── Blog/
 │   │   │   ├── Contact/
+│   │   │   ├── Media/
 │   │   │   └── Projects/
 │   │   ├── Shared/                   Cross-cutting infrastructure (section 3.2)
 │   │   │   ├── Email/  Hosting/  Modules/  Persistence/
@@ -133,7 +134,7 @@ flowchart TB
 ```
 
 - `Program.cs` may reference every module; modules never reference `Program`.
-- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Blog** and **Projects** depend on `Shared` and on `Accounts` (for the author entity and the authorization policy names); they do not depend on each other. Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
+- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Media** depends on `Shared` only. **Blog** and **Projects** depend on `Shared` and on `Accounts` (for the author entity and the authorization policy names); they do not depend on each other. Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
 - `Shared` never references a module, with one deliberate exception: `ApplicationDbContext` and `DatabaseService` know `ApplicationUser` from Accounts, because Identity shares the database. Every other module table is discovered through `IEntityTypeConfiguration<T>` without `Shared` naming it.
 - **All database reads and writes go through `DatabaseService`.** A module keeps its own query logic in a service or repository (what to ask for) but calls the gateway (how to ask). Never inject `ApplicationDbContext`, `UserManager`, or `RoleManager` into a module class other than Identity registration. The sanitization, access rules and one-click-one-unit-of-work guarantee (F7-US1) are applied beneath the gateway, so they hold for every module; declare an `EntityAccessRule<T>` next to every new entity (see section 4).
 
@@ -246,6 +247,19 @@ Owns projects (title, overview in Markdown, Gustavo's contribution, technologies
 | `DELETE /api/editor/projects/{id}` | Administrator + CSRF | Removes the project |
 
 `IProjectAuthoringService` owns the rules (title required; links optional but only absolute `http` or `https` addresses; technologies trimmed, de-duplicated by case, no commas; slug from `Shared/Text/Slug` fixed at creation with a numeric suffix on a collision; publication date set at first publish). Queries are in `IProjectRepository`; the access rule is `Domain/ProjectAccessRule.cs`; table `Projects` (migration `AddProjects`). The client has `ProjectFormPage` and `ProjectApi` beside the story ones, and the workspace (`EditorPage`) switches between the two lists.
+
+### 3.6b Media module
+
+Owns image uploads (F4-US5). Source: `Modules/Media/`. Files live in `Media:Directory` (`/data/uploads` in Docker, `uploaded-images` beside the app in development) under generated names; table `ContentImages` records them (readable by administrators only).
+
+| Method and path | Who | What |
+| --- | --- | --- |
+| `POST /api/editor/images` | Administrator + CSRF | Multipart upload of one file; JPEG, PNG or WebP by its first bytes, at most 5 MB (413 over); returns the reference `/uploads/<name>` |
+| `GET /api/editor/images` | Administrator | Lists uploaded images |
+| `DELETE /api/editor/images/{id}` | Administrator + CSRF | Removes the row and the file |
+| `GET /uploads/<name>` | Everyone | Static file, `nosniff`; only files the module wrote exist |
+
+Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
 
 ### 3.7 Authorization matrix
 

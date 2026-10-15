@@ -9,6 +9,8 @@ public sealed record ProjectResponse(
     IReadOnlyList<string> Technologies,
     string? DemoUrl,
     string? SourceUrl,
+    string CoverImage,
+    string CoverImageAlt,
     bool IsPublished,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,

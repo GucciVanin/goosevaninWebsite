@@ -380,7 +380,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Decided 2026-10-15 (with Gustavo; TE9 folded in as the first step):**
 - Saving never publishes. **Publish** and **Return to draft** are explicit actions; a new story is always a draft; publishing is idempotent (publishing again changes nothing). The first publish records the **publication date**, which Gustavo may change afterwards (for example to backdate an older story); it is kept when the story returns to draft.
 - A draft can be saved with only a title; **publishing needs an excerpt and the story text**. A save without a title, or a tag containing a comma, is refused with the field named, and nothing is stored.
-- The story body is **Markdown**, shown with raw HTML switched off (`markdown-it`); the preview renders it and labels a draft "not public". Cover images and the Projects switch wait for Sprint 4 (F4-US5, F4-US4), so the "optional cover image" part of acceptance test 1 is completed there.
+- The story body is **Markdown**, shown with raw HTML switched off (`markdown-it`); the preview renders it and labels a draft "not public". Cover images and the Projects switch wait for Sprint 4 (F4-US5, F4-US4), so the "optional cover image" part of acceptance test 1 is completed there (done 2026-10-16 with F4-US5).
 - The editor API moved to `/api/editor/stories` (everything admin-only, CSRF on writes); `/api/blog` keeps only the public reads. The code names (`BlogPost`, table `BlogPosts`) stay for now and are renamed together with F5.
 - The authoring rules live in `IBlogAuthoringService` (TE9): the slug is fixed once created (letters and digits only, accents dropped, numeric suffix on a collision), tags are trimmed and de-duplicated by case, and timestamps are set in one place. The leftover API limits on title, excerpt and category were removed (blog text has no length limit).
 
@@ -424,9 +424,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Implementation evidence (2026-10-16):** `ProjectEditorApiTests` (API) reopen a saved project with every field equal (acceptance test 1), show a draft is a 404 for the public and absent from the public list while the editor can open it, and an anonymous caller gets 401 (test 2); saving does not publish, publishing makes the project public once, and publishing again keeps the date (test 3); a missing title, a comma in a technology, a missing overview at publish, and links that are not web addresses are refused with the field named and nothing is stored or published (test 4). Client specs cover the project form and the workspace switch. The container run exercises the same flows (`75-projects.sh`).
 ### User Story F4-US5: Upload Content Images
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can upload and associate images with a story or project from my device.
+
+**Decided 2026-10-16 (with Gustavo):** Images are stored as files in a folder on the data volume (`Media:Directory`, `/data/uploads` in Docker) under generated names and served publicly at `/uploads/<name>` with `X-Content-Type-Options: nosniff`. A file is accepted only when its first bytes say it is a JPEG, PNG or WebP (the uploaded name and the type the browser sent are never trusted) and it is at most 5 MB; anything else is refused before anything is written. An image that no story or project uses is kept (it is not deleted automatically); Gustavo can list uploaded images and delete one (`GET` and `DELETE /api/editor/images`). Each story and project has an optional cover image with a description (alt text) that publishing requires, and an image can be added inside the text as Markdown after typing its description. Cover images and inline images may only refer to `/uploads/<generated name>`, never another site. **Not yet built:** a screen listing uploaded images for manual deletion (the API exists); it is added when Gustavo asks for it.
 
 **Acceptance tests:**
 
@@ -438,9 +440,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Tasks:**
 
 - [x] Choose allowed formats and maximum size: JPEG, PNG, and WebP, 5 MB, generated file names (decided 2026-10-02).
-- [ ] Choose the storage location and the deletion behavior for unreferenced images (see "Decisions to Record").
-- [ ] Implement administrator-only upload handling, content-type/size validation, and safe image references.
-- [ ] Test allowed, oversized, disallowed, and unauthenticated uploads; assert response, storage state, and preview rendering.
+- [x] Choose the storage location and the deletion behavior for unreferenced images (see "Decisions to Record").
+- [x] Implement administrator-only upload handling, content-type/size validation, and safe image references.
+- [x] Test allowed, oversized, disallowed, and unauthenticated uploads; assert response, storage state, and preview rendering.
+
+
+**Implementation evidence (2026-10-16):** `ImageUploadApiTests` upload a JPEG, PNG and WebP (stored under a generated name whatever the uploaded name says, served publicly with the real type and `nosniff`, bytes unchanged), refuse text, an SVG with a script and a GIF named `.png` (nothing is stored), refuse 5 MB plus one byte with 413 and accept exactly 5 MB (acceptance tests 1 and 2), refuse anonymous callers with 401 and administrators without the CSRF token with 400 with nothing stored (test 3), delete an image with its file, and prove a cover image must be an uploaded image on stories and projects and needs a description to publish (test 4). Client specs cover the image controls and the Markdown image rendering. The container run exercises uploads end to end (`78-images.sh`).
 
 **Feature estimate:** 11 US (132 hours)
 
@@ -879,7 +884,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 - Contact mail provider, sender identity, verification-link lifetime, pending-message storage mechanism, and delivery retry policy. (Current state: MailerSend SMTP configured through `Email:Smtp:*`, 30-minute in-memory pending store, no automatic retry.)
 - Contact rate-limit threshold and exact abuse-control combination.
 - Confirm F3 credential policy (the 12-character minimum is decided), verification/reset token lifetime, lockout duration, and authentication endpoint rate limits.
-- Image storage location and deletion behavior for unreferenced uploads (formats and size are decided; proposed default: `/data/uploads` on the data volume, and delete an image when its content item is deleted).
+- ~~Image storage location and deletion behavior for unreferenced uploads~~ Decided 2026-10-16: files on the data volume, unreferenced images are kept and can be listed and deleted by Gustavo (see F4-US5).
 - Member profiles (F8): profile URL scheme and where the profile data lives (proposed: a new `Profiles` module with its own table, one row per user).
 - F7: how access rules are declared (per entity or per operation) and how a rejected operation is reported.
 - Automated test tools for browsers and accessibility (see enabler TE5).
