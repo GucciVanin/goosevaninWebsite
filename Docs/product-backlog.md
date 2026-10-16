@@ -794,7 +794,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Estimate:** 3 US (36 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see a home page whose layout and section order follow Gustavo's inspiration image closely and still make who he is and how to contact him clear.
 
-**Progress 2026-10-16:** the hero is rebuilt to the mockup (animated React scene, eyebrow, SOFTWARE ENGINEER headline, three-line intro, Explore my work button) with the four category cards (Applications, Cloud & DevOps, Security, Systems & Tools), each with its icon, accent and image strip (cropped from the mockup). Still to do: the approach, selected work, skills, blog and contact sections below are not restyled yet, the card copy review with Gustavo, and Gustavo's portrait in About.
+**Progress 2026-10-16:** the hero is rebuilt to the mockup (the animated React scene with shifting sky light, ships crossing the skyline, a pulsing terminal with scrolling scanlines, flickering neon and drifting haze, extending behind the cards and fading out, responsive and reduced-motion aware, eyebrow, SOFTWARE ENGINEER headline, three-line intro, Explore my work button) with the four category cards (Applications, Cloud & DevOps, Security, Systems & Tools), each with its icon, accent and image strip (cropped from the mockup). Still to do: the approach, selected work, skills, blog and contact sections below are not restyled yet, the card copy review with Gustavo, and Gustavo's portrait in About.
 
 **Acceptance tests:**
 

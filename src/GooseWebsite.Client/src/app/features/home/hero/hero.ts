@@ -1,12 +1,10 @@
 import { Component, output } from '@angular/core';
-import { ArtScene } from '../../../shared/brand/art-scene';
 import { profile } from '../../../shared/models/profile';
 
 // The home entry point, built to the landing-page mockup: headline, three-line intro, and one action over the
 // animated scene. Gustavo's name, title and location stay available to assistive technology and search.
 @Component({
   selector: 'app-hero',
-  imports: [ArtScene],
   templateUrl: './hero.html',
   styleUrl: './hero.scss',
 })

@@ -47,7 +47,7 @@ interface Category {
     </section>
   `,
   styles: `
-    :host { display: block; margin-top: calc(var(--gcv-space-8) * -1); position: relative; z-index: 1; }
+    :host { display: block; margin-top: calc(var(--gcv-space-7) * -1); position: relative; z-index: 1; }
     .categories { margin: 0 auto; max-width: 1500px; padding: 0 var(--gcv-gutter); }
     ul { display: grid; gap: var(--gcv-space-5); grid-template-columns: 1fr; list-style: none; margin: 0; padding: 0; }
     @media (min-width: 560px) { ul { grid-template-columns: repeat(2, 1fr); } }

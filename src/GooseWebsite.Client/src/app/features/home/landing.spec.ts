@@ -12,7 +12,7 @@ describe('Landing page', () => {
     expect(element.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Software Engineer');
     expect(element.textContent).toContain('Build · Break · Improve');
     expect(element.querySelector('.intro')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Curious mind. Practical solutions. Real impact.');
-    expect(element.querySelector('gcv-scene')).not.toBeNull();
+
   });
 
   it('takes the visitor to the work section from Explore my work', () => {

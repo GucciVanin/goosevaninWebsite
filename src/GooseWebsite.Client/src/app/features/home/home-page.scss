@@ -1,2 +1,17 @@
 /* Lets section components participate directly in the shared home-page layout. */
 :host { display: contents; }
+
+.landing {
+  --hero-h: clamp(560px, 88vh, 920px);
+  isolation: isolate;
+  padding-bottom: var(--gcv-space-8);
+  position: relative;
+}
+/* The art runs from the top of the page to just behind the top of the category cards, and fades out there. */
+.scene {
+  --scene-fade-start: 78%;
+  height: calc(var(--hero-h) + 110px);
+  inset: 0 0 auto 0;
+  position: absolute;
+  z-index: -2;
+}

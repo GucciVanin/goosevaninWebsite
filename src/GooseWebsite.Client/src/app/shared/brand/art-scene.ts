@@ -11,8 +11,8 @@ const ScriptId = 'gcv-art-script';
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `<gcv-scene></gcv-scene>`,
   styles: `
-    :host { display: block; }
-    gcv-scene { display: block; }
+    :host { display: block; height: 100%; }
+    gcv-scene { display: block; height: 100%; }
   `,
 })
 export class ArtScene implements OnInit {
