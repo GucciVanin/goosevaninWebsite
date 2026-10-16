@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client-dev",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["start", "--prefix", "src/GooseWebsite.Client", "--", "--port", "4300"],
+      "port": 4300
+    }
+  ]
+}

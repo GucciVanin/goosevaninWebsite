@@ -254,12 +254,12 @@ Owns image uploads (F4-US5). Source: `Modules/Media/`. Files live in `Media:Dire
 
 | Method and path | Who | What |
 | --- | --- | --- |
-| `POST /api/editor/images` | Administrator + CSRF | Multipart upload of one file; JPEG, PNG or WebP by its first bytes, at most 5 MB (413 over); returns the reference `/uploads/<name>` |
+| `POST /api/editor/images` | Administrator + CSRF | Multipart upload of one file; JPEG, PNG, WebP or GIF by its first bytes, at most 5 MB (413 over); returns the reference `/uploads/<name>` |
 | `GET /api/editor/images` | Administrator | Lists uploaded images |
 | `DELETE /api/editor/images/{id}` | Administrator + CSRF | Removes the row and the file |
 | `GET /uploads/<name>` | Everyone | Static file, `nosniff`; only files the module wrote exist |
 
-Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
+Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp|gif>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
 
 ### 3.7 Authorization matrix
 
@@ -470,6 +470,15 @@ The public site is one long page with anchors (`home`, `work`, `approach`, `blog
 
 Build facts: output goes to `../GooseWebsite.Api/wwwroot`; production budgets warn at 500 kB and fail at 1 MB for the initial bundle; `ng serve` proxies `/api` to `https://localhost:8889` through `proxy.conf.json`.
 
+### 6.1 Design system (F9-US1)
+
+Direction (Gustavo, 2026-10-16): a mostly black/charcoal interface that stays extremely clean, with electric cyan as the main accent and magenta as the small secondary one; the artwork carries the visual complexity. The category cards keep their own green (Security) and orange (Systems & Tools) accents. Source material is in `Docs/Inspirations/`.
+
+- **Tokens** are CSS custom properties in `app/shared/styles/tokens.scss`, all named `--gcv-*`: surfaces (`bg-0..2`, `line`), text (`text`, `text-muted`, `text-faint`), accents (`cyan`, `magenta`, `violet`, `green`, `orange`), type (families Michroma / DM Sans / JetBrains Mono, a size scale, tracking), space (4 px base), shape (`radius-card`, `bracket-size`), motion (`motion-fast/base/slow`, which become instant under `prefers-reduced-motion`) and focus. The file records how each value traces to `LandingPageInspiration.png`. The old names (`--paper`, `--accent`...) remain as aliases so earlier screens already follow the palette; they are removed once F9-US2 to F9-US5 have moved every screen to the `gcv` names. **Rule: no screen uses a colour, font, size or spacing literal; it uses a token.**
+- **Base components** are global classes in `app/shared/styles/components.scss`: `gcv-eyebrow`, `gcv-heading` (with `--hero`, `--section`, `--card`; an `<em>` inside gets the cyan-to-white gradient), `gcv-label`, `gcv-link`, `gcv-btn` (corner brackets; `--solid`), `gcv-field`, `gcv-chip`, `gcv-rule`, and one site-wide visible focus style.
+- **Angular brand components** in `app/shared/brand/`: `BrandLogo` (resized WebP copies of the supplied raster logo: `public/brand/gcv-logo-192.webp` and `-512.webp`; descriptive alt text; never below 48 px; clear space equal to half its height), `ArtScene` and `ProjectPanel` (a "system diagnostic" panel: picture or GIF, technology stack, and a VIEW CASE control that opens the case in place with the demo and source links and a link to `/projects/<slug>`, the full post built by F5-US1).
+- **React island.** The animated hero scene (from `Docs/Inspirations/cyberpunk-react-loop`) is a React component in `client/art/`, built by Vite (`npm run build:art`, run automatically before `npm run build` and `npm start`) into `public/art/gcv-scene.js` (git-ignored, about 85 kB compressed), which defines the `<gcv-scene>` custom element in a shadow root. `ArtScene` loads that script the first time a page needs it, so pages without the scene never download React. The scene is decoration (hidden from assistive technology, no pointer input) and stops moving under `prefers-reduced-motion`. The hero artwork is `public/brand/hero-city.webp` (and a 960 px copy for narrow screens), optimized from the supplied PNG (2.3 MB to 207 kB). Future React-only animation goes in `client/art/` the same way. React is used only there; the application stays Angular.
+- **Review page.** `/design` (`features/design/design-page.ts`) shows every token and component with the scene and a sample project panel, for Gustavo's approval. It holds sample content and is removed before R1 ships (with TE4).
 ## 7. Configuration, build, and operations
 
 ### 7.1 Configuration reference

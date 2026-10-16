@@ -8,6 +8,7 @@ public static class ImageSniffer
     public static readonly Kind Jpeg = new("jpg", "image/jpeg");
     public static readonly Kind Png = new("png", "image/png");
     public static readonly Kind Webp = new("webp", "image/webp");
+    public static readonly Kind Gif = new("gif", "image/gif");
 
     private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
@@ -27,6 +28,12 @@ public static class ImageSniffer
         if (header.Length >= 12 && header[..4].SequenceEqual("RIFF"u8) && header.Slice(8, 4).SequenceEqual("WEBP"u8))
         {
             return Webp;
+        }
+
+        // GIF files start with "GIF87a" or "GIF89a".
+        if (header.Length >= 6 && (header[..6].SequenceEqual("GIF87a"u8) || header[..6].SequenceEqual("GIF89a"u8)))
+        {
+            return Gif;
         }
 
         return null;

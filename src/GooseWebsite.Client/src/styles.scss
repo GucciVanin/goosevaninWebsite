@@ -1,20 +1,8 @@
 /* Establishes shared design tokens before Angular component styles are applied. */
+@use './app/shared/styles/tokens';
+@use './app/shared/styles/components';
 @use './app/shared/styles/site';
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
-:root {
-  --paper: #071013;
-  --ink: #d8fff2;
-  --muted: #7ca69d;
-  --line: #183a3b;
-  --line-strong: #2c6460;
-  --accent: #ff4f8b;
-  --accent-soft: #80ffcf;
-  --sage: #103c3b;
-  --sand: #102b31;
-  --display: 'Playfair Display', Georgia, serif;
-  --body: 'DM Sans', sans-serif;
-  --mono: 'DM Mono', monospace;
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap');
 * {
   box-sizing: border-box;
 }

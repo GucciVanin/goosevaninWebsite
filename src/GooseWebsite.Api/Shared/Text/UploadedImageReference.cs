@@ -8,7 +8,7 @@ public static partial class UploadedImageReference
 {
     public const string UrlPrefix = "/uploads/";
 
-    [GeneratedRegex(@"^/uploads/[0-9a-f]{32}\.(jpg|png|webp)$")]
+    [GeneratedRegex(@"^/uploads/[0-9a-f]{32}\.(jpg|png|webp|gif)$")]
     private static partial Regex Pattern();
 
     public static bool IsValid(string? reference) => reference is not null && Pattern().IsMatch(reference);

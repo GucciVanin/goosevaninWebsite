@@ -5,7 +5,7 @@ using Xunit;
 
 namespace GooseWebsite.Api.Tests;
 
-// F4-US5: Gustavo uploads images from his device. Only real JPEG, PNG and WebP files up to 5 MB are stored, under
+// F4-US5: Gustavo uploads images from his device. Only real JPEG, PNG, WebP and GIF files up to 5 MB are stored, under
 // generated names; nothing else is stored or publicly addressable; strangers cannot upload.
 public sealed class ImageUploadApiTests
 {
@@ -15,6 +15,7 @@ public sealed class ImageUploadApiTests
     private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0];
     private static readonly byte[] Jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10, 0x4A, 0x46];
     private static readonly byte[] Webp = "RIFF\0\0\0\0WEBPVP8 "u8.ToArray();
+    private static readonly byte[] Gif = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 1, 0, 1, 0];
 
     private static async Task<(AuthApiFactory Factory, HttpClient Client)> SignedInAsync()
     {
@@ -50,11 +51,12 @@ public sealed class ImageUploadApiTests
     [InlineData("png", "image/png")]
     [InlineData("jpg", "image/jpeg")]
     [InlineData("webp", "image/webp")]
+    [InlineData("gif", "image/gif")]
     public async Task AnAllowedImageIsStoredUnderAGeneratedName_AndServedWithItsRealType(string extension, string contentType)
     {
         var (factory, client) = await SignedInAsync();
         using var host = factory;
-        var bytes = extension switch { "png" => Png, "jpg" => Jpeg, _ => Webp };
+        var bytes = extension switch { "png" => Png, "jpg" => Jpeg, "gif" => Gif, _ => Webp };
 
         // The uploaded file name and its extension are not trusted: this one claims to be a script.
         var response = await UploadAsync(client, bytes, "../../evil.js");
@@ -77,7 +79,7 @@ public sealed class ImageUploadApiTests
     [Theory]
     [InlineData("a script named like an image")]
     [InlineData("<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>")]
-    [InlineData("GIF89a not an allowed format")]
+    [InlineData("BM a bitmap is not an allowed format")]
     public async Task ANonImageIsRefused_AndNothingIsStored(string text)
     {
         var (factory, client) = await SignedInAsync();

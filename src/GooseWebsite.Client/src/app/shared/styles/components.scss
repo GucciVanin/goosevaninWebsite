@@ -1,0 +1,133 @@
+/*
+ * Base components (F9-US1), as global classes so every screen builds from the same pieces. All values are tokens.
+ * Usage is documented in Docs/architecture.md ("Design system").
+ */
+.gcv-eyebrow {
+  color: var(--gcv-magenta);
+  font: 500 var(--gcv-text-xs) / 1 var(--gcv-font-mono);
+  letter-spacing: var(--gcv-track-label);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.gcv-heading {
+  font-family: var(--gcv-font-display);
+  font-weight: 400;
+  letter-spacing: var(--gcv-track-display);
+  line-height: var(--gcv-leading-tight);
+  margin: 0;
+  text-transform: uppercase;
+}
+.gcv-heading--hero { font-size: var(--gcv-text-hero); }
+.gcv-heading--section { font-size: var(--gcv-text-2xl); }
+.gcv-heading--card { font-size: var(--gcv-text-lg); }
+.gcv-heading em {
+  background: linear-gradient(90deg, var(--gcv-cyan), var(--gcv-text));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: normal;
+}
+
+.gcv-label,
+.gcv-field label {
+  color: var(--gcv-text-muted);
+  font: 500 var(--gcv-text-xs) / 1.4 var(--gcv-font-mono);
+  letter-spacing: var(--gcv-track-label);
+  text-transform: uppercase;
+}
+
+.gcv-link {
+  color: var(--gcv-cyan);
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+.gcv-link:hover { text-decoration: underline; }
+
+/* A button with thin corner brackets, as in the mockup. Text stays uppercase mono. */
+.gcv-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--gcv-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: 500 var(--gcv-text-sm) / 1 var(--gcv-font-mono);
+  gap: var(--gcv-space-3);
+  letter-spacing: var(--gcv-track-label);
+  min-height: var(--gcv-control-height);
+  padding: var(--gcv-space-3) var(--gcv-space-5);
+  position: relative;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color var(--gcv-motion-base) var(--gcv-ease);
+}
+.gcv-btn::before,
+.gcv-btn::after {
+  border: 0 solid var(--gcv-violet);
+  content: '';
+  height: var(--gcv-bracket-size);
+  position: absolute;
+  transition: border-color var(--gcv-motion-base) var(--gcv-ease), transform var(--gcv-motion-base) var(--gcv-ease);
+  width: var(--gcv-bracket-size);
+}
+.gcv-btn::before { border-left-width: 1px; border-top-width: 1px; left: 0; top: 0; }
+.gcv-btn::after { border-bottom-width: 1px; border-right-width: 1px; bottom: 0; right: 0; }
+.gcv-btn:hover { color: var(--gcv-cyan); }
+.gcv-btn:hover::before { border-color: var(--gcv-cyan); transform: translate(-2px, -2px); }
+.gcv-btn:hover::after { border-color: var(--gcv-cyan); transform: translate(2px, 2px); }
+.gcv-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.gcv-btn--solid {
+  background: var(--gcv-cyan);
+  color: var(--gcv-on-accent);
+  font-weight: 700;
+}
+.gcv-btn--solid::before,
+.gcv-btn--solid::after { display: none; }
+.gcv-btn--solid:hover { background: var(--gcv-cyan-soft); color: var(--gcv-on-accent); }
+
+.gcv-field { display: grid; gap: var(--gcv-space-2); }
+.gcv-field input,
+.gcv-field textarea,
+.gcv-field select {
+  background: var(--gcv-bg-1);
+  border: 1px solid var(--gcv-line-strong);
+  border-radius: var(--gcv-radius-0);
+  box-sizing: border-box;
+  color: var(--gcv-text);
+  font: var(--gcv-text-md) / var(--gcv-leading-body) var(--gcv-font-body);
+  min-height: var(--gcv-control-height);
+  padding: var(--gcv-space-3);
+  width: 100%;
+}
+.gcv-field input:focus-visible,
+.gcv-field textarea:focus-visible,
+.gcv-field select:focus-visible { border-color: var(--gcv-cyan); }
+
+.gcv-chip {
+  border: 1px solid var(--gcv-line-strong);
+  color: var(--gcv-text-muted);
+  display: inline-block;
+  font: 500 var(--gcv-text-xs) / 1 var(--gcv-font-mono);
+  letter-spacing: 0.08em;
+  padding: var(--gcv-space-1) var(--gcv-space-2);
+  text-transform: uppercase;
+}
+
+.gcv-rule {
+  background: linear-gradient(90deg, var(--gcv-cyan), var(--gcv-magenta) 60%, transparent);
+  border: 0;
+  height: 1px;
+  margin: 0;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: var(--gcv-focus);
+  outline-offset: var(--gcv-focus-offset);
+}
