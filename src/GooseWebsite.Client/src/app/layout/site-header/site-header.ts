@@ -1,5 +1,6 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BrandLogo } from '../../shared/brand/brand-logo';
 import { AuthApi } from '../../features/auth/api/auth-api';
 import { NavigationItem } from '../../shared/models/navigation-item';
 import { profile } from '../../shared/models/profile';
@@ -7,7 +8,7 @@ import { profile } from '../../shared/models/profile';
 // Keeps navigation behavior and accessibility shared across all site pages.
 @Component({
   selector: 'app-site-header',
-  imports: [RouterLink],
+  imports: [BrandLogo, RouterLink],
   templateUrl: './site-header.html',
   styleUrl: './site-header.scss',
 })

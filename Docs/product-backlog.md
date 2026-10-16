@@ -767,10 +767,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US2: Redesign the Site Shell
 
-**Status:** Proposed  
+**Status:** In Progress (started 2026-10-16)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
+
+**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Page transitions, a mobile menu and the narrow-screen checks are not done yet.
 
 **Acceptance tests:**
 
@@ -787,10 +789,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US3: Redesign the Home Page
 
-**Status:** Proposed  
+**Status:** In Progress (started 2026-10-16)  
 **Release:** R1  
 **Estimate:** 3 US (36 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see a home page whose layout and section order follow Gustavo's inspiration image closely and still make who he is and how to contact him clear.
+
+**Progress 2026-10-16:** the hero is rebuilt to the mockup (animated React scene, eyebrow, SOFTWARE ENGINEER headline, three-line intro, Explore my work button) with the four category cards (Applications, Cloud & DevOps, Security, Systems & Tools), each with its icon, accent and image strip (cropped from the mockup). Still to do: the approach, selected work, skills, blog and contact sections below are not restyled yet, the card copy review with Gustavo, and Gustavo's portrait in About.
 
 **Acceptance tests:**
 

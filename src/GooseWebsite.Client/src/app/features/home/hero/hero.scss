@@ -1,2 +1,54 @@
-/* Keeps hero presentation governed by the shared site stylesheet. */
-:host { display: contents; }
+:host { display: block; }
+
+.gcv-hero {
+  isolation: isolate;
+  min-height: clamp(560px, 88vh, 920px);
+  overflow: hidden;
+  position: relative;
+}
+.scene { inset: 0; position: absolute; z-index: -2; }
+.veil {
+  background:
+    linear-gradient(90deg, var(--gcv-bg-0) 0%, rgba(5, 6, 13, 0.82) 30%, rgba(5, 6, 13, 0.25) 58%, transparent 75%),
+    linear-gradient(0deg, var(--gcv-bg-0) 0%, transparent 28%);
+  inset: 0;
+  position: absolute;
+  z-index: -1;
+}
+
+.copy {
+  display: grid;
+  gap: var(--gcv-space-5);
+  justify-items: start;
+  max-width: 600px;
+  padding: clamp(120px, 24vh, 220px) var(--gcv-gutter) var(--gcv-space-8);
+}
+.underline {
+  background: linear-gradient(90deg, var(--gcv-cyan) 0 25%, var(--gcv-magenta) 25% 100%);
+  height: 2px;
+  margin-top: calc(var(--gcv-space-3) * -1);
+  width: min(300px, 70%);
+}
+.intro {
+  color: var(--gcv-text);
+  font: var(--gcv-text-md) / 1.9 var(--gcv-font-mono);
+  letter-spacing: 0.16em;
+  margin: 0;
+  text-transform: uppercase;
+}
+.sr-only {
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 700px) {
+  .veil {
+    background: linear-gradient(0deg, var(--gcv-bg-0) 0%, rgba(5, 6, 13, 0.7) 45%, rgba(5, 6, 13, 0.35) 100%);
+  }
+  .copy { align-content: end; min-height: clamp(560px, 88vh, 920px); padding-top: 96px; }
+}

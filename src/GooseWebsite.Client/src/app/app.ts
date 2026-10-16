@@ -24,10 +24,9 @@ export class App {
 
   protected readonly navItems: NavigationItem[] = [
     { label: 'Home', id: 'home' },
-    { label: 'Work', id: 'work' },
-    { label: 'Approach', id: 'approach' },
-    { label: 'Blog', id: 'blog' },
-    { label: 'Contact', id: 'contact' },
+    { label: 'Projects', id: 'work' },
+    { label: 'Skills', id: 'skills' },
+    { label: 'About', id: 'approach' },
   ];
 
   constructor() {
