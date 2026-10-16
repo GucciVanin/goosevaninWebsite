@@ -1,2 +1,65 @@
-/* Lets shared shell styles position the header without an extra layout box. */
+/* The header floats over the hero artwork, as in the landing-page mockup, and hides while scrolling down. */
 :host { display: contents; }
+
+.gcv-bar {
+  align-items: center;
+  display: flex;
+  gap: var(--gcv-space-5);
+  justify-content: space-between;
+  left: 0;
+  padding: var(--gcv-space-2) var(--gcv-gutter);
+  position: fixed;
+  right: 0;
+  top: 0;
+  transition: transform var(--gcv-motion-base) var(--gcv-ease), background var(--gcv-motion-base) var(--gcv-ease);
+  z-index: 20;
+}
+.gcv-bar.header-hidden { pointer-events: none; transform: translateY(-110%); }
+
+.logo-link { display: inline-block; }
+
+.gcv-nav { display: flex; flex: 1; gap: clamp(16px, 3vw, 40px); margin-left: var(--gcv-space-5); }
+.gcv-nav a {
+  color: var(--gcv-text-muted);
+  font: 500 var(--gcv-text-xs) / 1 var(--gcv-font-mono);
+  letter-spacing: var(--gcv-track-label);
+  padding: var(--gcv-space-3) 0;
+  position: relative;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color var(--gcv-motion-base) var(--gcv-ease);
+}
+.gcv-nav a:hover, .gcv-nav a.active { color: var(--gcv-text); }
+.gcv-nav a.active::after {
+  background: var(--gcv-violet);
+  bottom: 2px;
+  content: '';
+  height: 2px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.gcv-actions { align-items: center; display: flex; gap: var(--gcv-space-4); }
+.topbar-login, .topbar-editor {
+  border: 0;
+  color: var(--gcv-text-muted);
+  font: 500 var(--gcv-text-xs) / 1 var(--gcv-font-mono);
+  letter-spacing: var(--gcv-track-label);
+  padding: var(--gcv-space-3) 0;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.topbar-login:hover, .topbar-editor:hover { color: var(--gcv-cyan); }
+
+.gcv-icons { align-items: center; display: inline-flex; gap: var(--gcv-space-3); }
+.gcv-icons a { color: var(--gcv-text); display: inline-grid; height: 28px; place-items: center; width: 28px; }
+.gcv-icons a:hover { color: var(--gcv-cyan); }
+.gcv-icons svg { height: 20px; width: 20px; }
+.divider { background: var(--gcv-line-strong); height: 18px; width: 1px; }
+
+@media (max-width: 760px) {
+  .gcv-nav { display: none; }
+  .gcv-actions { margin-left: auto; }
+  .topbar-login, .topbar-editor { display: none; }
+}

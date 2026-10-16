@@ -325,7 +325,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US1: Navigate and Manage Content in the Editor
 
-**Status:** In Progress (stories part approved 2026-10-15, pull request merged; the Projects switch implemented 2026-10-16, awaiting approval)  
+**Status:** Done (stories part approved 2026-10-15; the Projects switch approved 2026-10-16, pull request merged)  
 **Estimate:** 3 US (36 hours)  
 **Goal:** As Gustavo, I can use a private editor workspace to find and manage my projects and stories without editing source files.
 
@@ -401,7 +401,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US4: Manage Projects as Drafts
 
-**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
+**Status:** Done (implemented 2026-10-16; approved 2026-10-16, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can create and edit a project with its overview, my contribution, tools, images, and demo/source links.
 
@@ -424,7 +424,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Implementation evidence (2026-10-16):** `ProjectEditorApiTests` (API) reopen a saved project with every field equal (acceptance test 1), show a draft is a 404 for the public and absent from the public list while the editor can open it, and an anonymous caller gets 401 (test 2); saving does not publish, publishing makes the project public once, and publishing again keeps the date (test 3); a missing title, a comma in a technology, a missing overview at publish, and links that are not web addresses are refused with the field named and nothing is stored or published (test 4). Client specs cover the project form and the workspace switch. The container run exercises the same flows (`75-projects.sh`).
 ### User Story F4-US5: Upload Content Images
 
-**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
+**Status:** Done (implemented 2026-10-16; approved 2026-10-16, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can upload and associate images with a story or project from my device.
 
@@ -736,10 +736,17 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US1: Establish Brand and Design Tokens
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I get a documented brand foundation (logo, colors, typography, spacing, and base components) taken from my inspiration image, so every screen is built from the same pieces.
+
+**Decided 2026-10-16 (with Gustavo, after the inspiration files arrived in `Docs/Inspirations`):**
+- **Look:** mostly black/charcoal and extremely clean; electric cyan is the main accent and magenta the small secondary one; the artwork carries the complexity, the interface does not glow. The four category cards keep their own accents (magenta, cyan, green, orange).
+- **React:** Gustavo wants React's moving art. The client stays Angular; the animated scene is a React component built into a `<gcv-scene>` custom element (a React island, `client/art`) that Angular pages load on demand. Future animated art is added there.
+- **Project panels:** a project appears as a system-diagnostic panel (picture or GIF, technology stack, a small VIEW CASE control that opens the case in place, with the demo and source links and a link to the full project post). The panel component is built here; the full post page is F5-US1.
+- **GIF:** F4-US5 now also accepts GIF (checked by content, still 5 MB) so a project can show a GIF.
+- **Logo and artwork:** the supplied `GCVLogo.svg` is a transparent raster inside an SVG; the site serves resized WebP copies (192 and 512 px wide). The hero artwork is served as WebP (207 kB from 2.3 MB).
 
 **Acceptance tests:**
 
@@ -750,17 +757,22 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Receive the logo SVG and the inspiration image; record the design analysis (regions, palette, typography, imagery, animation) in this feature.
-- [ ] Define the token system (client styles) and document it in `architecture.md`.
-- [ ] Add the logo asset with accessible markup; build base components (buttons, links, form fields, headings).
+- [x] Receive the logo SVG and the inspiration image; record the design analysis (regions, palette, typography, imagery, animation) in this feature.
+- [x] Define the token system (client styles) and document it in `architecture.md`.
+- [x] Add the logo asset with accessible markup; build base components (buttons, links, form fields, headings).
 - [ ] Review with Gustavo and record approval.
+
+
+**Implementation evidence (2026-10-16):** the logo renders from resized WebP copies with descriptive alt text and a 48 px minimum (spec `brand.spec.ts`, test 1); every colour, font, size, space, radius and timing is a named `--gcv-*` token in `tokens.scss` with its trace to the inspiration image in the file's header (test 2); the base components are global classes in `components.scss` and the token rule is written in `architecture.md` section 6.1 (test 3); the `/design` page applies everything, with the animated React scene and a sample project panel, for Gustavo's review (test 4, **pending his approval**; the last task stays open until then). Client specs: 66 pass, including the project panel opening in place with its link to the full post. The container run exercises `/design` in `30-pages.sh`.
 
 ### User Story F9-US2: Redesign the Site Shell
 
-**Status:** Proposed  
+**Status:** In Progress (started 2026-10-16)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
+
+**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. Page transitions, a mobile menu and the narrow-screen checks are not done yet.
 
 **Acceptance tests:**
 
@@ -777,10 +789,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US3: Redesign the Home Page
 
-**Status:** Proposed  
+**Status:** In Progress (started 2026-10-16)  
 **Release:** R1  
 **Estimate:** 3 US (36 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see a home page whose layout and section order follow Gustavo's inspiration image closely and still make who he is and how to contact him clear.
+
+**Progress 2026-10-16:** the hero is rebuilt to the mockup (the animated React scene with shifting sky light, ships crossing the skyline, a pulsing terminal with scrolling scanlines, flickering neon and drifting haze, extending behind the cards and fading out, responsive and reduced-motion aware, eyebrow, SOFTWARE ENGINEER headline, three-line intro, Explore my work button) with the four category cards (Applications, Cloud & DevOps, Security, Systems & Tools), each with its icon, accent and image strip (cropped from the mockup). The sections below the cards are restyled too (2026-10-16): About with the portrait, Projects (published projects as diagnostic panels, no sample content), Skills as three cards, Stories and Contact on the same tokens. Still to do: the card copy review with Gustavo and his approval.
 
 **Acceptance tests:**
 
@@ -947,12 +961,12 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F1 Public Profile | R1 | 2 US / 24 hours | Done | 2 of 2 |
 | F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
 | F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 2 of 4 |
-| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | In Progress | 2 of 5 |
+| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | Done | 5 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **10 of 30** |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **13 of 30** |
 
 By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

@@ -24,10 +24,10 @@ export class App {
 
   protected readonly navItems: NavigationItem[] = [
     { label: 'Home', id: 'home' },
-    { label: 'Work', id: 'work' },
-    { label: 'Approach', id: 'approach' },
-    { label: 'Blog', id: 'blog' },
-    { label: 'Contact', id: 'contact' },
+    { label: 'Projects', id: 'work' },
+    { label: 'Skills', id: 'skills' },
+    { label: 'About', id: 'approach' },
+    { label: 'Stories', id: 'blog' },
   ];
 
   constructor() {
@@ -38,7 +38,7 @@ export class App {
 
   private isAuthenticationRoute(url: string): boolean {
     const path = url.split(/[?#]/, 1)[0];
-    return ['/sign-in', '/verify-email', '/contact/verify', '/access-denied'].includes(path) || path === '/editor' || path.startsWith('/editor/');
+    return ['/sign-in', '/verify-email', '/contact/verify', '/access-denied', '/design'].includes(path) || path === '/editor' || path.startsWith('/editor/');
   }
 
   @HostListener('window:scroll', [])

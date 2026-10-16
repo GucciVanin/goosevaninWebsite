@@ -4,11 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ImageApi, UploadedImage } from '../api/image-api';
 
 const MaxBytes = 5 * 1024 * 1024;
-const Allowed = ['image/jpeg', 'image/png', 'image/webp'];
+const Allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 // Image handling for the story and project forms: a cover image with its alternative text, and images placed inside
 // the text (as Markdown). Files are checked here for a friendly message and again by the API, which is what enforces
-// the rules (JPEG, PNG or WebP, up to 5 MB).
+// the rules (JPEG, PNG, WebP or GIF, up to 5 MB).
 @Component({
   selector: 'app-image-controls',
   imports: [FormsModule],
@@ -16,14 +16,14 @@ const Allowed = ['image/jpeg', 'image/png', 'image/webp'];
     <fieldset class="images">
       <legend>Images</legend>
 
-      <p class="hint">JPEG, PNG or WebP, up to 5 MB.</p>
+      <p class="hint">JPEG, PNG, WebP or GIF, up to 5 MB.</p>
 
       @if (coverImage()) {
         <img class="cover" [src]="coverImage()" [alt]="coverImageAlt() || 'Cover image (no description yet)'" />
       }
 
       <label for="cover-file">{{ coverImage() ? 'Replace the cover image' : 'Cover image' }}</label>
-      <input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="busy()" (change)="chooseCover($event)" />
+      <input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="busy()" (change)="chooseCover($event)" />
 
       @if (coverImage()) {
         <label for="cover-alt">Cover image description (for readers who cannot see it)</label>
@@ -34,7 +34,7 @@ const Allowed = ['image/jpeg', 'image/png', 'image/webp'];
       <label for="inline-alt">Description for an image inside the text</label>
       <input id="inline-alt" type="text" [ngModel]="inlineAlt()" (ngModelChange)="inlineAlt.set($event)" />
       <label for="inline-file">Add an image to the text</label>
-      <input id="inline-file" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="busy()" (change)="chooseInline($event)" />
+      <input id="inline-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="busy()" (change)="chooseInline($event)" />
 
       @if (problem()) {
         <p class="problem" role="alert">{{ problem() }}</p>
@@ -109,7 +109,7 @@ export class ImageControls {
     }
 
     if (!Allowed.includes(file.type)) {
-      this.problem.set('Only JPEG, PNG and WebP images can be uploaded.');
+      this.problem.set('Only JPEG, PNG, WebP and GIF images can be uploaded.');
       input.value = '';
       return;
     }

@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "build:art": "vite build --config art/vite.config.ts",
+    "prestart": "npm run build:art",
     "start": "ng serve",
+    "prebuild": "npm run build:art",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -29,6 +32,8 @@
     "@angular/platform-browser": "^20.3.33",
     "@angular/router": "^20.3.33",
     "markdown-it": "^15.0.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -39,6 +44,9 @@
     "@angular/compiler-cli": "^20.3.33",
     "@types/jasmine": "~5.1.0",
     "@types/markdown-it": "^14.2.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
@@ -46,6 +54,10 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "karma-spec-reporter": "^0.0.37",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vite": "^7.3.6"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.59.0"
   }
 }

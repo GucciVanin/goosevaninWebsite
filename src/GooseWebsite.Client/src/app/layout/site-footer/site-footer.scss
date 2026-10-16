@@ -1,2 +1,13 @@
-/* Lets shared shell styles position the footer without an extra layout box. */
-:host { display: contents; }
+:host { display: block; }
+
+.gcv-footer {
+  align-items: center;
+  border-top: 1px solid var(--gcv-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gcv-space-4) var(--gcv-space-5);
+  margin: var(--gcv-space-8) 0 0;
+  padding: var(--gcv-space-5) var(--gcv-gutter);
+}
+.line { background: linear-gradient(90deg, var(--gcv-line-strong), transparent); flex: 1; height: 1px; min-width: 40px; }
+.copy { color: var(--gcv-text-muted); font: var(--gcv-text-xs) / 1 var(--gcv-font-mono); letter-spacing: var(--gcv-track-label); margin: 0; text-transform: uppercase; }

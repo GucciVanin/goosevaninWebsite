@@ -6,7 +6,7 @@ public enum ImageUploadOutcome
 {
     Stored,
 
-    /// <summary>Not a JPEG, PNG or WebP file, or empty.</summary>
+    /// <summary>Not a JPEG, PNG, WebP or GIF file, or empty.</summary>
     NotAnAllowedImage,
 
     TooLarge

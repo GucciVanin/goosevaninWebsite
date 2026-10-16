@@ -6,7 +6,7 @@ using GooseWebsite.Api.Modules.Media.Services;
 
 namespace GooseWebsite.Api.Modules.Media.Controllers;
 
-// Gustavo's image uploads: administrators only, every write needs the CSRF token. Only JPEG, PNG and WebP files up
+// Gustavo's image uploads: administrators only, every write needs the CSRF token. Only JPEG, PNG, WebP and GIF files up
 // to 5 MB are stored, under a generated name; anything else is refused before anything is written.
 [ApiController]
 [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
@@ -36,7 +36,7 @@ public sealed class ImageEditorController(IImageService images) : ControllerBase
         {
             ImageUploadOutcome.Stored => Created(string.Empty, ImageResponse.From(result.Image!)),
             ImageUploadOutcome.TooLarge => Problem("The image is larger than 5 MB.", statusCode: StatusCodes.Status413PayloadTooLarge),
-            _ => Problem("Only JPEG, PNG and WebP images can be uploaded.", statusCode: StatusCodes.Status400BadRequest)
+            _ => Problem("Only JPEG, PNG, WebP and GIF images can be uploaded.", statusCode: StatusCodes.Status400BadRequest)
         };
     }
 

@@ -254,12 +254,12 @@ Owns image uploads (F4-US5). Source: `Modules/Media/`. Files live in `Media:Dire
 
 | Method and path | Who | What |
 | --- | --- | --- |
-| `POST /api/editor/images` | Administrator + CSRF | Multipart upload of one file; JPEG, PNG or WebP by its first bytes, at most 5 MB (413 over); returns the reference `/uploads/<name>` |
+| `POST /api/editor/images` | Administrator + CSRF | Multipart upload of one file; JPEG, PNG, WebP or GIF by its first bytes, at most 5 MB (413 over); returns the reference `/uploads/<name>` |
 | `GET /api/editor/images` | Administrator | Lists uploaded images |
 | `DELETE /api/editor/images/{id}` | Administrator + CSRF | Removes the row and the file |
 | `GET /uploads/<name>` | Everyone | Static file, `nosniff`; only files the module wrote exist |
 
-Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
+Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp|gif>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
 
 ### 3.7 Authorization matrix
 
@@ -460,7 +460,7 @@ flowchart TD
 | `app/features/auth/` | `api/` (AuthApi with CSRF handling), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
 | `app/features/editor/` | The editor workspace (`EditorPage`: stories with status filter, title search and confirmed deletion), the story form (`pages/story-form-page`), `StoryApi`, `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
 | `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
-| `app/features/home/` | The home page and its sections: `hero`, `selected-work`, `approach`, `toolkit` |
+| `app/features/home/` | The home page and its sections, all built from the design tokens: `hero` and `categories` over the animated scene, `approach` (About, with the portrait), `selected-work` (Projects: published projects from `/api/projects` as `ProjectPanel`s), `toolkit` (Skills). Stories (`features/blog`) and Contact (`features/contact`) follow, then the footer |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles |
 | `app/layout/` | `site-header`, `site-footer` |
 | `app/shared/` | `models/` (profile, navigation item), `styles/site.scss` shared layout rules |
@@ -470,6 +470,15 @@ The public site is one long page with anchors (`home`, `work`, `approach`, `blog
 
 Build facts: output goes to `../GooseWebsite.Api/wwwroot`; production budgets warn at 500 kB and fail at 1 MB for the initial bundle; `ng serve` proxies `/api` to `https://localhost:8889` through `proxy.conf.json`.
 
+### 6.1 Design system (F9-US1)
+
+Direction (Gustavo, 2026-10-16): a mostly black/charcoal interface that stays extremely clean, with electric cyan as the main accent and magenta as the small secondary one; the artwork carries the visual complexity. The category cards keep their own green (Security) and orange (Systems & Tools) accents. Source material is in `Docs/Inspirations/`.
+
+- **Tokens** are CSS custom properties in `app/shared/styles/tokens.scss`, all named `--gcv-*`: surfaces (`bg-0..2`, `line`), text (`text`, `text-muted`, `text-faint`), accents (`cyan`, `magenta`, `violet`, `green`, `orange`), type (families Michroma / DM Sans / JetBrains Mono, a size scale, tracking), space (4 px base), shape (`radius-card`, `bracket-size`), motion (`motion-fast/base/slow`, which become instant under `prefers-reduced-motion`) and focus. The file records how each value traces to `LandingPageInspiration.png`. The old names (`--paper`, `--accent`...) remain as aliases so earlier screens already follow the palette; they are removed once F9-US2 to F9-US5 have moved every screen to the `gcv` names. **Rule: no screen uses a colour, font, size or spacing literal; it uses a token.**
+- **Base components** are global classes in `app/shared/styles/components.scss`: `gcv-eyebrow`, `gcv-heading` (with `--hero`, `--section`, `--card`; an `<em>` inside gets the cyan-to-white gradient), `gcv-label`, `gcv-link`, `gcv-btn` (corner brackets; `--solid`), `gcv-field`, `gcv-chip`, `gcv-rule`, and one site-wide visible focus style.
+- **Angular brand components** in `app/shared/brand/`: `BrandLogo` (resized WebP copies of the supplied raster logo: `public/brand/gcv-logo-192.webp` and `-512.webp`; descriptive alt text; never below 48 px; clear space equal to half its height), `ArtScene` and `ProjectPanel` (a "system diagnostic" panel: picture or GIF, technology stack, and a VIEW CASE control that opens the case in place with the demo and source links and a link to `/projects/<slug>`, the full post built by F5-US1).
+- **React island.** The animated hero scene (from `Docs/Inspirations/cyberpunk-react-loop`) is a React component in `client/art/`, built by Vite (`npm run build:art`, run automatically before `npm run build` and `npm start`) into `public/art/gcv-scene.js` (git-ignored, about 85 kB compressed), which defines the `<gcv-scene>` custom element in a shadow root. `ArtScene` loads that script the first time a page needs it, so pages without the scene never download React. The scene lays its effects on a 3:2 "stage" sized to cover the area (so every effect stays on the right part of the art at any screen shape): shifting sky light and drifting clouds, four ships crossing the skyline continuously at different heights and speeds, a pulsing terminal glow with scrolling scanlines and a sweep fitted to the laptop screen, flickering neon signs (the koi tower, the kanji signs), drifting haze, and a slow camera breath; React adds a gentle pointer parallax (skipped on touch screens). On phones the focus moves to the figure and laptop and a 960 px image is used. The scene is decoration (hidden from assistive technology, no pointer input), and every animation, the ships and the parallax stop under `prefers-reduced-motion`. On the home page the scene runs from the top of the page to just behind the top of the category cards and fades out there (a mask on the element; `--scene-fade-start` sets where the fade begins). The hero artwork is `public/brand/hero-city.webp` (and a 960 px copy for narrow screens), optimized from the supplied PNG (2.3 MB to 207 kB). Future React-only animation goes in `client/art/` the same way. React is used only there; the application stays Angular.
+- **Review page.** `/design` (`features/design/design-page.ts`) shows every token and component with the scene and a sample project panel, for Gustavo's approval. It holds sample content and is removed before R1 ships (with TE4).
 ## 7. Configuration, build, and operations
 
 ### 7.1 Configuration reference
@@ -617,7 +626,7 @@ Each item is also tracked in [project.md](./project.md) or the backlog.
 | Gap | Where | Consequence | Tracked as |
 | --- | --- | --- | --- |
 | Pending contact messages are in process memory | `ContactVerificationService` | Lost on restart; single instance only | Accepted for R1 |
-| Blog section ships hard-coded sample posts, the "selected work" section is placeholder, and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
+| Blog section ships hard-coded sample posts (the Projects section no longer has sample content: it shows published projects or says there are none), and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
 | No reader display-name update, password reset, or administrator recovery | Accounts | Recovery paths missing | F3-US3, F3-US4 |
 | `npm audit` reports 6 high findings, all in the Karma test runner chain (`karma`, `karma-jasmine`, `karma-jasmine-html-reporter`, `braces`, `chokidar`) and `@angular/build` through it | `src/GooseWebsite.Client` | Development and CI only: the packages never ship to the browser or the image. The only suggested fix is a downgrade to Karma 4, so it is not applied | Replace Karma with the test runner Angular supports next (revisit with the Angular 21 upgrade) |
 | `GooseWebsite.Api.csproj` pins `SQLitePCLRaw.lib.e_sqlite3` 2.1.13 | `GooseWebsite.Api.csproj` | Overrides the vulnerable transitive 2.1.11 (CVE-2025-6965); `SqliteVersionTests` fails if the engine is older than SQLite 3.50.2 | Remove the pin when `Microsoft.EntityFrameworkCore.Sqlite` ships a patched engine |

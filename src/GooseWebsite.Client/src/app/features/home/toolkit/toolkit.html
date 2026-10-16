@@ -1,12 +1,17 @@
-<!-- Keeps skills content separate from the layout that presents it. -->
-<section class="toolkit page-section">
-  <div class="section-label"><span>03</span><span>Toolkit</span></div>
-  <div class="toolkit-content">
-    <h2>Curious by nature.<br /><em>Precise by practice.</em></h2>
-    <div class="tool-list">
-      <div><span>01</span><strong>Frontend</strong><p>Angular / TypeScript / HTML &amp; CSS / Accessibility</p></div>
-      <div><span>02</span><strong>Backend</strong><p>.NET / Node.js / REST / Event-driven systems</p></div>
-      <div><span>03</span><strong>Infrastructure</strong><p>Azure / CI/CD / Containers / Observability</p></div>
-    </div>
-  </div>
+<!-- Skills: three diagnostic-style cards, one per area. -->
+<section class="gcv-section" id="skills" aria-labelledby="skills-title">
+  <p class="gcv-section__label"><b>03</b> Skills</p>
+  <h2 id="skills-title" class="gcv-heading gcv-heading--section">Curious by nature. <em>Precise by practice.</em></h2>
+  <ul class="areas">
+    @for (area of areas; track area.title) {
+      <li class="gcv-card" [style.--area]="'var(' + area.token + ')'">
+        <p class="gcv-label"><span class="dot" aria-hidden="true"></span>{{ area.index }} / {{ area.title }}</p>
+        <ul class="skills" [attr.aria-label]="area.title + ' skills'">
+          @for (skill of area.skills; track skill) {
+            <li class="gcv-chip">{{ skill }}</li>
+          }
+        </ul>
+      </li>
+    }
+  </ul>
 </section>
