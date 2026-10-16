@@ -1,2 +1,12 @@
-/* Keeps contact styling in the shared site system while preserving feature ownership. */
-:host { display: contents; }
+:host { display: block; }
+.layout { align-items: start; display: grid; gap: var(--gcv-space-7); grid-template-columns: 1fr 1.1fr; }
+.aside { display: grid; gap: var(--gcv-space-5); }
+.email { font: 500 var(--gcv-text-md) var(--gcv-font-mono); overflow-wrap: anywhere; }
+.form-wrap { padding: var(--gcv-space-6); }
+form { display: grid; gap: var(--gcv-space-4); }
+.submit { justify-self: start; }
+.form-error { border: 1px solid var(--gcv-danger); color: var(--gcv-danger); margin: 0; padding: var(--gcv-space-3); }
+.form-success { display: grid; gap: var(--gcv-space-4); }
+.form-success p { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; }
+.trap { height: 1px; left: -9999px; opacity: 0; pointer-events: none; position: absolute; width: 1px; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .form-wrap { padding: var(--gcv-space-5); } }

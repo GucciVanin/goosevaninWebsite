@@ -131,3 +131,34 @@ summary:focus-visible {
   outline: var(--gcv-focus);
   outline-offset: var(--gcv-focus-offset);
 }
+
+/* Page sections below the hero: a centred column, a mono label with an index, and a section heading. */
+.gcv-section {
+  margin: 0 auto;
+  max-width: var(--gcv-content-width);
+  padding: var(--gcv-space-8) var(--gcv-gutter);
+  scroll-margin-top: var(--gcv-space-7);
+}
+.gcv-section__label {
+  align-items: center;
+  color: var(--gcv-text-muted);
+  display: flex;
+  font: 500 var(--gcv-text-xs) / 1 var(--gcv-font-mono);
+  gap: var(--gcv-space-3);
+  letter-spacing: var(--gcv-track-label);
+  margin: 0 0 var(--gcv-space-5);
+  text-transform: uppercase;
+}
+.gcv-section__label b { color: var(--gcv-cyan); font-weight: 500; }
+.gcv-section__label::after { background: linear-gradient(90deg, var(--gcv-line-strong), transparent); content: ''; flex: 1; height: 1px; }
+.gcv-lede { color: var(--gcv-text-muted); font-size: var(--gcv-text-md); line-height: var(--gcv-leading-body); margin: 0; max-width: 62ch; }
+
+/* A bordered card with the same corner-bracket language as the buttons. */
+.gcv-card {
+  background: var(--gcv-bg-1);
+  border: 1px solid var(--gcv-line);
+  border-radius: var(--gcv-radius-card);
+  padding: var(--gcv-space-5);
+  transition: border-color var(--gcv-motion-base) var(--gcv-ease), transform var(--gcv-motion-base) var(--gcv-ease);
+}
+.gcv-card:hover { border-color: var(--gcv-cyan); }

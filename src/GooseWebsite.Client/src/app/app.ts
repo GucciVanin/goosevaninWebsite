@@ -27,6 +27,7 @@ export class App {
     { label: 'Projects', id: 'work' },
     { label: 'Skills', id: 'skills' },
     { label: 'About', id: 'approach' },
+    { label: 'Stories', id: 'blog' },
   ];
 
   constructor() {

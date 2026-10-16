@@ -460,7 +460,7 @@ flowchart TD
 | `app/features/auth/` | `api/` (AuthApi with CSRF handling), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
 | `app/features/editor/` | The editor workspace (`EditorPage`: stories with status filter, title search and confirmed deletion), the story form (`pages/story-form-page`), `StoryApi`, `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
 | `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
-| `app/features/home/` | The home page and its sections: `hero`, `selected-work`, `approach`, `toolkit` |
+| `app/features/home/` | The home page and its sections, all built from the design tokens: `hero` and `categories` over the animated scene, `approach` (About, with the portrait), `selected-work` (Projects: published projects from `/api/projects` as `ProjectPanel`s), `toolkit` (Skills). Stories (`features/blog`) and Contact (`features/contact`) follow, then the footer |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles |
 | `app/layout/` | `site-header`, `site-footer` |
 | `app/shared/` | `models/` (profile, navigation item), `styles/site.scss` shared layout rules |
@@ -626,7 +626,7 @@ Each item is also tracked in [project.md](./project.md) or the backlog.
 | Gap | Where | Consequence | Tracked as |
 | --- | --- | --- | --- |
 | Pending contact messages are in process memory | `ContactVerificationService` | Lost on restart; single instance only | Accepted for R1 |
-| Blog section ships hard-coded sample posts, the "selected work" section is placeholder, and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
+| Blog section ships hard-coded sample posts (the Projects section no longer has sample content: it shows published projects or says there are none), and the local dev database holds two demo posts | `blog-page.ts`, `selected-work` | Violates the R1 "no sample content" decision. Gustavo: leave until just before deployment | TE4 (deployment gate) |
 | No reader display-name update, password reset, or administrator recovery | Accounts | Recovery paths missing | F3-US3, F3-US4 |
 | `npm audit` reports 6 high findings, all in the Karma test runner chain (`karma`, `karma-jasmine`, `karma-jasmine-html-reporter`, `braces`, `chokidar`) and `@angular/build` through it | `src/GooseWebsite.Client` | Development and CI only: the packages never ship to the browser or the image. The only suggested fix is a downgrade to Karma 4, so it is not applied | Replace Karma with the test runner Angular supports next (revisit with the Angular 21 upgrade) |
 | `GooseWebsite.Api.csproj` pins `SQLitePCLRaw.lib.e_sqlite3` 2.1.13 | `GooseWebsite.Api.csproj` | Overrides the vulnerable transitive 2.1.11 (CVE-2025-6965); `SqliteVersionTests` fails if the engine is older than SQLite 3.50.2 | Remove the pin when `Microsoft.EntityFrameworkCore.Sqlite` ships a patched engine |
