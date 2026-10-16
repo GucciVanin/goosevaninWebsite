@@ -1,5 +1,4 @@
-using System.Globalization;
-using System.Text;
+using GooseWebsite.Api.Shared.Text;
 using GooseWebsite.Api.Modules.Blog.Contracts;
 using GooseWebsite.Api.Modules.Blog.Domain;
 
@@ -76,6 +75,11 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
             errors["content"] = ["Add the story text before publishing."];
         }
 
+        if (post.CoverImage.Length > 0 && string.IsNullOrWhiteSpace(post.CoverImageAlt))
+        {
+            errors["coverImageAlt"] = ["Describe the cover image before publishing."];
+        }
+
         if (errors.Count > 0)
         {
             return AuthoringResult.Invalid(errors);
@@ -128,6 +132,11 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
             errors["title"] = ["A story needs a title."];
         }
 
+        if (!string.IsNullOrWhiteSpace(request.CoverImage) && !UploadedImageReference.IsValid(request.CoverImage.Trim()))
+        {
+            errors["coverImage"] = ["The cover image must be an image uploaded in the editor."];
+        }
+
         if (request.Tags is not null && request.Tags.Any(tag => tag.Contains(',')))
         {
             errors["tags"] = ["A tag cannot contain a comma."];
@@ -142,6 +151,8 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
         post.Excerpt = request.Excerpt.Trim();
         post.Content = request.Content;
         post.Category = string.IsNullOrWhiteSpace(request.Category) ? "Field notes" : request.Category.Trim();
+        post.CoverImage = request.CoverImage.Trim();
+        post.CoverImageAlt = post.CoverImage.Length == 0 ? string.Empty : request.CoverImageAlt.Trim();
         post.Tags = string.Join(',', CleanTags(request.Tags));
         if (request.PublishedAtUtc is { } publishedAt)
         {
@@ -170,31 +181,5 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
         return slug;
     }
 
-    // "Same Title!" -> "same-title"; accents are dropped, anything else becomes one hyphen, and an empty result is "story".
-    internal static string Slugify(string title)
-    {
-        var slug = new StringBuilder();
-        var lastWasHyphen = true;
-        foreach (var character in title.Normalize(NormalizationForm.FormD))
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark)
-            {
-                continue;
-            }
-
-            if (char.IsAsciiLetterOrDigit(character))
-            {
-                slug.Append(char.ToLowerInvariant(character));
-                lastWasHyphen = false;
-            }
-            else if (!lastWasHyphen)
-            {
-                slug.Append('-');
-                lastWasHyphen = true;
-            }
-        }
-
-        var result = slug.ToString().Trim('-');
-        return result.Length == 0 ? "story" : result;
-    }
+    internal static string Slugify(string title) => Slug.From(title, "story");
 }

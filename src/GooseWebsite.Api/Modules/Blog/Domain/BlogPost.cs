@@ -13,6 +13,12 @@ public sealed class BlogPost
     public string Content { get; set; } = string.Empty;
     public string Category { get; set; } = "Field notes";
     public string Tags { get; set; } = string.Empty;
+    /// <summary>The cover image: an uploaded-image reference ("/uploads/<name>") or empty.</summary>
+    public string CoverImage { get; set; } = string.Empty;
+
+    /// <summary>What the cover image shows, for readers who cannot see it.</summary>
+    public string CoverImageAlt { get; set; } = string.Empty;
+
     public bool IsPublished { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;

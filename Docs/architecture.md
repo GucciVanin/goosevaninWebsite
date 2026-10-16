@@ -72,7 +72,9 @@ GooseWebsite/
 │   │   ├── Modules/                  One folder per feature (section 3)
 │   │   │   ├── Accounts/
 │   │   │   ├── Blog/
-│   │   │   └── Contact/
+│   │   │   ├── Contact/
+│   │   │   ├── Media/
+│   │   │   └── Projects/
 │   │   ├── Shared/                   Cross-cutting infrastructure (section 3.2)
 │   │   │   ├── Email/  Hosting/  Modules/  Persistence/
 │   │   ├── Data/                     SQLite file for local development (git-ignored)
@@ -132,7 +134,7 @@ flowchart TB
 ```
 
 - `Program.cs` may reference every module; modules never reference `Program`.
-- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Blog** depends on `Shared` and on `Accounts` (for the author entity and the authorization policy names). Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
+- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Media** depends on `Shared` only. **Blog** and **Projects** depend on `Shared` and on `Accounts` (for the author entity and the authorization policy names); they do not depend on each other. Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
 - `Shared` never references a module, with one deliberate exception: `ApplicationDbContext` and `DatabaseService` know `ApplicationUser` from Accounts, because Identity shares the database. Every other module table is discovered through `IEntityTypeConfiguration<T>` without `Shared` naming it.
 - **All database reads and writes go through `DatabaseService`.** A module keeps its own query logic in a service or repository (what to ask for) but calls the gateway (how to ask). Never inject `ApplicationDbContext`, `UserManager`, or `RoleManager` into a module class other than Identity registration. The sanitization, access rules and one-click-one-unit-of-work guarantee (F7-US1) are applied beneath the gateway, so they hold for every module; declare an `EntityAccessRule<T>` next to every new entity (see section 4).
 
@@ -231,6 +233,33 @@ Owns stories (the product name; the code keeps its historical "blog post" name, 
 `BlogController` (public reads) and `StoryEditorController` (everything that changes or lists drafts) are thin: the rules live in `IBlogAuthoringService` (`BlogAuthoringService`, TE9), which returns an outcome (`Succeeded`, `NotFound`, `Invalid` with the failing fields) that the controller maps to a response. The service owns: the slug (made from the title with letters and digits only, accents dropped, `story` when nothing is left, numeric suffix on a collision, never changed afterwards so links stay stable), the tags (trimmed, no empty tags, no duplicates that differ only in case, no commas inside a tag), the timestamps, and the rules for publishing. Saving a draft needs only a title; publishing needs an excerpt and text. Query logic is in `IBlogPostRepository` (`BlogPostRepository`), which reads and writes only through `DatabaseService`; the access rule (everybody reads published stories, administrators read drafts and write, no length limit) is `Domain/BlogPostAccessRule.cs` and the table mapping `Domain/BlogPostConfiguration.cs`. Stories published before `PublishedAtUtc` existed received their creation date in the `AddStoryPublishedAt` migration.
 
 In the client (`app/features/editor/`, loaded on demand so visitors never download it) `StoryFormPage` is the form: save draft, preview (Markdown rendered by `markdown-it` with raw HTML off), publish, return to draft, with the status written in words.
+
+### 3.6a Projects module
+
+Owns projects (title, overview in Markdown, Gustavo's contribution, technologies, optional demo and source links). Source: `Modules/Projects/`. It follows the same pattern as stories: drafts are never public, saving never publishes, and publishing is explicit.
+
+| Method and path | Who | What |
+| --- | --- | --- |
+| `GET /api/projects`, `GET /api/projects/{slug}` | Everyone | Published projects only (a draft is a 404) |
+| `GET /api/editor/projects`, `GET /api/editor/projects/{id}` | Administrator | List (summaries) and open any project, drafts included |
+| `POST /api/editor/projects`, `PUT /api/editor/projects/{id}` | Administrator + CSRF | Create or save; always leaves the state as it was (new = draft) |
+| `POST /api/editor/projects/{id}/publish`, `.../unpublish` | Administrator + CSRF | Explicit state changes; publishing needs an overview and is idempotent |
+| `DELETE /api/editor/projects/{id}` | Administrator + CSRF | Removes the project |
+
+`IProjectAuthoringService` owns the rules (title required; links optional but only absolute `http` or `https` addresses; technologies trimmed, de-duplicated by case, no commas; slug from `Shared/Text/Slug` fixed at creation with a numeric suffix on a collision; publication date set at first publish). Queries are in `IProjectRepository`; the access rule is `Domain/ProjectAccessRule.cs`; table `Projects` (migration `AddProjects`). The client has `ProjectFormPage` and `ProjectApi` beside the story ones, and the workspace (`EditorPage`) switches between the two lists.
+
+### 3.6b Media module
+
+Owns image uploads (F4-US5). Source: `Modules/Media/`. Files live in `Media:Directory` (`/data/uploads` in Docker, `uploaded-images` beside the app in development) under generated names; table `ContentImages` records them (readable by administrators only).
+
+| Method and path | Who | What |
+| --- | --- | --- |
+| `POST /api/editor/images` | Administrator + CSRF | Multipart upload of one file; JPEG, PNG or WebP by its first bytes, at most 5 MB (413 over); returns the reference `/uploads/<name>` |
+| `GET /api/editor/images` | Administrator | Lists uploaded images |
+| `DELETE /api/editor/images/{id}` | Administrator + CSRF | Removes the row and the file |
+| `GET /uploads/<name>` | Everyone | Static file, `nosniff`; only files the module wrote exist |
+
+Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
 
 ### 3.7 Authorization matrix
 

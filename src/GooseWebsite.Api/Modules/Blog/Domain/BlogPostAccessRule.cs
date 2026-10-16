@@ -14,5 +14,6 @@ public sealed class BlogPostAccessRule : EntityAccessRule<BlogPost>
         IsUserText(post => post.Content);
         IsUserText(post => post.Category);
         IsUserText(post => post.Tags);
+        IsUserText(post => post.CoverImageAlt);
     }
 }

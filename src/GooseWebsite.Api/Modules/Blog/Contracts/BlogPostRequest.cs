@@ -12,6 +12,8 @@ public sealed class BlogPostRequest
     public string Content { get; set; } = string.Empty;
     public string Category { get; set; } = "Field notes";
     public string[]? Tags { get; set; }
+    public string CoverImage { get; set; } = string.Empty;
+    public string CoverImageAlt { get; set; } = string.Empty;
 
     /// <summary>Optional: sets the publication date (for example to backdate an older story). The first publish sets it when it is empty.</summary>
     public DateTime? PublishedAtUtc { get; set; }

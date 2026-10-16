@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ImageApi } from '../api/image-api';
 import { StoryApi } from '../api/story-api';
 import { Story } from '../models/story';
 import { StoryFormPage } from './story-form-page';
@@ -27,6 +28,8 @@ function story(overrides: Partial<Story> = {}): Story {
     content: '# Heading\n\nSome *text*.',
     category: 'Notes',
     tags: ['life', 'work'],
+    coverImage: '',
+    coverImageAlt: '',
     isPublished: false,
     createdAtUtc: '2026-10-15T10:00:00Z',
     updatedAtUtc: '2026-10-15T10:00:00Z',
@@ -51,6 +54,7 @@ describe('StoryFormPage', () => {
       providers: [
         provideRouter([]),
         { provide: StoryApi, useValue: api },
+        { provide: ImageApi, useValue: {} },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap(id ? { id } : {}) } } },
       ],
     }).compileComponents();

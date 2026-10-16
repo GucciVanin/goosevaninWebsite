@@ -35,4 +35,11 @@ describe('renderMarkdown', () => {
     expect(renderMarkdown('')).toBe('');
     expect(renderMarkdown('   ')).toBe('');
   });
+
+  it('shows an uploaded image with its description, and never a script address as an image', () => {
+    const html = renderMarkdown('![A red door](/uploads/0123456789abcdef0123456789abcdef.png)\n\n![x](javascript:alert(1))');
+
+    expect(html).toContain('<img src="/uploads/0123456789abcdef0123456789abcdef.png" alt="A red door"');
+    expect(html).not.toContain('src="javascript');
+  });
 });

@@ -24,3 +24,4 @@ src/GooseWebsite.Api/data-protection-keys/
 # Container verification run (TE10): results, data backups and test-only credentials
 verify-results/
 .env.verify
+src/GooseWebsite.Api/uploaded-images/

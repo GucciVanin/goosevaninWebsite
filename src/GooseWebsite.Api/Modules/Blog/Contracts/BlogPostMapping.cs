@@ -18,6 +18,8 @@ public static class BlogPostMapping
         post.Content,
         post.Category,
         post.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries),
+        post.CoverImage,
+        post.CoverImageAlt,
         post.IsPublished,
         Utc(post.CreatedAtUtc),
         Utc(post.UpdatedAtUtc),

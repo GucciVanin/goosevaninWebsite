@@ -17,6 +17,8 @@ export interface Story extends StorySummary {
   excerpt: string;
   content: string;
   tags: string[];
+  coverImage: string;
+  coverImageAlt: string;
   authorId: string;
   authorName: string;
 }
@@ -28,5 +30,7 @@ export interface StoryDraft {
   content: string;
   category: string;
   tags: string[];
+  coverImage: string;
+  coverImageAlt: string;
   publishedAtUtc: string | null;
 }

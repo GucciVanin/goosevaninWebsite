@@ -325,7 +325,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US1: Navigate and Manage Content in the Editor
 
-**Status:** In Progress (stories part implemented 2026-10-15, awaiting approval; the Projects half arrives with F4-US4)  
+**Status:** In Progress (stories part approved 2026-10-15, pull request merged; the Projects switch implemented 2026-10-16, awaiting approval)  
 **Estimate:** 3 US (36 hours)  
 **Goal:** As Gustavo, I can use a private editor workspace to find and manage my projects and stories without editing source files.
 
@@ -339,11 +339,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [x] (Stories now; the Projects switch is completed with F4-US4 in Sprint 4) Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
-- [x] (Stories) Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
-- [x] (Stories) Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
+- [x] Implement an authenticated editor entry point and navigation between project and story lists; keep it out of public navigation.
+- [x] Implement content lists showing title, draft/published status, and last-updated date, with status filtering, title search, and empty states.
+- [x] Wire create and select-item actions to the corresponding project/story forms; implement deletion with an explicit confirmation step.
 - [x] Apply the compact, task-focused visual direction with responsive layout, keyboard operation, visible focus, and non-color-only state labels.
-- [x] (Stories; narrow-viewport and keyboard flow are covered by the browser tests, TE5) Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
+- [x] (Narrow-viewport and keyboard flow are covered by the browser tests, TE5) Test list contents, search/filter results, create/edit routing, cancel/confirm deletion, anonymous access, keyboard flow, and narrow viewport behavior; assert UI and persisted state.
 
 ### User Story F4-US2: Secure the Administrator Editor
 
@@ -374,13 +374,13 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US3: Manage Stories as Drafts
 
-**Status:** In Progress (implemented 2026-10-15, awaiting approval)  
+**Status:** Done (implemented 2026-10-15; approved 2026-10-15, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can create and edit a story with the agreed fields, preview it, and publish it explicitly.
 **Decided 2026-10-15 (with Gustavo; TE9 folded in as the first step):**
 - Saving never publishes. **Publish** and **Return to draft** are explicit actions; a new story is always a draft; publishing is idempotent (publishing again changes nothing). The first publish records the **publication date**, which Gustavo may change afterwards (for example to backdate an older story); it is kept when the story returns to draft.
 - A draft can be saved with only a title; **publishing needs an excerpt and the story text**. A save without a title, or a tag containing a comma, is refused with the field named, and nothing is stored.
-- The story body is **Markdown**, shown with raw HTML switched off (`markdown-it`); the preview renders it and labels a draft "not public". Cover images and the Projects switch wait for Sprint 4 (F4-US5, F4-US4), so the "optional cover image" part of acceptance test 1 is completed there.
+- The story body is **Markdown**, shown with raw HTML switched off (`markdown-it`); the preview renders it and labels a draft "not public". Cover images and the Projects switch wait for Sprint 4 (F4-US5, F4-US4), so the "optional cover image" part of acceptance test 1 is completed there (done 2026-10-16 with F4-US5).
 - The editor API moved to `/api/editor/stories` (everything admin-only, CSRF on writes); `/api/blog` keeps only the public reads. The code names (`BlogPost`, table `BlogPosts`) stay for now and are renamed together with F5.
 - The authoring rules live in `IBlogAuthoringService` (TE9): the slug is fixed once created (letters and digits only, accents dropped, numeric suffix on a collision), tags are trimmed and de-duplicated by case, and timestamps are set in one place. The leftover API limits on title, excerpt and category were removed (blog text has no length limit).
 
@@ -401,9 +401,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F4-US4: Manage Projects as Drafts
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can create and edit a project with its overview, my contribution, tools, images, and demo/source links.
+
+**Decided 2026-10-16 (with Gustavo):** Projects are their own module (`Modules/Projects`, table `Projects`, editor API `/api/editor/projects`, public reads `/api/projects`), built the same way as stories: a draft is private, saving never publishes, Publish and Return to draft are explicit, the publication date is set at the first publish and editable, and the overview is Markdown shown safely. A draft needs only a title; publishing needs an overview. Demo and source links are optional and must be web addresses (`http` or `https`); anything else, such as `javascript:`, is refused with the field named. Images arrive with F4-US5.
 
 **Acceptance tests:**
 
@@ -414,15 +416,19 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Implement project data fields and server-side validation, including URL validation for optional external links.
-- [ ] Implement Gustavo's editor forms for create/edit, draft save, preview, and explicit publish.
-- [ ] Test project field persistence, invalid URLs, preview rendering, draft privacy, and publish transitions through API and UI checks.
+- [x] Implement project data fields and server-side validation, including URL validation for optional external links.
+- [x] Implement Gustavo's editor forms for create/edit, draft save, preview, and explicit publish.
+- [x] Test project field persistence, invalid URLs, preview rendering, draft privacy, and publish transitions through API and UI checks.
 
+
+**Implementation evidence (2026-10-16):** `ProjectEditorApiTests` (API) reopen a saved project with every field equal (acceptance test 1), show a draft is a 404 for the public and absent from the public list while the editor can open it, and an anonymous caller gets 401 (test 2); saving does not publish, publishing makes the project public once, and publishing again keeps the date (test 3); a missing title, a comma in a technology, a missing overview at publish, and links that are not web addresses are refused with the field named and nothing is stored or published (test 4). Client specs cover the project form and the workspace switch. The container run exercises the same flows (`75-projects.sh`).
 ### User Story F4-US5: Upload Content Images
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, I can upload and associate images with a story or project from my device.
+
+**Decided 2026-10-16 (with Gustavo):** Images are stored as files in a folder on the data volume (`Media:Directory`, `/data/uploads` in Docker) under generated names and served publicly at `/uploads/<name>` with `X-Content-Type-Options: nosniff`. A file is accepted only when its first bytes say it is a JPEG, PNG or WebP (the uploaded name and the type the browser sent are never trusted) and it is at most 5 MB; anything else is refused before anything is written. An image that no story or project uses is kept (it is not deleted automatically); Gustavo can list uploaded images and delete one (`GET` and `DELETE /api/editor/images`). Each story and project has an optional cover image with a description (alt text) that publishing requires, and an image can be added inside the text as Markdown after typing its description. Cover images and inline images may only refer to `/uploads/<generated name>`, never another site. **Not yet built:** a screen listing uploaded images for manual deletion (the API exists); it is added when Gustavo asks for it.
 
 **Acceptance tests:**
 
@@ -434,9 +440,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Tasks:**
 
 - [x] Choose allowed formats and maximum size: JPEG, PNG, and WebP, 5 MB, generated file names (decided 2026-10-02).
-- [ ] Choose the storage location and the deletion behavior for unreferenced images (see "Decisions to Record").
-- [ ] Implement administrator-only upload handling, content-type/size validation, and safe image references.
-- [ ] Test allowed, oversized, disallowed, and unauthenticated uploads; assert response, storage state, and preview rendering.
+- [x] Choose the storage location and the deletion behavior for unreferenced images (see "Decisions to Record").
+- [x] Implement administrator-only upload handling, content-type/size validation, and safe image references.
+- [x] Test allowed, oversized, disallowed, and unauthenticated uploads; assert response, storage state, and preview rendering.
+
+
+**Implementation evidence (2026-10-16):** `ImageUploadApiTests` upload a JPEG, PNG and WebP (stored under a generated name whatever the uploaded name says, served publicly with the real type and `nosniff`, bytes unchanged), refuse text, an SVG with a script and a GIF named `.png` (nothing is stored), refuse 5 MB plus one byte with 413 and accept exactly 5 MB (acceptance tests 1 and 2), refuse anonymous callers with 401 and administrators without the CSRF token with 400 with nothing stored (test 3), delete an image with its file, and prove a cover image must be an uploaded image on stories and projects and needs a description to publish (test 4). Client specs cover the image controls and the Markdown image rendering. The container run exercises uploads end to end (`78-images.sh`).
 
 **Feature estimate:** 11 US (132 hours)
 
@@ -875,7 +884,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 - Contact mail provider, sender identity, verification-link lifetime, pending-message storage mechanism, and delivery retry policy. (Current state: MailerSend SMTP configured through `Email:Smtp:*`, 30-minute in-memory pending store, no automatic retry.)
 - Contact rate-limit threshold and exact abuse-control combination.
 - Confirm F3 credential policy (the 12-character minimum is decided), verification/reset token lifetime, lockout duration, and authentication endpoint rate limits.
-- Image storage location and deletion behavior for unreferenced uploads (formats and size are decided; proposed default: `/data/uploads` on the data volume, and delete an image when its content item is deleted).
+- ~~Image storage location and deletion behavior for unreferenced uploads~~ Decided 2026-10-16: files on the data volume, unreferenced images are kept and can be listed and deleted by Gustavo (see F4-US5).
 - Member profiles (F8): profile URL scheme and where the profile data lives (proposed: a new `Profiles` module with its own table, one row per user).
 - F7: how access rules are declared (per entity or per operation) and how a rejected operation is reported.
 - Automated test tools for browsers and accessibility (see enabler TE5).
@@ -938,12 +947,12 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F1 Public Profile | R1 | 2 US / 24 hours | Done | 2 of 2 |
 | F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
 | F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 2 of 4 |
-| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | In Progress | 1 of 5 |
+| F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | In Progress | 2 of 5 |
 | F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **9 of 30** |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **10 of 30** |
 
 By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

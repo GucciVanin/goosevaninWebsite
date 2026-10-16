@@ -9,6 +9,8 @@ public sealed record BlogPostResponse(
     string Content,
     string Category,
     IReadOnlyList<string> Tags,
+    string CoverImage,
+    string CoverImageAlt,
     bool IsPublished,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
