@@ -1,59 +1,58 @@
-<!-- Keeps search, filtering, and post content in one focused reading view. -->
-<section class="blog-page">
-  <div class="blog-hero">
-    <p class="blog-kicker">// personal transmission log</p>
-    <h1>Signals from<br /><em>the field.</em></h1>
-    <p>Daily life, security engineering, and the projects that keep me curious.</p>
+<!-- Stories: search, category filter and the reading view, in the site's design. -->
+<section class="gcv-section" id="blog" aria-labelledby="blog-title">
+  <p class="gcv-section__label"><b>04</b> Stories</p>
+  <div class="intro">
+    <h2 id="blog-title" class="gcv-heading gcv-heading--section">Signals from <em>the field.</em></h2>
+    <p class="gcv-lede">Daily life, security engineering, and the projects that keep me curious.</p>
   </div>
-  <div class="blog-controls">
-    <label
-      ><span>Search notes</span
-      ><input
-        [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
-        placeholder="try 'systems' or 'tools'"
-    /></label>
-    <div class="categories" aria-label="Filter by category">
+  <div class="controls">
+    <div class="gcv-field search">
+      <label for="story-search">Search stories</label>
+      <input id="story-search" type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="try systems or tools" />
+    </div>
+    <div class="categories" role="group" aria-label="Filter by category">
       @for (item of categories; track item) {
-        <button type="button" [class.active]="category() === item" (click)="category.set(item)">
+        <button type="button" class="filter" [class.active]="category() === item" [attr.aria-pressed]="category() === item" (click)="category.set(item)">
           {{ item }}
         </button>
       }
     </div>
   </div>
   @if (selected(); as post) {
-    <article class="post-detail">
-      <button class="back-button" type="button" (click)="selected.set(null)">← all signals</button>
-      <p class="post-meta">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</p>
-      <h2>{{ post.title }}</h2>
-      <p class="post-lede">{{ post.excerpt }}</p>
-      <p class="post-content">{{ post.content }}</p>
-      <div class="tag-list">
+    <article class="detail gcv-card">
+      <button class="gcv-btn back" type="button" (click)="selected.set(null)"><span aria-hidden="true">←</span> All stories</button>
+      <p class="gcv-label">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</p>
+      <h3 class="gcv-heading gcv-heading--section title">{{ post.title }}</h3>
+      <p class="lede">{{ post.excerpt }}</p>
+      <p class="content">{{ post.content }}</p>
+      <ul class="tags">
         @for (tag of post.tags; track tag) {
-          <span>#{{ tag }}</span>
+          <li class="gcv-chip">#{{ tag }}</li>
         }
-      </div>
+      </ul>
     </article>
   } @else {
-    <div class="post-list">
+    <ul class="list">
       @for (post of filteredPosts(); track post.slug) {
-        <article class="post-card" (click)="selected.set(post)">
-          <div class="post-index">{{ $index + 1 }}</div>
-          <div>
-            <p class="post-meta">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</p>
-            <h2>{{ post.title }}</h2>
-            <p>{{ post.excerpt }}</p>
-            <div class="tag-list">
-              @for (tag of post.tags; track tag) {
-                <span>#{{ tag }}</span>
-              }
-            </div>
-          </div>
-          <span class="post-arrow">↗</span>
-        </article>
+        <li>
+          <button type="button" class="post gcv-card" (click)="selected.set(post)">
+            <span class="index" aria-hidden="true">{{ $index + 1 < 10 ? '0' : '' }}{{ $index + 1 }}</span>
+            <span class="body">
+              <span class="gcv-label">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</span>
+              <span class="gcv-heading gcv-heading--card">{{ post.title }}</span>
+              <span class="excerpt">{{ post.excerpt }}</span>
+              <span class="tags">
+                @for (tag of post.tags; track tag) {
+                  <span class="gcv-chip">#{{ tag }}</span>
+                }
+              </span>
+            </span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+        </li>
       } @empty {
-        <p class="empty-state">No signal found. Try another query.</p>
+        <li class="empty">No story found. Try another search.</li>
       }
-    </div>
+    </ul>
   }
 </section>

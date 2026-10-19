@@ -1,12 +1,9 @@
-<!-- Keeps site identity and external links consistent across routed views. -->
-<footer>
-  <a class="brand" href="#home" (click)="onNavigate('home', $event)">
-    <span class="brand-mark">{{ profile.initials }}</span>
-    <span class="brand-copy"><strong>{{ profile.name }}</strong><small>{{ profile.title }}</small></span>
+<!-- Closing strip from the mockup: the logo on the left and the "Let's connect" action on the right. -->
+<footer class="gcv-footer">
+  <a class="logo" href="#home" (click)="onNavigate('home', $event)" [attr.aria-label]="profile.name + ' home'">
+    <app-brand-logo [size]="64" />
   </a>
-  <p>Designed and built with attention. <span>© 2025</span></p>
-  <div class="footer-links">
-    <a [href]="profile.links.github" target="_blank" rel="noreferrer">GitHub ↗</a>
-    <a [href]="profile.links.linkedin" target="_blank" rel="noreferrer">LinkedIn ↗</a>
-  </div>
+  <span class="line" aria-hidden="true"></span>
+  <p class="copy">© {{ year }} {{ profile.name }}</p>
+  <a class="gcv-btn" href="#contact" (click)="onNavigate('contact', $event)">Let's connect <span aria-hidden="true">→</span></a>
 </footer>

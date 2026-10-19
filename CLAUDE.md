@@ -18,7 +18,7 @@ Gustavo Couto Vanin's personal website: a public profile, a verified contact for
 
 - **Backend:** ASP.NET Core on .NET 10, modular monolith (`src/GooseWebsite.Api/Modules/{Accounts,Blog,Contact,Media,Projects}` over `Shared/`)
 - **Database:** SQLite through EF Core, with ASP.NET Core Identity (file `Data/goosewebsite.db` in development)
-- **Frontend:** Angular 20, standalone components and signals, SCSS (`src/GooseWebsite.Client`). It builds into `src/GooseWebsite.Api/wwwroot`.
+- **Frontend:** Angular 20, standalone components and signals, SCSS (`src/GooseWebsite.Client`). It builds into `src/GooseWebsite.Api/wwwroot`. Animated art is React, built as web-component islands from `src/GooseWebsite.Client/art` (see `Docs/architecture.md` 6.1).
 - **Email:** SMTP through `ISmtpMailSender` (MailerSend today)
 - **Deployment:** Docker; Caddy reverse proxy in `docker-compose.yml`
 - **Tests:** xUnit (`tests/GooseWebsite.Api.Tests`), Jasmine/Karma (client)

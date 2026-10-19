@@ -1,0 +1,279 @@
+/*
+ * Animated cyberpunk scene, based on Docs/Inspirations/cyberpunk-react-loop and extended.
+ *
+ * Every effect sits in a "stage" that is always the same 3:2 shape as the artwork and is sized to cover the scene
+ * (like background-size: cover). All positions are percentages of that stage, so the terminal glow stays on the
+ * laptop and the signs flicker on the signs at any screen shape. --focus-x / --focus-y choose which part of the art
+ * stays in view when the screen is narrower than the art (the figure and laptop on phones).
+ *
+ * Motion: sky light shifting, ships crossing the skyline, a pulsing terminal with scrolling scanlines, flickering
+ * neon signs, drifting haze and a slow camera breath. Everything stops under prefers-reduced-motion.
+ */
+:host {
+  height: 100%;
+  position: relative;
+  display: block;
+  /* The art fades into the page as it finishes (the cards sit over this fade). */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 var(--scene-fade-start, 70%), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 var(--scene-fade-start, 70%), transparent 100%);
+}
+
+.cyberpunk-scene {
+  --focus-x: 42%;
+  --focus-y: 46%;
+  background: #050816;
+  container-type: size;
+  contain: paint;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  position: absolute;
+}
+
+.stage {
+  aspect-ratio: 3 / 2;
+  container-type: inline-size;
+  height: max(100cqh, 66.667cqw);
+  left: var(--focus-x);
+  position: absolute;
+  top: var(--focus-y);
+  transform: translate(calc(var(--focus-x) * -1 + var(--px, 0px)), calc(var(--focus-y) * -1 + var(--py, 0px)));
+  transition: transform 0.6s var(--ease, ease-out);
+  width: max(100cqw, 150cqh);
+}
+
+.stage > * { pointer-events: none; position: absolute; }
+
+.art {
+  animation: camera-breathe 26s ease-in-out infinite alternate;
+  background: url('/brand/hero-city.webp') center / cover no-repeat;
+  inset: 0;
+}
+
+/* ---- Sky: shifting atmospheric light over the clouds and the sunset band ---- */
+.sky {
+  inset: 0 0 48% 0;
+  mix-blend-mode: screen;
+}
+.sky__glow {
+  animation: sky-shift 18s ease-in-out infinite alternate;
+  background:
+    radial-gradient(ellipse 38% 30% at 38% 62%, rgba(255, 122, 80, 0.55), transparent 70%),
+    radial-gradient(ellipse 34% 34% at 72% 40%, rgba(255, 44, 207, 0.4), transparent 70%),
+    radial-gradient(ellipse 40% 34% at 20% 30%, rgba(0, 217, 255, 0.32), transparent 70%);
+  inset: -10% -10% 0 -10%;
+  position: absolute;
+}
+.sky__clouds {
+  animation: clouds-drift 60s linear infinite;
+  background: linear-gradient(90deg, transparent 0, rgba(255, 150, 190, 0.22) 20%, transparent 40%, rgba(120, 170, 255, 0.2) 60%, transparent 80%);
+  filter: blur(22px);
+  height: 40%;
+  left: -50%;
+  position: absolute;
+  top: 18%;
+  width: 200%;
+}
+
+/* ---- Haze drifting between the buildings ---- */
+.haze {
+  filter: blur(26px);
+  height: 11%;
+  mix-blend-mode: screen;
+  width: 70%;
+}
+.haze--one {
+  animation: haze-drift 34s linear infinite;
+  background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.42), rgba(165, 43, 255, 0.4), transparent);
+  left: -70%;
+  top: 56%;
+}
+.haze--two {
+  animation: haze-drift 52s linear infinite reverse;
+  background: linear-gradient(90deg, transparent, rgba(255, 44, 207, 0.32), rgba(0, 217, 255, 0.3), transparent);
+  left: -70%;
+  top: 68%;
+}
+
+/* ---- Neon signs: each flickers on its own rhythm ---- */
+.neon {
+  border-radius: 6%;
+  filter: blur(6px);
+  mix-blend-mode: screen;
+}
+.neon--koi { animation: flicker-a 6.5s steps(1, end) infinite; background: radial-gradient(ellipse at center, rgba(255, 44, 207, 0.75), rgba(0, 217, 255, 0.35) 60%, transparent 75%); height: 28%; left: 77%; top: 20%; width: 12%; }
+.neon--kanji { animation: flicker-b 9s steps(1, end) infinite; background: radial-gradient(ellipse at center, rgba(255, 44, 207, 0.7), transparent 72%); height: 38%; left: 91.5%; top: 31%; width: 7%; }
+.neon--left { animation: flicker-c 7.5s steps(1, end) infinite; background: radial-gradient(ellipse at center, rgba(255, 44, 207, 0.6), transparent 72%); height: 16%; left: 11%; top: 39%; width: 11%; }
+.neon--cyan { animation: flicker-b 11s steps(1, end) infinite reverse; background: radial-gradient(ellipse at center, rgba(0, 217, 255, 0.55), transparent 72%); height: 12%; left: 84%; top: 52%; width: 5%; }
+
+/* ---- Terminal: pulsing glow and scrolling scanlines, fitted to the laptop screen ---- */
+.terminal {
+  clip-path: polygon(8.9% 0, 100% 0, 97% 100%, 0 100%);
+  height: 14.9%;
+  left: 50.2%;
+  top: 73.1%;
+  width: 16%;
+}
+.terminal__glow {
+  animation: terminal-pulse 4.5s ease-in-out infinite;
+  background: linear-gradient(115deg, rgba(0, 223, 255, 0.1) 5%, rgba(0, 223, 255, 0.5) 50%, rgba(120, 255, 240, 0.12) 90%);
+  inset: 0;
+  mix-blend-mode: screen;
+  position: absolute;
+}
+.terminal__scan {
+  animation: scanline-scroll 2.4s linear infinite;
+  background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(0, 235, 255, 0.55) 3px 4px);
+  inset: 0;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+  position: absolute;
+}
+.terminal__sweep {
+  animation: scan-sweep 5s linear infinite;
+  background: linear-gradient(to bottom, transparent, rgba(180, 255, 255, 0.55), transparent);
+  height: 24%;
+  inset: 0 0 auto 0;
+  mix-blend-mode: screen;
+  position: absolute;
+}
+.terminal-halo {
+  animation: terminal-pulse 4.5s ease-in-out infinite;
+  background: radial-gradient(ellipse at center, rgba(0, 217, 255, 0.35), transparent 70%);
+  filter: blur(18px);
+  height: 30%;
+  left: 46%;
+  mix-blend-mode: screen;
+  top: 66%;
+  width: 24%;
+}
+
+/* ---- Flying ships: continuous crossings at different heights, speeds and sizes ---- */
+.ship {
+  animation: ship-fly var(--dur, 30s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 0 6px #00d9ff) drop-shadow(0 0 14px #ff2ccf);
+  aspect-ratio: 4.6 / 1;
+  left: -8%;
+  opacity: var(--alpha, 0.9);
+  top: var(--top, 20%);
+  width: var(--w, 5%);
+  will-change: transform;
+}
+.ship__body {
+  animation: ship-bob 3.2s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, #0a1633, #5fe9ff 42%, #ff4bd8 74%, #101f3f);
+  clip-path: polygon(0 48%, 26% 14%, 66% 22%, 100% 50%, 66% 74%, 24% 86%);
+  inset: 0;
+  position: absolute;
+}
+.ship__body::after {
+  background: #e8fdff;
+  box-shadow: 0 0 8px 3px #00d9ff;
+  content: '';
+  height: 8%;
+  left: 14%;
+  position: absolute;
+  top: 46%;
+  width: 70%;
+}
+.ship__trail {
+  background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.7));
+  height: 7%;
+  left: -70%;
+  position: absolute;
+  top: 46%;
+  width: 70%;
+}
+.ship--back { animation-direction: reverse; }
+.ship--back .ship__body { transform: scaleX(-1); }
+
+.grain {
+  animation: grain-shift 0.24s steps(2, end) infinite;
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.06) 4px, transparent 5px);
+  inset: 0;
+  opacity: 0.12;
+}
+
+@keyframes camera-breathe {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.035) translate3d(-0.5%, 0.3%, 0); }
+}
+@keyframes sky-shift {
+  0% { opacity: 0.45; transform: translate3d(-4%, -2%, 0) rotate(-2deg) scale(1); }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.55; transform: translate3d(5%, 3%, 0) rotate(2deg) scale(1.08); }
+}
+@keyframes clouds-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(25%, 0, 0); }
+}
+@keyframes haze-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(260%, -10%, 0); }
+}
+@keyframes ship-fly {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(100cqw + 8cqw + 8%), -2cqw, 0); }
+}
+@keyframes ship-bob {
+  from { transform: translateY(-6%); }
+  to { transform: translateY(8%); }
+}
+@keyframes terminal-pulse {
+  0%, 100% { opacity: 0.45; }
+  40% { opacity: 0.85; }
+  46% { opacity: 0.4; }
+  52% { opacity: 1; }
+  60% { opacity: 0.55; }
+}
+@keyframes scanline-scroll {
+  from { background-position-y: 0; }
+  to { background-position-y: 16px; }
+}
+@keyframes scan-sweep {
+  from { transform: translateY(-120%); }
+  to { transform: translateY(520%); }
+}
+@keyframes flicker-a {
+  0%, 14%, 16%, 55%, 57%, 100% { opacity: 0.5; }
+  15%, 56% { opacity: 0.15; }
+  30% { opacity: 0.8; }
+  31% { opacity: 0.3; }
+  78% { opacity: 0.7; }
+}
+@keyframes flicker-b {
+  0%, 40%, 43%, 100% { opacity: 0.45; }
+  41% { opacity: 0.1; }
+  42% { opacity: 0.75; }
+  70% { opacity: 0.6; }
+  71% { opacity: 0.2; }
+}
+@keyframes flicker-c {
+  0%, 25%, 100% { opacity: 0.4; }
+  26% { opacity: 0.8; }
+  27% { opacity: 0.1; }
+  66% { opacity: 0.65; }
+  90% { opacity: 0.2; }
+}
+@keyframes grain-shift {
+  from { transform: translateY(0); }
+  to { transform: translateY(2px); }
+}
+
+/* Phones: keep the figure and the laptop in view and tone down the finest effects. */
+@media (max-width: 700px) {
+  .cyberpunk-scene { --focus-x: 36%; --focus-y: 56%; }
+  .art { background-image: url('/brand/hero-city-960.webp'); }
+  .terminal__scan { opacity: 0.3; }
+  .grain { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyberpunk-scene *, .cyberpunk-scene *::before, .cyberpunk-scene *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .ship { display: none; }
+  .grain { display: none; }
+}

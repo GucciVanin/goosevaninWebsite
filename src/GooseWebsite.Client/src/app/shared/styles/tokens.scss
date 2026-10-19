@@ -1,0 +1,105 @@
+/*
+ * Brand and design tokens (F9-US1). Every colour, font, size, space, radius and timing in the client comes from here.
+ * Direction (Gustavo, 2026-10-16): a mostly black/charcoal interface that stays extremely clean, with electric cyan
+ * as the main accent and magenta as the small secondary one. The artwork carries the visual complexity.
+ *
+ * Traceability to Docs/Inspirations/LandingPageInspiration.png (sampled with an image tool, then rounded):
+ *   page background  #00010a..#02040f in the image  -> --gcv-bg-0 #05060d (a touch lighter, so it reads as charcoal-navy)
+ *   cyan accent      #06a3f5 rule, #0297bf card edge  -> --gcv-cyan #00d9ff (the value the animated scene uses for its glow)
+ *   magenta accent   #fb2ffa rule                     -> --gcv-magenta #ff2ccf (scene value)
+ *   violet           the button brackets              -> --gcv-violet #a52bff (scene value)
+ *   card accents     green (Security), orange (Systems & Tools) -> --gcv-green, --gcv-orange (category cards only)
+ */
+:root {
+  /* Surfaces, darkest first */
+  --gcv-bg-0: #05060d;
+  --gcv-bg-1: #090c16;
+  --gcv-bg-2: #0f1422;
+  --gcv-line: #1d2538;
+  --gcv-line-strong: #2b3652;
+
+  /* Text. Muted passes 4.5:1 on every surface above; faint is for large or decorative text only. */
+  --gcv-text: #e8ecf6;
+  --gcv-text-muted: #98a1b8;
+  --gcv-text-faint: #6b748b;
+  --gcv-on-accent: #04101a;
+
+  /* Accents */
+  --gcv-cyan: #00d9ff;
+  --gcv-cyan-soft: #7ceeff;
+  --gcv-magenta: #ff2ccf;
+  --gcv-violet: #a52bff;
+  --gcv-green: #2de08a;
+  --gcv-orange: #ff9a4d;
+  --gcv-danger: #ff6b86;
+
+  /* Type */
+  --gcv-font-display: 'Michroma', 'Segoe UI', system-ui, sans-serif;
+  --gcv-font-body: 'DM Sans', system-ui, sans-serif;
+  --gcv-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --gcv-text-xs: 0.75rem;
+  --gcv-text-sm: 0.875rem;
+  --gcv-text-md: 1rem;
+  --gcv-text-lg: 1.25rem;
+  --gcv-text-xl: clamp(1.5rem, 3vw, 2rem);
+  --gcv-text-2xl: clamp(1.75rem, 5vw, 3rem);
+  --gcv-text-hero: clamp(2rem, 7vw, 4.25rem);
+  --gcv-track-label: 0.18em;
+  --gcv-track-display: 0.04em;
+  --gcv-leading-tight: 1.1;
+  --gcv-leading-body: 1.65;
+
+  /* Space (4 px base) */
+  --gcv-space-1: 4px;
+  --gcv-space-2: 8px;
+  --gcv-space-3: 12px;
+  --gcv-space-4: 16px;
+  --gcv-space-5: 24px;
+  --gcv-space-6: 32px;
+  --gcv-space-7: 48px;
+  --gcv-space-8: 72px;
+  --gcv-gutter: clamp(16px, 5vw, 64px);
+  --gcv-content-width: 1180px;
+  --gcv-control-height: 44px;
+
+  /* Shape and edges */
+  --gcv-radius-0: 0;
+  --gcv-radius-card: 8px;
+  --gcv-bracket-size: 12px;
+
+  /* Motion */
+  --gcv-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --gcv-motion-fast: 150ms;
+  --gcv-motion-base: 240ms;
+  --gcv-motion-slow: 600ms;
+
+  /* Focus */
+  --gcv-focus: 2px solid var(--gcv-cyan);
+  --gcv-focus-offset: 3px;
+
+  /*
+   * Legacy names used by the screens built before the redesign (sign-in, editor, contact...). They point at the new
+   * tokens so those screens already follow the new palette; each screen moves to the gcv names as F9-US2..US5
+   * restyle it, and these aliases are removed when the last one has moved.
+   */
+  --paper: var(--gcv-bg-0);
+  --ink: var(--gcv-text);
+  --muted: var(--gcv-text-muted);
+  --line: var(--gcv-line);
+  --line-strong: var(--gcv-line-strong);
+  --accent: var(--gcv-cyan);
+  --accent-soft: var(--gcv-cyan-soft);
+  --sage: var(--gcv-bg-2);
+  --sand: var(--gcv-bg-1);
+  --display: var(--gcv-font-display);
+  --body: var(--gcv-font-body);
+  --mono: var(--gcv-font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --gcv-motion-fast: 0.01ms;
+    --gcv-motion-base: 0.01ms;
+    --gcv-motion-slow: 0.01ms;
+  }
+}

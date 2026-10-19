@@ -1,2 +1,13 @@
-/* Keeps approach presentation governed by the shared site stylesheet. */
-:host { display: contents; }
+:host { display: block; }
+.layout { align-items: center; display: grid; gap: var(--gcv-space-7); grid-template-columns: minmax(200px, 320px) 1fr; }
+.portrait { margin: 0; position: relative; }
+.portrait::before, .portrait::after { border: 0 solid var(--gcv-violet); content: ''; height: 24px; position: absolute; width: 24px; }
+.portrait::before { border-left-width: 1px; border-top-width: 1px; left: -8px; top: -8px; }
+.portrait::after { border-bottom-width: 1px; border-right-width: 1px; bottom: -8px; right: -8px; }
+.portrait img { background: radial-gradient(circle at 50% 40%, var(--gcv-bg-2), var(--gcv-bg-1)); border: 1px solid var(--gcv-line); display: block; height: auto; width: 100%; }
+.text { display: grid; gap: var(--gcv-space-5); }
+h2 { font-size: var(--gcv-text-xl); line-height: 1.25; text-transform: none; }
+.principles { display: grid; gap: var(--gcv-space-4); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); list-style: none; margin: var(--gcv-space-7) 0 0; padding: 0; }
+.principles li { display: grid; gap: var(--gcv-space-3); }
+.principles p { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } .portrait { max-width: 260px; } }

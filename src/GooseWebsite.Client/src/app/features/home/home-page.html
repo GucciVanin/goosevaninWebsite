@@ -1,5 +1,10 @@
 <!-- Composes focused home sections so each section can evolve independently. -->
-<app-hero (navigate)="navigate.emit($event)"></app-hero>
+<!-- The animated art spans the hero and the category cards, and fades into the page where it ends. -->
+<div class="landing">
+  <app-art-scene class="scene" />
+  <app-hero (navigate)="navigate.emit($event)"></app-hero>
+  <app-categories (navigate)="navigate.emit($event)"></app-categories>
+</div>
 <app-approach></app-approach>
 <app-selected-work></app-selected-work>
 <app-toolkit></app-toolkit>

@@ -1,0 +1,191 @@
+.cyberpunk-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: clamp(420px, 72vh, 900px);
+  background: #050816;
+  contain: paint;
+}
+
+.cyberpunk-scene__art,
+.cyberpunk-scene__sky-glow,
+.cyberpunk-scene__haze,
+.cyberpunk-scene__terminal-glow,
+.cyberpunk-scene__terminal-scanlines,
+.cyberpunk-scene__neon-flicker,
+.cyberpunk-scene__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cyberpunk-scene__art {
+  z-index: -5;
+  background-image: url('/cyberpunk-city.png');
+  background-size: cover;
+  background-position: center 52%;
+  transform: scale(1.025);
+  animation: city-breathe 24s ease-in-out infinite alternate;
+}
+
+/* A very restrained moving light wash suggests clouds shifting at dusk. */
+.cyberpunk-scene__sky-glow {
+  z-index: -4;
+  inset: -15%;
+  opacity: .26;
+  background: radial-gradient(ellipse at 42% 26%, rgba(255, 112, 173, .28), transparent 35%),
+              radial-gradient(ellipse at 70% 18%, rgba(33, 171, 255, .22), transparent 30%);
+  mix-blend-mode: screen;
+  animation: sky-drift 32s ease-in-out infinite alternate;
+}
+
+.cyberpunk-scene__haze {
+  z-index: -3;
+  inset: auto auto 8% -15%;
+  width: 65%;
+  height: 18%;
+  border-radius: 50%;
+  filter: blur(30px);
+  opacity: .18;
+  background: linear-gradient(90deg, transparent, #00d9ff, #a52bff, transparent);
+  animation: haze-drift 27s linear infinite;
+}
+.cyberpunk-scene__haze--two {
+  bottom: 28%;
+  left: 45%;
+  width: 70%;
+  height: 10%;
+  opacity: .11;
+  animation-duration: 38s;
+  animation-direction: reverse;
+}
+
+.cyberpunk-scene__ship {
+  position: absolute;
+  z-index: -2;
+  top: 23%;
+  left: -12%;
+  width: 48px;
+  height: 11px;
+  opacity: .78;
+  filter: drop-shadow(0 0 5px #00d9ff) drop-shadow(0 0 12px #ff2ccf);
+  clip-path: polygon(0 45%, 30% 15%, 68% 24%, 100% 50%, 67% 70%, 27% 82%);
+  background: linear-gradient(90deg, #0a2348, #7ceeff 45%, #ff4bd8 70%, #14284b);
+  animation: ship-flight 26s linear infinite;
+}
+.cyberpunk-scene__ship i {
+  position: absolute;
+  width: 70%;
+  height: 2px;
+  left: 15%;
+  top: 45%;
+  background: #d8fbff;
+  box-shadow: 0 0 6px 2px #00cfff;
+}
+.cyberpunk-scene__ship--two {
+  top: 31%;
+  width: 31px;
+  height: 8px;
+  opacity: .65;
+  animation-duration: 34s;
+  animation-delay: -17s;
+}
+.cyberpunk-scene__ship--three {
+  top: 18%;
+  width: 23px;
+  height: 7px;
+  opacity: .52;
+  animation-duration: 42s;
+  animation-delay: -29s;
+}
+
+/* Positioned to add a screen shimmer to the laptop in the supplied 16:10 art. */
+.cyberpunk-scene__terminal-glow {
+  z-index: -1;
+  inset: 72% auto auto 50%;
+  width: 15%;
+  height: 12%;
+  transform: perspective(160px) rotateY(-5deg) skewY(-2deg);
+  background: linear-gradient(110deg, transparent 8%, rgba(0, 223, 255, .08) 28%, rgba(0, 223, 255, .28) 50%, transparent 73%);
+  mix-blend-mode: screen;
+  animation: terminal-pulse 5.5s ease-in-out infinite;
+}
+.cyberpunk-scene__terminal-scanlines {
+  z-index: -1;
+  inset: 73% auto auto 51%;
+  width: 13.5%;
+  height: 9%;
+  opacity: .24;
+  background: repeating-linear-gradient(to bottom, transparent 0 4px, rgba(0, 235, 255, .45) 5px, transparent 6px);
+  transform: skewY(-3deg);
+  animation: scanline-scroll 2.8s linear infinite;
+}
+
+.cyberpunk-scene__neon-flicker {
+  z-index: -1;
+  opacity: .12;
+  background: linear-gradient(90deg, transparent 0 12%, rgba(255, 40, 207, .08) 18%, transparent 23% 78%, rgba(0, 225, 255, .08) 84%, transparent 90%);
+  mix-blend-mode: screen;
+  animation: neon-flicker 7s steps(1, end) infinite;
+}
+.cyberpunk-scene__grain {
+  z-index: -1;
+  opacity: .1;
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.07) 4px, transparent 5px);
+  animation: grain-shift 0.22s steps(2, end) infinite;
+}
+
+@keyframes city-breathe {
+  from { transform: scale(1.025) translate3d(0, 0, 0); }
+  to { transform: scale(1.065) translate3d(-.6%, .3%, 0); }
+}
+@keyframes sky-drift {
+  from { transform: translate3d(-3%, -1%, 0) rotate(-2deg); }
+  to { transform: translate3d(4%, 2%, 0) rotate(2deg); }
+}
+@keyframes haze-drift {
+  from { transform: translate3d(-8%, 0, 0); }
+  to { transform: translate3d(180%, -18%, 0); }
+}
+@keyframes ship-flight {
+  from { transform: translate3d(0, 0, 0) scale(.85); }
+  to { transform: translate3d(125vw, -22px, 0) scale(1.05); }
+}
+@keyframes terminal-pulse {
+  0%, 100% { opacity: .24; }
+  46% { opacity: .55; }
+  49% { opacity: .22; }
+  52% { opacity: .68; }
+  55% { opacity: .3; }
+}
+@keyframes scanline-scroll {
+  from { background-position-y: 0; }
+  to { background-position-y: 18px; }
+}
+@keyframes neon-flicker {
+  0%, 17%, 19%, 58%, 60%, 100% { opacity: .12; }
+  18%, 59% { opacity: .28; }
+  73% { opacity: .17; }
+  74% { opacity: .08; }
+}
+@keyframes grain-shift {
+  from { transform: translateY(0); }
+  to { transform: translateY(2px); }
+}
+
+@media (max-width: 700px) {
+  .cyberpunk-scene { min-height: 560px; }
+  .cyberpunk-scene__art { background-position: 46% center; }
+  .cyberpunk-scene__terminal-glow,
+  .cyberpunk-scene__terminal-scanlines { opacity: .12; }
+  .cyberpunk-scene__ship { transform-origin: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyberpunk-scene *, .cyberpunk-scene *::before, .cyberpunk-scene *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

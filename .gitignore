@@ -25,3 +25,6 @@ src/GooseWebsite.Api/data-protection-keys/
 verify-results/
 .env.verify
 src/GooseWebsite.Api/uploaded-images/
+
+# React islands are built from client/art by `npm run build:art`
+src/GooseWebsite.Client/public/art/

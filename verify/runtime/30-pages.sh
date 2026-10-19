@@ -11,6 +11,13 @@ check_true "the shell references the main script bundle" "no main-*.js reference
 check "the main script bundle is served" 200 "$(code_of "$BASE/$bundle")"
 check "the favicon is served" 200 "$(code_of "$BASE/favicon.ico")"
 
-for route in /sign-in /verify-email /contact/verify /editor /access-denied /a-route-that-does-not-exist; do
+for route in /sign-in /verify-email /contact/verify /editor /access-denied /design /a-route-that-does-not-exist; do
   check "route $route serves the app" 200 "$(code_of "$BASE$route")"
+done
+
+# Brand assets and the React island (F9-US1).
+check "the React scene script is served" 200 "$(code_of "$BASE/art/gcv-scene.js")"
+check_contains "the scene script is JavaScript" "javascript" "$(curl_https -o /dev/null -w '%{content_type}' "$BASE/art/gcv-scene.js")"
+for asset in /brand/gcv-logo-192.webp /brand/gcv-logo-512.webp /brand/hero-city.webp /brand/hero-city-960.webp; do
+  check "brand asset $asset is served" 200 "$(code_of "$BASE$asset")"
 done

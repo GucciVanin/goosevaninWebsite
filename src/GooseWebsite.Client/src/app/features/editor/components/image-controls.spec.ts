@@ -59,8 +59,8 @@ describe('ImageControls', () => {
   });
 
   it('refuses a file that is not an allowed image, or over 5 MB, without calling the API', () => {
-    controls.chooseCover(pick(new File(['x'], 'a.gif', { type: 'image/gif' })));
-    expect(text()).toContain('Only JPEG, PNG and WebP');
+    controls.chooseCover(pick(new File(['x'], 'a.bmp', { type: 'image/bmp' })));
+    expect(text()).toContain('Only JPEG, PNG, WebP and GIF');
 
     controls.chooseCover(pick(new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' })));
     expect(text()).toContain('larger than 5 MB');
@@ -68,11 +68,11 @@ describe('ImageControls', () => {
   });
 
   it('shows what the server said when it refuses an upload', () => {
-    api.upload.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { detail: 'Only JPEG, PNG and WebP images can be uploaded.' } })));
+    api.upload.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { detail: 'Only JPEG, PNG, WebP and GIF images can be uploaded.' } })));
 
     controls.chooseCover(pick(new File(['x'], 'a.png', { type: 'image/png' })));
 
-    expect(text()).toContain('Only JPEG, PNG and WebP images can be uploaded.');
+    expect(text()).toContain('Only JPEG, PNG, WebP and GIF images can be uploaded.');
     expect(fixture.componentInstance.coverImage()).toBe('');
   });
 
