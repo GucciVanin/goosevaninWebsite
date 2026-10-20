@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { BrandLogo } from '../../../shared/brand/brand-logo';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,46 +10,46 @@ import { safeReturnUrl } from '../return-url';
 // Keeps sign-in and registration state within the authentication feature boundary.
 @Component({
   selector: 'app-sign-in-page',
-  imports: [FormsModule, RouterLink],
+  imports: [BrandLogo, FormsModule, RouterLink],
   template: `
-    <main class="auth-page">
-      <a class="back-link" routerLink="/">Back to Gustavo's site</a>
-      <section class="auth-panel" aria-labelledby="auth-title">
-        <p class="eyebrow">Account</p>
-        <h1 id="auth-title">Sign in</h1>
+    <main class="gcv-auth">
+      <header class="gcv-auth__top"><a routerLink="/" aria-label="Gustavo Couto Vanin home"><app-brand-logo [size]="72" /></a><a class="gcv-link" routerLink="/">Back to Gustavo's site</a></header>
+      <section class="gcv-auth__panel gcv-card" aria-labelledby="auth-title">
+        <p class="gcv-eyebrow">Account</p>
+        <h1 id="auth-title" class="gcv-heading gcv-heading--section">Sign in</h1>
         @if (user(); as signedInUser) {
-          <p class="status" role="status">Signed in as {{ signedInUser.displayName }}.</p>
-          <p class="status">Access level: {{ signedInUser.isAdmin ? 'Administrator' : 'Standard account' }}</p>
-          <button type="button" [disabled]="isBusy()" (click)="signOut()">Sign out</button>
+          <p class="gcv-status" role="status">Signed in as {{ signedInUser.displayName }}.</p>
+          <p class="gcv-status">Access level: {{ signedInUser.isAdmin ? 'Administrator' : 'Standard account' }}</p>
+          <button type="button" class="gcv-btn gcv-btn--solid" [disabled]="isBusy()" (click)="signOut()">Sign out</button>
         } @else if (isRegistering) {
-          <p class="intro">Create your Reader account.</p>
+          <p class="gcv-status">Create your Reader account.</p>
           @if (message()) {
-            <p class="status" role="status">{{ message() }}</p>
+            <p class="gcv-status" role="status">{{ message() }}</p>
           }
           <form (ngSubmit)="register()" #registerForm="ngForm">
-            <label for="display-name">Display name</label>
-            <input id="display-name" name="displayName" type="text" required maxlength="100" [(ngModel)]="displayName" />
-            <label for="register-email">Email</label>
-            <input id="register-email" name="registerEmail" type="email" autocomplete="username" required email [(ngModel)]="email" />
-            <label for="register-password">Password</label>
-            <input id="register-password" name="registerPassword" type="password" autocomplete="new-password" required minlength="12" [(ngModel)]="password" />
-            <button type="submit" [disabled]="!registerForm.valid || isBusy()">
+            <div class="gcv-field"><label for="display-name">Display name</label>
+            <input id="display-name" name="displayName" type="text" required maxlength="100" [(ngModel)]="displayName" /></div>
+            <div class="gcv-field"><label for="register-email">Email</label>
+            <input id="register-email" name="registerEmail" type="email" autocomplete="username" required email [(ngModel)]="email" /></div>
+            <div class="gcv-field"><label for="register-password">Password</label>
+            <input id="register-password" name="registerPassword" type="password" autocomplete="new-password" required minlength="12" [(ngModel)]="password" /></div>
+            <button type="submit" class="gcv-btn gcv-btn--solid" [disabled]="!registerForm.valid || isBusy()">
               {{ isBusy() ? 'Creating account…' : 'Create account' }}
             </button>
           </form>
           @if (verificationPending) {
-            <button type="button" class="secondary" [disabled]="isBusy()" (click)="resendVerification()">
+            <button type="button" class="gcv-btn" [disabled]="isBusy()" (click)="resendVerification()">
               {{ isBusy() ? 'Sending…' : 'Resend confirmation email' }}
             </button>
           }
-          <button type="button" class="secondary" [disabled]="isBusy()" (click)="backToSignIn()">Back to sign in</button>
+          <button type="button" class="gcv-btn" [disabled]="isBusy()" (click)="backToSignIn()">Back to sign in</button>
         } @else {
-          <p class="intro">Sign in with your account to continue.</p>
+          <p class="gcv-status">Sign in with your account to continue.</p>
           @if (sessionNotice()) {
-            <p class="status" role="status">{{ sessionNotice() }}</p>
+            <p class="gcv-status" role="status">{{ sessionNotice() }}</p>
           }
           <form (ngSubmit)="signIn()" #signInForm="ngForm">
-            <label for="email">Email</label>
+            <div class="gcv-field"><label for="email">Email</label>
             <input
               id="email"
               name="email"
@@ -57,8 +58,8 @@ import { safeReturnUrl } from '../return-url';
               required
               email
               [(ngModel)]="email"
-            />
-            <label for="password">Password</label>
+            /></div>
+            <div class="gcv-field"><label for="password">Password</label>
             <input
               id="password"
               name="password"
@@ -66,38 +67,22 @@ import { safeReturnUrl } from '../return-url';
               autocomplete="current-password"
               required
               [(ngModel)]="password"
-            />
+            /></div>
             @if (message()) {
-              <p class="status" role="alert">{{ message() }}</p>
+              <p class="gcv-status gcv-status--alert" role="alert">{{ message() }}</p>
             }
-            <button type="submit" [disabled]="!signInForm.valid || isBusy()">
+            <button type="submit" class="gcv-btn gcv-btn--solid" [disabled]="!signInForm.valid || isBusy()">
               {{ isBusy() ? 'Signing in…' : 'Sign in' }}
             </button>
           </form>
           @if (registrationEnabled()) {
-            <button type="button" class="secondary" [disabled]="isBusy()" (click)="startRegistration()">Create account</button>
+            <button type="button" class="gcv-btn" [disabled]="isBusy()" (click)="startRegistration()">Create account</button>
           }
         }
       </section>
     </main>
   `,
-  styles: `
-    :host { display: block; min-height: 100vh; background: var(--paper); color: var(--ink); }
-    .auth-page { box-sizing: border-box; margin: 0 auto; max-width: 760px; min-height: 100vh; padding: 40px 24px; }
-    .back-link { color: var(--accent-soft); font: 12px var(--mono); }
-    .auth-panel { margin: clamp(64px, 16vh, 140px) auto 0; max-width: 440px; }
-    .eyebrow { color: var(--accent-soft); font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
-    h1 { font: 500 clamp(2rem, 7vw, 3.5rem)/1.1 var(--display); margin: 14px 0; }
-    .intro, .status { color: var(--muted); line-height: 1.6; }
-    form { display: grid; gap: 12px; margin-top: 28px; }
-    label { color: var(--muted); font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-    input { background: #eef1e8; border: 1px solid var(--line); border-radius: 0; box-sizing: border-box; color: #172622; font: 16px var(--body); min-height: 48px; padding: 10px 12px; width: 100%; }
-    button { background: var(--accent); border: 0; color: #071013; cursor: pointer; font: 600 14px var(--body); margin-top: 12px; min-height: 48px; padding: 12px 20px; }
-    .secondary { background: transparent; border: 1px solid var(--line); color: var(--ink); }
-    button:disabled { cursor: wait; opacity: .65; }
-    a:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 4px; }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
-  `,
+  styles: `:host { display: block; }`,
 })
 export class SignInPage implements OnInit {
   protected email = '';

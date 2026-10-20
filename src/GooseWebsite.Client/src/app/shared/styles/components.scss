@@ -162,3 +162,23 @@ summary:focus-visible {
   transition: border-color var(--gcv-motion-base) var(--gcv-ease), transform var(--gcv-motion-base) var(--gcv-ease);
 }
 .gcv-card:hover { border-color: var(--gcv-cyan); }
+
+/* Account and confirmation screens (sign-in, email confirmation, contact confirmation, access denied). */
+.gcv-auth {
+  background: radial-gradient(ellipse 60% 38% at 50% 0, rgba(165, 43, 255, 0.2), transparent 70%), radial-gradient(ellipse 40% 30% at 85% 10%, rgba(0, 217, 255, 0.12), transparent 70%), var(--gcv-bg-0);
+  box-sizing: border-box;
+  color: var(--gcv-text);
+  display: grid;
+  justify-items: center;
+  min-height: 100vh;
+  padding: var(--gcv-space-4) var(--gcv-gutter) var(--gcv-space-8);
+}
+.gcv-auth__top { align-items: center; display: flex; justify-content: space-between; max-width: 960px; width: 100%; }
+.gcv-auth__panel { align-self: start; display: grid; gap: var(--gcv-space-4); margin-top: clamp(24px, 6vh, 72px); position: relative; width: min(480px, 100%); }
+.gcv-auth__panel::before, .gcv-auth__panel::after { border: 0 solid var(--gcv-violet); content: ''; height: 18px; position: absolute; width: 18px; }
+.gcv-auth__panel::before { border-left-width: 1px; border-top-width: 1px; left: -6px; top: -6px; }
+.gcv-auth__panel::after { border-bottom-width: 1px; border-right-width: 1px; bottom: -6px; right: -6px; }
+.gcv-auth__panel form { display: grid; gap: var(--gcv-space-4); }
+.gcv-auth__panel .gcv-btn { justify-self: start; }
+.gcv-status { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; }
+.gcv-status--alert { border: 1px solid var(--gcv-danger); color: var(--gcv-danger); padding: var(--gcv-space-3); }

@@ -736,7 +736,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US1: Establish Brand and Design Tokens
 
-**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
+**Status:** Done (implemented 2026-10-16; approved 2026-10-20, pull request merged)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I get a documented brand foundation (logo, colors, typography, spacing, and base components) taken from my inspiration image, so every screen is built from the same pieces.
@@ -760,7 +760,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 - [x] Receive the logo SVG and the inspiration image; record the design analysis (regions, palette, typography, imagery, animation) in this feature.
 - [x] Define the token system (client styles) and document it in `architecture.md`.
 - [x] Add the logo asset with accessible markup; build base components (buttons, links, form fields, headings).
-- [ ] Review with Gustavo and record approval.
+- [x] Review with Gustavo and record approval (2026-10-20, pull request merged).
 
 
 **Implementation evidence (2026-10-16):** the logo renders from resized WebP copies with descriptive alt text and a 48 px minimum (spec `brand.spec.ts`, test 1); every colour, font, size, space, radius and timing is a named `--gcv-*` token in `tokens.scss` with its trace to the inspiration image in the file's header (test 2); the base components are global classes in `components.scss` and the token rule is written in `architecture.md` section 6.1 (test 3); the `/design` page applies everything, with the animated React scene and a sample project panel, for Gustavo's review (test 4, **pending his approval**; the last task stays open until then). Client specs: 66 pass, including the project panel opening in place with its link to the full post. The container run exercises `/design` in `30-pages.sh`.
@@ -772,7 +772,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
 
-**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. Page transitions, a mobile menu and the narrow-screen checks are not done yet.
+**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. A mobile menu (button with aria-expanded, same links) was added 2026-10-20. Page transitions and the narrow-screen checks are not done yet.
 
 **Acceptance tests:**
 
@@ -811,10 +811,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US4: Redesign Contact, Blog, and Account Pages
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-20, awaiting approval)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor or account holder, I see the same design on the contact form, the blog or story section, and the sign-in and email-verification screens.
+
+**Progress 2026-10-20:** the contact form and the Stories section were restyled with the home page (2026-10-16); now the sign-in, email-confirmation, contact-confirmation and access-denied screens use the same design (logo, bracketed panel, tokenised fields and buttons) and keep their behaviour. The existing specs pass unchanged apart from the markup; approval is still to be recorded.
 
 **Acceptance tests:**
 
