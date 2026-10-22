@@ -1,0 +1,1 @@
+Give the project a browser test layer: automated tests that drive the real running stack in real browser engines and run an accessibility scan, so the checks that were manual until now (320 px layout, keyboard use and focus, contrast and other accessibility rules, reduced motion) become part of the one-command verification, and F9-US7 can be verified rather than asserted.

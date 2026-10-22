@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Shared helpers for the verification run (TE10). Every check prints one line:
-#   PASS|FAIL|SKIP  <stage>  <test name>  (<ms>)  [- detail]
+#   PASS|FAIL|SKIP|KNOWN  <stage>  <test name>  (<ms>)  [- detail]
 # and appends one JSON object to $RESULTS_DIR/latest.jsonl. Stages are sourced by run.sh so the counters persist.
 
 RESULTS_DIR=${RESULTS_DIR:-/results}
 PASS=0
 FAIL=0
 SKIP=0
+KNOWN=0   # a defect already listed in verify/browser/known-issues.json (TE5); counted apart from PASS and FAIL
 STAGE=""
 
 now_ms() { date +%s%3N; }
@@ -21,6 +22,7 @@ record() { # result name ms [detail]
     PASS) PASS=$((PASS + 1)) ;;
     FAIL) FAIL=$((FAIL + 1)) ;;
     SKIP) SKIP=$((SKIP + 1)) ;;
+    KNOWN) KNOWN=$((KNOWN + 1)) ;;
   esac
 }
 

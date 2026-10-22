@@ -17,6 +17,11 @@ unset MAILERSEND_API_KEY
 
 STARTED=$(date -u +%FT%TZ)
 for stage_script in /verify/stages/*.sh; do
+  # VERIFY_STAGES limits the run to the stages whose file name starts with one of these prefixes (a regular
+  # expression, for example "40" or "10|20"); the default is every stage.
+  if [[ -n "${VERIFY_STAGES:-}" && ! "$(basename "$stage_script")" =~ ^($VERIFY_STAGES) ]]; then
+    continue
+  fi
   # shellcheck disable=SC1090
   source "$stage_script"
 done
@@ -27,9 +32,10 @@ jq -s --arg started "$STARTED" --arg finished "$FINISHED" \
     passed: (map(select(.result == "PASS")) | length),
     failed: (map(select(.result == "FAIL")) | length),
     skipped: (map(select(.result == "SKIP")) | length),
+    known: (map(select(.result == "KNOWN")) | length),
     tests: .}' "$RESULTS_DIR/latest.jsonl" > "$RESULTS_DIR/latest.json"
 
-printf '\n=== SUMMARY: %s passed, %s failed, %s skipped ===\n' "$PASS" "$FAIL" "$SKIP" | tee -a "$RESULTS_DIR/latest.log"
+printf '\n=== SUMMARY: %s passed, %s failed, %s skipped, %s known ===\n' "$PASS" "$FAIL" "$SKIP" "$KNOWN" | tee -a "$RESULTS_DIR/latest.log"
 if [[ "$FAIL" -gt 0 ]]; then
   echo "Failed tests:" | tee -a "$RESULTS_DIR/latest.log"
   jq -r 'select(.result == "FAIL") | "  \(.stage): \(.test) - \(.detail)"' "$RESULTS_DIR/latest.jsonl" | tee -a "$RESULTS_DIR/latest.log"

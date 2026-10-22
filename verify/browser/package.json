@@ -1,0 +1,11 @@
+{
+  "name": "goosewebsite-verify-browser",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Browser tests (TE5): Playwright and axe-core against the live container stack.",
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "axe-core": "4.14.0"
+  }
+}

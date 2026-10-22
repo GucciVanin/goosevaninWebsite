@@ -853,7 +853,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US6: Brand the Emails
 
-**Status:** In Progress (implemented 2026-10-22, awaiting approval)  
+**Status:** Done (implemented 2026-10-22; approved 2026-10-22; real-client check remains a manual step, see the story)  
 **Release:** R1  
 **Estimate:** 1 US (12 hours), proposed 2026-10-02  
 **Goal:** As a person who receives a message from the site, I see Gustavo's logo and design in the contact acknowledgement and account verification emails.

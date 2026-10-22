@@ -19,7 +19,18 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 
 ENV CHROME_BIN=/usr/bin/google-chrome-stable \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-    DOTNET_NOLOGO=1
+    DOTNET_NOLOGO=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Browser tests (TE5): Playwright with axe-core, and the engines' builds that belong to that exact Playwright
+# version (Chromium, Firefox, WebKit) plus their system libraries. Versions are pinned in verify/browser/package.json
+# and its lockfile, so rebuilding the image gives the same browsers. Installed before the sources so that a source
+# change does not download them again.
+COPY verify/browser/package.json verify/browser/package-lock.json /verify/browser/
+RUN cd /verify/browser \
+    && npm ci \
+    && node_modules/.bin/playwright install --with-deps chromium firefox webkit \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
 
