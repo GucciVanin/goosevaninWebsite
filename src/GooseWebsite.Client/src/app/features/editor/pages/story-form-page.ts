@@ -3,6 +3,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, switchMap, tap } from 'rxjs';
+import { BrandLogo } from '../../../shared/brand/brand-logo';
 import { ImageControls } from '../components/image-controls';
 import { StoryApi } from '../api/story-api';
 import { renderMarkdown } from '../markdown';
@@ -12,105 +13,87 @@ import { Story, StoryDraft } from '../models/story';
 // is always written out in words. The body is Markdown, with a safe preview.
 @Component({
   selector: 'app-story-form-page',
-  imports: [FormsModule, ImageControls, RouterLink],
+  imports: [BrandLogo, FormsModule, ImageControls, RouterLink],
   template: `
-    <main class="story-form">
-      <a class="back-link" routerLink="/editor">Back to the editor</a>
-      <header>
-        <p class="eyebrow">Story</p>
-        <h1>{{ id() === null ? 'New story' : 'Edit story' }}</h1>
-        <p class="status" role="status">Status: {{ statusText() }}</p>
-        @if (message()) {
-          <p class="notice" role="status">{{ message() }}</p>
-        }
-        @if (problems().length > 0) {
-          <ul class="problems" role="alert">
-            @for (problem of problems(); track problem) {
-              <li>{{ problem }}</li>
-            }
-          </ul>
-        }
+    <main class="gcv-editor">
+      <header class="gcv-editor__top">
+        <a routerLink="/" aria-label="Gustavo Couto Vanin home"><app-brand-logo [size]="72" /></a>
+        <a class="gcv-link" routerLink="/editor">Back to the editor</a>
       </header>
 
-      @if (loadFailed()) {
-        <p class="problems" role="alert">This story could not be opened. It may have been deleted.</p>
-      } @else if (previewing()) {
-        <section class="preview-area" aria-label="Preview">
-          <p class="banner">{{ isPublished() ? 'Preview of the published story' : 'Draft preview: this story is not public' }}</p>
-          @if (coverImage) {
-            <img class="preview-cover" [src]="coverImage" [alt]="coverImageAlt" />
+      <div class="gcv-editor__body gcv-editor__body--form">
+        <header class="gcv-editor__group">
+          <p class="gcv-eyebrow">Story</p>
+          <h1 class="gcv-heading gcv-heading--section">{{ id() === null ? 'New story' : 'Edit story' }}</h1>
+          <p class="gcv-chip gcv-chip--state" [class.gcv-chip--published]="isPublished()" role="status">Status: {{ statusText() }}</p>
+          @if (message()) {
+            <p class="gcv-status" role="status">{{ message() }}</p>
           }
-          <h2 class="preview-title">{{ title || 'Untitled story' }}</h2>
-          @if (excerpt) {
-            <p class="preview-excerpt">{{ excerpt }}</p>
+          @if (problems().length > 0) {
+            <ul class="gcv-status gcv-status--alert gcv-problems" role="alert">
+              @for (problem of problems(); track problem) {
+                <li>{{ problem }}</li>
+              }
+            </ul>
           }
-          <div class="preview" [innerHTML]="previewHtml()"></div>
-        </section>
-      } @else {
-        <form (ngSubmit)="saveDraft()" #storyForm="ngForm">
-          <label for="story-title">Title</label>
-          <input id="story-title" name="title" type="text" [(ngModel)]="title" />
+        </header>
 
-          <label for="story-excerpt">Excerpt (a short summary shown in lists)</label>
-          <textarea id="story-excerpt" name="excerpt" rows="3" [(ngModel)]="excerpt"></textarea>
+        @if (loadFailed()) {
+          <p class="gcv-status gcv-status--alert" role="alert">This story could not be opened. It may have been deleted.</p>
+        } @else if (previewing()) {
+          <section class="gcv-editor__group" aria-label="Preview">
+            <p class="gcv-banner">{{ isPublished() ? 'Preview of the published story' : 'Draft preview: this story is not public' }}</p>
+            @if (coverImage) {
+              <img class="preview-cover" [src]="coverImage" [alt]="coverImageAlt" />
+            }
+            <h2>{{ title || 'Untitled story' }}</h2>
+            @if (excerpt) {
+              <p class="gcv-lede">{{ excerpt }}</p>
+            }
+            <div class="preview gcv-preview" [innerHTML]="previewHtml()"></div>
+          </section>
+        } @else {
+          <form (ngSubmit)="saveDraft()" #storyForm="ngForm">
+            <div class="gcv-field"><label for="story-title">Title</label>
+            <input id="story-title" name="title" type="text" [(ngModel)]="title" /></div>
 
-          <label for="story-category">Category</label>
-          <input id="story-category" name="category" type="text" [(ngModel)]="category" />
+            <div class="gcv-field"><label for="story-excerpt">Excerpt (a short summary shown in lists)</label>
+            <textarea id="story-excerpt" name="excerpt" rows="3" [(ngModel)]="excerpt"></textarea></div>
 
-          <label for="story-tags">Tags (separate with commas)</label>
-          <input id="story-tags" name="tags" type="text" [(ngModel)]="tagsText" />
+            <div class="gcv-field"><label for="story-category">Category</label>
+            <input id="story-category" name="category" type="text" [(ngModel)]="category" /></div>
 
-          <label for="story-date">Publication date (optional)</label>
-          <input id="story-date" name="publishedDate" type="date" [(ngModel)]="publishedDate" />
+            <div class="gcv-field"><label for="story-tags">Tags (separate with commas)</label>
+            <input id="story-tags" name="tags" type="text" [(ngModel)]="tagsText" /></div>
 
-          <label for="story-content">Story text (Markdown)</label>
-          <textarea id="story-content" name="content" class="body" rows="18" [(ngModel)]="content"></textarea>
-        </form>
-        <app-image-controls [(coverImage)]="coverImage" [(coverImageAlt)]="coverImageAlt" (insert)="addToText($event)" />
-      }
+            <div class="gcv-field"><label for="story-date">Publication date (optional)</label>
+            <input id="story-date" name="publishedDate" type="date" [(ngModel)]="publishedDate" /></div>
 
-      @if (!loadFailed()) {
-        <div class="actions">
-          <button type="button" [disabled]="isBusy()" (click)="saveDraft()">{{ isPublished() ? 'Save changes' : 'Save draft' }}</button>
-          <button type="button" class="secondary" [disabled]="isBusy()" (click)="togglePreview()">
-            {{ previewing() ? 'Back to editing' : 'Preview' }}
-          </button>
-          @if (isPublished()) {
-            <button type="button" class="secondary" [disabled]="isBusy()" (click)="returnToDraft()">Return to draft</button>
-          } @else {
-            <button type="button" class="publish" [disabled]="isBusy()" (click)="publish()">Publish</button>
-          }
-        </div>
-      }
+            <div class="gcv-field"><label for="story-content">Story text (Markdown)</label>
+            <textarea id="story-content" name="content" class="gcv-body" rows="18" [(ngModel)]="content"></textarea></div>
+          </form>
+          <app-image-controls [(coverImage)]="coverImage" [(coverImageAlt)]="coverImageAlt" (insert)="addToText($event)" />
+        }
+
+        @if (!loadFailed()) {
+          <div class="gcv-actions">
+            <button type="button" class="gcv-btn gcv-btn--solid" [disabled]="isBusy()" (click)="saveDraft()">{{ isPublished() ? 'Save changes' : 'Save draft' }}</button>
+            <button type="button" class="gcv-btn" [disabled]="isBusy()" (click)="togglePreview()">
+              {{ previewing() ? 'Back to editing' : 'Preview' }}
+            </button>
+            @if (isPublished()) {
+              <button type="button" class="gcv-btn" [disabled]="isBusy()" (click)="returnToDraft()">Return to draft</button>
+            } @else {
+              <button type="button" class="gcv-btn" [disabled]="isBusy()" (click)="publish()">Publish</button>
+            }
+          </div>
+        }
+      </div>
     </main>
   `,
   styles: `
-    :host { display: block; min-height: 100vh; background: var(--paper); color: var(--ink); }
-    .story-form { box-sizing: border-box; margin: 0 auto; max-width: 860px; padding: 40px 24px 80px; }
-    .back-link { color: var(--accent-soft); font: 12px var(--mono); }
-    .eyebrow { color: var(--accent-soft); font: 11px var(--mono); letter-spacing: .12em; margin: 28px 0 0; text-transform: uppercase; }
-    h1 { font: 500 clamp(1.8rem, 6vw, 2.8rem)/1.1 var(--display); margin: 8px 0 12px; }
-    .status, .notice { color: var(--muted); font: 13px var(--mono); margin: 4px 0; }
-    .problems { border: 1px solid var(--accent); color: var(--ink); margin: 12px 0; padding: 12px 12px 12px 32px; }
-    form { display: grid; gap: 10px; margin-top: 20px; }
-    label { color: var(--muted); font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-    input, textarea { background: #eef1e8; border: 1px solid var(--line); border-radius: 0; box-sizing: border-box; color: #172622; font: 16px var(--body); padding: 10px 12px; width: 100%; }
-    input { min-height: 44px; }
-    textarea.body { font-family: var(--mono); font-size: 15px; line-height: 1.5; }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-    button { background: var(--accent); border: 0; color: #071013; cursor: pointer; font: 600 14px var(--body); min-height: 44px; padding: 10px 20px; }
-    button.secondary { background: transparent; border: 1px solid var(--line); color: var(--ink); }
-    button.publish { background: var(--accent-soft); }
-    button:disabled { cursor: wait; opacity: .65; }
-    .banner { border: 1px dashed var(--line); color: var(--accent-soft); font: 12px var(--mono); margin: 20px 0 8px; padding: 8px 12px; }
-    .preview-title { font: 500 clamp(1.6rem, 5vw, 2.4rem)/1.15 var(--display); margin: 12px 0 6px; }
+    :host { display: block; }
     .preview-cover { display: block; max-height: 320px; max-width: 100%; object-fit: contain; }
-    .preview img { max-width: 100%; }
-    .preview-excerpt { color: var(--muted); font-style: italic; line-height: 1.6; }
-    .preview { line-height: 1.7; max-width: 70ch; }
-    .preview :is(h1, h2, h3) { font-family: var(--display); }
-    .preview a { color: var(--accent-soft); }
-    a:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
   `,
 })
 export class StoryFormPage implements OnInit {

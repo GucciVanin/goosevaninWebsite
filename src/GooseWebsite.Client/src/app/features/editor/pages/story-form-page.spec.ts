@@ -179,4 +179,47 @@ describe('StoryFormPage', () => {
     expect(api.unpublish).toHaveBeenCalledWith(5);
     expect(text()).toContain('Status: Draft');
   });
+
+  it('shows the draft status as a labelled badge in words', async () => {
+    await open('5');
+    const badge = () => (fixture.nativeElement as HTMLElement).querySelector('.gcv-chip[role="status"]');
+    expect(fixture.nativeElement.querySelector('main.gcv-editor')).not.toBeNull();
+    expect(badge()?.textContent?.trim()).toBe('Status: Draft');
+  });
+
+  it('shows Published on the badge for a published story', async () => {
+    await open('5', story({ isPublished: true, publishedAtUtc: '2026-10-15T10:00:00Z' }));
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.gcv-chip[role="status"]')?.textContent?.trim()).toBe('Status: Published on 2026-10-15');
+  });
+
+  it('makes Save the solid action and Publish a separate, plainly named button', async () => {
+    await open('5');
+
+    const buttons = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.gcv-actions button'));
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Save draft', 'Preview', 'Publish']);
+    expect(buttons.every((button) => button.classList.contains('gcv-btn'))).toBeTrue();
+    expect(buttons[0].classList).toContain('gcv-btn--solid');
+    expect(buttons[1].classList).not.toContain('gcv-btn--solid');
+    expect(buttons[2].classList).not.toContain('gcv-btn--solid');
+  });
+
+  it('puts inputs in the shared field style and the draft preview banner in words', async () => {
+    const form = await open('5');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.gcv-field input, .gcv-field textarea').length).toBeGreaterThanOrEqual(6);
+
+    form.togglePreview();
+    expect(text()).toContain('Draft preview: this story is not public');
+  });
+
+  it('reports a refusal in the shared alert style', async () => {
+    const form = await open('5');
+    api.update.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+    form.saveDraft();
+    fixture.detectChanges();
+
+    const alert = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]') as HTMLElement;
+    expect(alert.classList).toContain('gcv-status--alert');
+  });
 });

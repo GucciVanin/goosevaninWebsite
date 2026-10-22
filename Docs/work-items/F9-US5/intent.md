@@ -1,0 +1,1 @@
+Apply the new design (tokens, base components, the account-screen look) to the private editor built in F4, so Gustavo's workspace, story form, project form and image controls match the rest of the site while staying compact and task-focused, with draft, preview, save and publish states shown in words and not by colour alone, usable at 320 CSS pixels and by keyboard.

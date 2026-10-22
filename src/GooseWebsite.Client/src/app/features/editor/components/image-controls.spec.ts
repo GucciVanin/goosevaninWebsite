@@ -98,4 +98,23 @@ describe('ImageControls', () => {
     expect(fixture.componentInstance.coverImage()).toBe('');
     expect(fixture.componentInstance.coverImageAlt()).toBe('');
   });
+
+  it('ties each label to its input by for/id inside a shared field, and shows the cover controls once a cover exists', () => {
+    fixture.componentInstance.coverImage.set(uploaded.url);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    for (const id of ['cover-file', 'cover-alt', 'inline-alt', 'inline-file']) {
+      const input = element.querySelector(`#${id}`) as HTMLInputElement;
+      expect(input).withContext(id).not.toBeNull();
+      expect(input.closest('.gcv-field')).withContext(`${id} in .gcv-field`).not.toBeNull();
+      const label = element.querySelector(`label[for="${id}"]`) as HTMLLabelElement;
+      expect(label).withContext(`label for ${id}`).not.toBeNull();
+      expect(label.closest('.gcv-field')).toBe(input.closest('.gcv-field'));
+      expect((label.textContent ?? '').trim().length).toBeGreaterThan(0);
+    }
+
+    const remove = element.querySelector('button.gcv-btn') as HTMLButtonElement;
+    expect(remove.textContent?.trim()).toBe('Remove the cover image');
+  });
 });

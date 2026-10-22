@@ -139,4 +139,17 @@ describe('ProjectFormPage', () => {
     expect(api.unpublish).toHaveBeenCalledWith(5);
     expect(text()).toContain('Status: Draft');
   });
+
+  it('shows the status as a labelled badge and the actions as shared buttons', async () => {
+    await open('5');
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('main.gcv-editor')).not.toBeNull();
+    expect(element.querySelector('.gcv-chip[role="status"]')?.textContent?.trim()).toBe('Status: Draft');
+    const buttons = Array.from(element.querySelectorAll<HTMLButtonElement>('.gcv-actions button'));
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Save draft', 'Preview', 'Publish']);
+    expect(buttons.every((button) => button.classList.contains('gcv-btn'))).toBeTrue();
+    expect(buttons[0].classList).toContain('gcv-btn--solid');
+    expect(element.querySelectorAll('.gcv-field input, .gcv-field textarea').length).toBeGreaterThanOrEqual(7);
+  });
 });

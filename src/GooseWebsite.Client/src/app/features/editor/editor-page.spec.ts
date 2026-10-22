@@ -149,4 +149,49 @@ describe('EditorPage', () => {
     expect(projectApi.remove).toHaveBeenCalledWith(7);
     expect(api.remove).not.toHaveBeenCalled();
   });
+
+  it('wears the shared page shell, with the Stories and Projects switch exposing its state as text and aria-pressed', async () => {
+    await open();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('main.gcv-editor')).not.toBeNull();
+    expect(element.querySelector('app-brand-logo')).not.toBeNull();
+    const buttons = Array.from(element.querySelectorAll<HTMLButtonElement>('.gcv-toggle button'));
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Stories', 'Projects']);
+    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+    expect(element.querySelector('#story-search')?.closest('.gcv-field')).not.toBeNull();
+    expect(element.querySelector('#story-status')?.closest('.gcv-field')).not.toBeNull();
+  });
+
+  it('writes each row state as a labelled chip and lays rows out as cards', async () => {
+    await open();
+
+    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.story-list li');
+    expect(rows[0].classList).toContain('gcv-card');
+    expect(rows[0].querySelector('.gcv-chip')?.textContent?.trim()).toBe('State: Published');
+    expect(rows[1].querySelector('.gcv-chip')?.textContent?.trim()).toBe('State: Draft');
+  });
+
+  it('asks for the deletion in words with two named buttons, in the shared alert style', async () => {
+    const page = await open();
+
+    page.pendingDelete.set(2);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const alert = element.querySelector('.story-list [role="alert"]') as HTMLElement;
+    expect(alert.textContent).toContain('Delete "Beta notes" for good?');
+    const names = Array.from(element.querySelectorAll<HTMLButtonElement>('.story-list li:nth-child(2) button')).map((button) => button.textContent?.trim());
+    expect(names).toEqual(['Yes, delete', 'Keep it']);
+  });
+
+  it('gives every button and link an accessible name and uses the shared button style', async () => {
+    await open();
+
+    const element = fixture.nativeElement as HTMLElement;
+    for (const control of Array.from(element.querySelectorAll('button, a'))) {
+      expect((control.textContent ?? '').trim().length + (control.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0);
+    }
+    expect(element.querySelectorAll('.gcv-btn').length).toBeGreaterThan(0);
+  });
 });

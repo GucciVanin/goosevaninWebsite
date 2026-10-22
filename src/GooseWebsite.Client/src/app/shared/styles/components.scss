@@ -165,7 +165,7 @@ summary:focus-visible {
 
 /* Account and confirmation screens (sign-in, email confirmation, contact confirmation, access denied). */
 .gcv-auth {
-  background: radial-gradient(ellipse 60% 38% at 50% 0, rgba(165, 43, 255, 0.2), transparent 70%), radial-gradient(ellipse 40% 30% at 85% 10%, rgba(0, 217, 255, 0.12), transparent 70%), var(--gcv-bg-0);
+  background: radial-gradient(ellipse 60% 38% at 50% 0, var(--gcv-glow-violet), transparent 70%), radial-gradient(ellipse 40% 30% at 85% 10%, var(--gcv-glow-cyan), transparent 70%), var(--gcv-bg-0);
   box-sizing: border-box;
   color: var(--gcv-text);
   display: grid;
@@ -182,3 +182,53 @@ summary:focus-visible {
 .gcv-auth__panel .gcv-btn { justify-self: start; }
 .gcv-status { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; }
 .gcv-status--alert { border: 1px solid var(--gcv-danger); color: var(--gcv-danger); padding: var(--gcv-space-3); }
+
+/* Editor shell (F9-US5): the private workspace, lists and forms. Same page look as the account screens, a wider column. */
+.gcv-editor {
+  background: radial-gradient(ellipse 60% 30% at 50% 0, var(--gcv-glow-violet-soft), transparent 70%), var(--gcv-bg-0);
+  box-sizing: border-box;
+  color: var(--gcv-text);
+  display: block;
+  min-height: 100vh;
+  padding: var(--gcv-space-4) var(--gcv-gutter) var(--gcv-space-8);
+}
+.gcv-editor__top { align-items: center; display: flex; flex-wrap: wrap; gap: var(--gcv-space-3); justify-content: space-between; margin: 0 auto; max-width: 960px; }
+.gcv-editor__body { display: grid; gap: var(--gcv-space-4); margin: var(--gcv-space-6) auto 0; max-width: 960px; min-width: 0; }
+.gcv-editor__body--form { max-width: 860px; }
+.gcv-editor__group { display: grid; gap: var(--gcv-space-4); grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.gcv-editor__group > *, .gcv-editor .gcv-banner { overflow-wrap: anywhere; }
+.gcv-editor__body > *, .gcv-editor form { min-width: 0; }
+.gcv-editor form { display: grid; gap: var(--gcv-space-3); }
+.gcv-editor h2 { font-family: var(--gcv-font-display); font-size: var(--gcv-text-lg); font-weight: 400; margin: 0; overflow-wrap: anywhere; }
+.gcv-editor textarea.gcv-body { font-family: var(--gcv-font-mono); font-size: var(--gcv-text-sm); line-height: var(--gcv-leading-body); }
+.gcv-actions { display: flex; flex-wrap: wrap; gap: var(--gcv-space-3); }
+.gcv-btn--danger { color: var(--gcv-danger); }
+.gcv-btn--danger::before, .gcv-btn--danger::after { border-color: var(--gcv-danger); }
+
+/* A two-way switch whose state is written as a mark and set in aria-pressed, never colour alone. */
+.gcv-toggle { display: flex; flex-wrap: wrap; gap: var(--gcv-space-2); }
+.gcv-toggle button { background: transparent; border: 1px solid var(--gcv-line-strong); color: var(--gcv-text); cursor: pointer; font: 500 var(--gcv-text-sm) / 1 var(--gcv-font-mono); letter-spacing: var(--gcv-track-label); min-height: var(--gcv-control-height); padding: var(--gcv-space-3) var(--gcv-space-5); text-transform: uppercase; }
+.gcv-toggle button[aria-pressed='true'] { background: var(--gcv-cyan); border-color: var(--gcv-cyan); color: var(--gcv-on-accent); font-weight: 700; }
+.gcv-toggle button[aria-pressed='true']::before { content: '\2713\00a0'; }
+
+/* A labelled state badge ("State: Draft"); the published variant adds an edge colour on top of the words. */
+.gcv-chip--published { border-color: var(--gcv-cyan); color: var(--gcv-cyan); }
+.gcv-chip--state { justify-self: start; margin: 0; }
+
+.gcv-list { display: grid; gap: var(--gcv-space-3); list-style: none; margin: 0; padding: 0; }
+.gcv-list__row { align-items: center; display: flex; flex-wrap: wrap; gap: var(--gcv-space-2) var(--gcv-space-4); }
+.gcv-list__title { color: var(--gcv-text); font-family: var(--gcv-font-display); font-size: var(--gcv-text-md); overflow-wrap: anywhere; text-decoration: none; }
+.gcv-list__title:hover { color: var(--gcv-cyan); }
+.gcv-editor .gcv-status { min-width: 0; overflow-wrap: anywhere; }
+.gcv-editor .gcv-lede, .gcv-editor .gcv-preview, .gcv-editor .gcv-preview *, .gcv-editor h3 { min-width: 0; overflow-wrap: anywhere; }
+.gcv-list__actions { align-items: center; display: flex; flex-wrap: wrap; gap: var(--gcv-space-2) var(--gcv-space-4); margin-top: var(--gcv-space-3); }
+.gcv-filters { display: grid; gap: var(--gcv-space-3); grid-template-columns: 1fr; }
+@media (min-width: 640px) { .gcv-filters { grid-template-columns: 2fr 1fr; } }
+.gcv-banner { border: 1px dashed var(--gcv-line-strong); color: var(--gcv-cyan); font: 500 var(--gcv-text-xs) / 1.4 var(--gcv-font-mono); margin: 0; padding: var(--gcv-space-2) var(--gcv-space-3); }
+.gcv-preview { line-height: var(--gcv-leading-body); max-width: 70ch; overflow-wrap: anywhere; }
+.gcv-preview img, .gcv-editor img { max-width: 100%; }
+.gcv-editor .gcv-chip { max-width: 100%; min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+.gcv-editor .gcv-preview pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; }
+.gcv-preview a, .gcv-editor .gcv-preview-area a { color: var(--gcv-cyan); }
+.gcv-tech { display: flex; flex-wrap: wrap; gap: var(--gcv-space-2); list-style: none; margin: 0; padding: 0; }
+.gcv-problems { margin: 0; padding-left: var(--gcv-space-6); }

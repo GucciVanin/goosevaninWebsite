@@ -833,7 +833,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US5: Apply the Design to the Editor
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-22, awaiting approval)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I use a private editor that matches the new design while staying compact and task-focused.
@@ -844,10 +844,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 2. Given the editor at 320 CSS-pixel width or by keyboard, when it is used, then actions stay reachable and focus is visible.
 3. Given Gustavo reviews the editor, when he approves it, then approval is recorded.
 
+**Implementation evidence (2026-10-22, start-dev work item `Docs/work-items/F9-US5`):** the workspace, story form, project form and image controls use the design tokens and shared editor-shell classes (`components.scss`); state is written in words (row chips `State: Draft` / `State: Published`, form badge `Status: ...`, the Stories/Projects toggle exposes `aria-pressed` and a check mark, the preview banner says `Draft preview: ... not public`); specs assert there is no legacy alias or colour literal in the editor components or in the `.gcv-editor` / `.gcv-auth` stylesheet rules (`editor-design.spec.ts`). At 320 CSS pixels the editor measured `scrollWidth` 320 on 11 states, including long unbroken text and the delete confirmation, after overflow fixes (measured with an emulated viewport and a stubbed API). Reviewer verdicts accurate (O1 to O4), Security pass (no findings), Testing: .NET 158, Karma 97 and container 393 tests each passed three times with identical per-test lists (`Docs/tests/reports/F9-US5-run.md`). **Gap recorded for review:** AC2 keyboard operation and visible focus, and the 320 px layout, have no automated test yet (follow-up for TE5 and F9-US7).
+
 **Tasks:**
 
-- [ ] Re-skin the F4 editor screens with the tokens and base components.
-- [ ] Update editor tests for markup changes and record Gustavo's approval.
+- [x] Re-skin the F4 editor screens with the tokens and base components.
+- [x] Update editor tests for markup changes. (Gustavo's approval is still to be recorded.)
 
 ### User Story F9-US6: Brand the Emails
 
