@@ -21,6 +21,7 @@ export class SiteHeader {
 
   // Only a convenience: the API decides who may use the editor.
   protected readonly isAdmin = signal(false);
+  protected readonly menuOpen = signal(false);
 
   constructor() {
     inject(AuthApi)
@@ -30,6 +31,7 @@ export class SiteHeader {
 
   protected onNavigate(id: string, event: Event): void {
     event.preventDefault();
+    this.menuOpen.set(false);
     this.navigate.emit(id);
   }
 }

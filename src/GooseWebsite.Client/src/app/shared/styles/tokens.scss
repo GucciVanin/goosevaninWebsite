@@ -33,6 +33,11 @@
   --gcv-orange: #ff9a4d;
   --gcv-danger: #ff6b86;
 
+  /* Page-background glows (used by .gcv-auth and .gcv-editor): --gcv-violet #a52bff and --gcv-cyan #00d9ff at low alpha. */
+  --gcv-glow-violet: rgba(165, 43, 255, 0.2);
+  --gcv-glow-violet-soft: rgba(165, 43, 255, 0.16);
+  --gcv-glow-cyan: rgba(0, 217, 255, 0.12);
+
   /* Type */
   --gcv-font-display: 'Michroma', 'Segoe UI', system-ui, sans-serif;
   --gcv-font-body: 'DM Sans', system-ui, sans-serif;

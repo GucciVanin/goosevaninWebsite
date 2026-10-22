@@ -14,47 +14,42 @@ const Allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   imports: [FormsModule],
   template: `
     <fieldset class="images">
-      <legend>Images</legend>
+      <legend class="gcv-label">Images</legend>
 
-      <p class="hint">JPEG, PNG, WebP or GIF, up to 5 MB.</p>
+      <p class="gcv-status">JPEG, PNG, WebP or GIF, up to 5 MB.</p>
 
       @if (coverImage()) {
         <img class="cover" [src]="coverImage()" [alt]="coverImageAlt() || 'Cover image (no description yet)'" />
       }
 
-      <label for="cover-file">{{ coverImage() ? 'Replace the cover image' : 'Cover image' }}</label>
-      <input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="busy()" (change)="chooseCover($event)" />
+      <div class="gcv-field"><label for="cover-file">{{ coverImage() ? 'Replace the cover image' : 'Cover image' }}</label>
+      <input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="busy()" (change)="chooseCover($event)" /></div>
 
       @if (coverImage()) {
-        <label for="cover-alt">Cover image description (for readers who cannot see it)</label>
-        <input id="cover-alt" type="text" [ngModel]="coverImageAlt()" (ngModelChange)="coverImageAlt.set($event)" />
-        <button type="button" class="secondary" (click)="removeCover()">Remove the cover image</button>
+        <div class="gcv-field"><label for="cover-alt">Cover image description (for readers who cannot see it)</label>
+        <input id="cover-alt" type="text" [ngModel]="coverImageAlt()" (ngModelChange)="coverImageAlt.set($event)" /></div>
+        <button type="button" class="gcv-btn" (click)="removeCover()">Remove the cover image</button>
       }
 
-      <label for="inline-alt">Description for an image inside the text</label>
-      <input id="inline-alt" type="text" [ngModel]="inlineAlt()" (ngModelChange)="inlineAlt.set($event)" />
-      <label for="inline-file">Add an image to the text</label>
-      <input id="inline-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="busy()" (change)="chooseInline($event)" />
+      <div class="gcv-field"><label for="inline-alt">Description for an image inside the text</label>
+      <input id="inline-alt" type="text" [ngModel]="inlineAlt()" (ngModelChange)="inlineAlt.set($event)" /></div>
+      <div class="gcv-field"><label for="inline-file">Add an image to the text</label>
+      <input id="inline-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="busy()" (change)="chooseInline($event)" /></div>
 
       @if (problem()) {
-        <p class="problem" role="alert">{{ problem() }}</p>
+        <p class="gcv-status gcv-status--alert" role="alert">{{ problem() }}</p>
       }
       @if (note()) {
-        <p class="note" role="status">{{ note() }}</p>
+        <p class="gcv-status" role="status">{{ note() }}</p>
       }
     </fieldset>
   `,
   styles: `
-    .images { border: 1px solid var(--line); display: grid; gap: 8px; margin: 12px 0 0; padding: 12px; }
-    legend { color: var(--muted); font: 11px var(--mono); letter-spacing: .08em; padding: 0 6px; text-transform: uppercase; }
-    label { color: var(--muted); font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-    input[type='text'] { background: #eef1e8; border: 1px solid var(--line); border-radius: 0; box-sizing: border-box; color: #172622; font: 16px var(--body); min-height: 44px; padding: 10px 12px; width: 100%; }
-    input[type='file'] { color: var(--ink); max-width: 100%; }
+    .images { border: 1px solid var(--gcv-line-strong); display: grid; gap: var(--gcv-space-3); margin: 0; min-width: 0; padding: var(--gcv-space-4); }
+    legend { padding: 0 var(--gcv-space-2); }
+    input[type='file'] { color: var(--gcv-text); max-width: 100%; }
     .cover { max-height: 200px; max-width: 100%; object-fit: contain; }
-    .hint, .note { color: var(--muted); font: 12px var(--mono); margin: 0; }
-    .problem { border: 1px solid var(--accent); margin: 0; padding: 8px 12px; }
-    button { background: transparent; border: 1px solid var(--line); color: var(--ink); cursor: pointer; font: 600 14px var(--body); min-height: 44px; padding: 8px 16px; }
-    input:focus-visible, button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
+    .images .gcv-btn { justify-self: start; }
   `,
 })
 export class ImageControls {

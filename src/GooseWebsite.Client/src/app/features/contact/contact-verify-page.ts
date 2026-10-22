@@ -1,42 +1,32 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { BrandLogo } from '../../shared/brand/brand-logo';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 // Requires an explicit user action so email link scanners cannot deliver a contact message.
 @Component({
   selector: 'app-contact-verify-page',
-  imports: [RouterLink],
+  imports: [BrandLogo, RouterLink],
   template: `
-    <main class="auth-page">
-      <a class="back-link" routerLink="/">Back to the site</a>
-      <section class="auth-panel" aria-labelledby="verification-title">
-        <p class="eyebrow">Contact</p>
-        <h1 id="verification-title">Confirm your email</h1>
+    <main class="gcv-auth">
+      <header class="gcv-auth__top"><a routerLink="/" aria-label="Gustavo Couto Vanin home"><app-brand-logo [size]="72" /></a><a class="gcv-link" routerLink="/">Back to the site</a></header>
+      <section class="gcv-auth__panel gcv-card" aria-labelledby="verification-title">
+        <p class="gcv-eyebrow">Contact</p>
+        <h1 id="verification-title" class="gcv-heading gcv-heading--section">Confirm your email</h1>
         @if (message()) {
-          <p class="status" role="status">{{ message() }}</p>
+          <p class="gcv-status" role="status">{{ message() }}</p>
         } @else if (hasToken) {
-          <p class="intro">Confirm your email address to send your message to Gustavo.</p>
-          <button type="button" [disabled]="isBusy()" (click)="confirm()">
+          <p class="gcv-status">Confirm your email address to send your message to Gustavo.</p>
+          <button type="button" class="gcv-btn gcv-btn--solid" [disabled]="isBusy()" (click)="confirm()">
             {{ isBusy() ? 'Sending…' : 'Confirm and send message' }}
           </button>
         } @else {
-          <p class="status" role="status">This verification link is invalid or incomplete.</p>
+          <p class="gcv-status" role="status">This verification link is invalid or incomplete.</p>
         }
       </section>
     </main>
   `,
-  styles: `
-    :host { display: block; min-height: 100vh; background: var(--paper); color: var(--ink); }
-    .auth-page { box-sizing: border-box; margin: 0 auto; max-width: 760px; min-height: 100vh; padding: 40px 24px; }
-    .back-link { color: var(--accent-soft); font: 12px var(--mono); }
-    .auth-panel { margin: clamp(64px, 16vh, 140px) auto 0; max-width: 440px; }
-    .eyebrow { color: var(--accent-soft); font: 11px var(--mono); text-transform: uppercase; }
-    h1 { font: 500 clamp(2rem, 7vw, 3.5rem)/1.1 var(--display); margin: 14px 0; }
-    .intro, .status { color: var(--muted); line-height: 1.6; }
-    button { background: var(--accent); border: 0; color: #071013; cursor: pointer; font: 600 14px var(--body); margin-top: 20px; min-height: 48px; padding: 12px 20px; }
-    button:disabled { cursor: wait; opacity: .65; }
-    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 4px; }
-  `,
+  styles: `:host { display: block; }`,
 })
 export class ContactVerifyPage implements OnInit {
   private readonly http = inject(HttpClient);

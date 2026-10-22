@@ -57,4 +57,42 @@ describe('SiteHeader', () => {
 
     expect(editorLink()).toBeNull();
   });
+
+  describe('mobile menu', () => {
+    function toggle(): HTMLButtonElement {
+      return fixture.nativeElement.querySelector('.gcv-menu') as HTMLButtonElement;
+    }
+
+    it('opens and closes a menu with the same links, and reports its state to assistive technology', () => {
+      fixture.componentRef.setInput('navItems', [{ label: 'Projects', id: 'work' }]);
+      fixture.detectChanges();
+      controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
+      expect(toggle().getAttribute('aria-expanded')).toBe('false');
+      expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
+
+      toggle().click();
+      fixture.detectChanges();
+
+      expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      const links = Array.from(fixture.nativeElement.querySelectorAll('.gcv-drawer a') as NodeListOf<HTMLAnchorElement>).map((a) => a.textContent.trim());
+      expect(links).toEqual(['Projects', 'Sign in']);
+
+      toggle().click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
+    });
+
+    it('closes the menu after choosing a section', () => {
+      fixture.componentRef.setInput('navItems', [{ label: 'Projects', id: 'work' }]);
+      fixture.detectChanges();
+      controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
+      toggle().click();
+      fixture.detectChanges();
+
+      (fixture.nativeElement.querySelector('.gcv-drawer a') as HTMLAnchorElement).click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
+    });
+  });
 });

@@ -736,7 +736,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US1: Establish Brand and Design Tokens
 
-**Status:** In Progress (implemented 2026-10-16, awaiting approval)  
+**Status:** Done (implemented 2026-10-16; approved 2026-10-20, pull request merged)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I get a documented brand foundation (logo, colors, typography, spacing, and base components) taken from my inspiration image, so every screen is built from the same pieces.
@@ -760,7 +760,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 - [x] Receive the logo SVG and the inspiration image; record the design analysis (regions, palette, typography, imagery, animation) in this feature.
 - [x] Define the token system (client styles) and document it in `architecture.md`.
 - [x] Add the logo asset with accessible markup; build base components (buttons, links, form fields, headings).
-- [ ] Review with Gustavo and record approval.
+- [x] Review with Gustavo and record approval (2026-10-20, pull request merged).
 
 
 **Implementation evidence (2026-10-16):** the logo renders from resized WebP copies with descriptive alt text and a 48 px minimum (spec `brand.spec.ts`, test 1); every colour, font, size, space, radius and timing is a named `--gcv-*` token in `tokens.scss` with its trace to the inspiration image in the file's header (test 2); the base components are global classes in `components.scss` and the token rule is written in `architecture.md` section 6.1 (test 3); the `/design` page applies everything, with the animated React scene and a sample project panel, for Gustavo's review (test 4, **pending his approval**; the last task stays open until then). Client specs: 66 pass, including the project panel opening in place with its link to the full post. The container run exercises `/design` in `30-pages.sh`.
@@ -772,7 +772,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
 
-**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. Page transitions, a mobile menu and the narrow-screen checks are not done yet.
+**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. A mobile menu (button with aria-expanded, same links) was added 2026-10-20. Page transitions and the narrow-screen checks are not done yet.
 
 **Acceptance tests:**
 
@@ -811,10 +811,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US4: Redesign Contact, Blog, and Account Pages
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-20, awaiting approval)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor or account holder, I see the same design on the contact form, the blog or story section, and the sign-in and email-verification screens.
+
+**Progress 2026-10-20:** the contact form and the Stories section were restyled with the home page (2026-10-16); now the sign-in, email-confirmation, contact-confirmation and access-denied screens use the same design (logo, bracketed panel, tokenised fields and buttons) and keep their behaviour. The existing specs pass unchanged apart from the markup; approval is still to be recorded.
 
 **Acceptance tests:**
 
@@ -831,7 +833,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US5: Apply the Design to the Editor
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-22, awaiting approval)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I use a private editor that matches the new design while staying compact and task-focused.
@@ -842,10 +844,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 2. Given the editor at 320 CSS-pixel width or by keyboard, when it is used, then actions stay reachable and focus is visible.
 3. Given Gustavo reviews the editor, when he approves it, then approval is recorded.
 
+**Implementation evidence (2026-10-22, start-dev work item `Docs/work-items/F9-US5`):** the workspace, story form, project form and image controls use the design tokens and shared editor-shell classes (`components.scss`); state is written in words (row chips `State: Draft` / `State: Published`, form badge `Status: ...`, the Stories/Projects toggle exposes `aria-pressed` and a check mark, the preview banner says `Draft preview: ... not public`); specs assert there is no legacy alias or colour literal in the editor components or in the `.gcv-editor` / `.gcv-auth` stylesheet rules (`editor-design.spec.ts`). At 320 CSS pixels the editor measured `scrollWidth` 320 on 11 states, including long unbroken text and the delete confirmation, after overflow fixes (measured with an emulated viewport and a stubbed API). Reviewer verdicts accurate (O1 to O4), Security pass (no findings), Testing: .NET 158, Karma 97 and container 393 tests each passed three times with identical per-test lists (`Docs/tests/reports/F9-US5-run.md`). **Gap recorded for review:** AC2 keyboard operation and visible focus, and the 320 px layout, have no automated test yet (follow-up for TE5 and F9-US7).
+
 **Tasks:**
 
-- [ ] Re-skin the F4 editor screens with the tokens and base components.
-- [ ] Update editor tests for markup changes and record Gustavo's approval.
+- [x] Re-skin the F4 editor screens with the tokens and base components.
+- [x] Update editor tests for markup changes. (Gustavo's approval is still to be recorded.)
 
 ### User Story F9-US6: Brand the Emails
 

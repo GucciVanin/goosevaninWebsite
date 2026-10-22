@@ -30,5 +30,21 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M3 5h18v14H3zM3 6l9 7 9-7" /></svg>
       </a>
     </span>
+    <button type="button" class="gcv-menu" [attr.aria-expanded]="menuOpen()" aria-controls="gcv-drawer" (click)="menuOpen.set(!menuOpen())">
+      <span class="sr-only">{{ menuOpen() ? 'Close menu' : 'Open menu' }}</span>
+      <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+    </button>
   </div>
+
+  @if (menuOpen()) {
+    <nav id="gcv-drawer" class="gcv-drawer" aria-label="Menu" (keydown.escape)="menuOpen.set(false)">
+      @for (item of navItems(); track item.id) {
+        <a [href]="'#' + item.id" (click)="onNavigate(item.id, $event)">{{ item.label }}</a>
+      }
+      @if (isAdmin()) {
+        <a routerLink="/editor" (click)="menuOpen.set(false)">Editor</a>
+      }
+      <a routerLink="/sign-in" (click)="menuOpen.set(false)">Sign in</a>
+    </nav>
+  }
 </header>
