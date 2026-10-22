@@ -1,0 +1,1 @@
+Brand the account verification email (and confirm the three contact emails already branded) so that the people who receive them see Gustavo's logo and the site's design, with a readable plain-text alternative, no tracking or third-party resources, and unchanged links, expiry guidance and privacy rules.

@@ -853,7 +853,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US6: Brand the Emails
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-22, awaiting approval)  
 **Release:** R1  
 **Estimate:** 1 US (12 hours), proposed 2026-10-02  
 **Goal:** As a person who receives a message from the site, I see Gustavo's logo and design in the contact acknowledgement and account verification emails.
@@ -865,9 +865,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 2. Given an email is inspected, when its content is reviewed, then it contains no tracking or third-party resources, and links, expiry guidance, and privacy rules are unchanged.
 3. Given the test mail sink, when emails are sent in automated tests, then recipient, count, and message content assertions still pass.
 
+**Implementation evidence (2026-10-22, start-dev work item `Docs/work-items/F9-US6`):** the account verification email is now an HTML message in the redesign's look (tables and inline styles, logo as the only image, from the site's own address) plus a plain-text alternative, built in code (`AccountVerificationEmailRenderer`, sent by `SmtpAccountEmailSender`); the link, the 24-hour expiry and the ignore sentence are unchanged; the display name is HTML-encoded. 11 new tests cover both views, the logo with alt text and its real aspect ratio (360x299), no script, link, font, tracking pixel or third-party host, encoding, and the failure when SMTP is not configured; the contact and registration mail-sink tests pass unchanged. Reviewer accurate, Security pass, Testing: .NET 169, Karma 97 and container 404 tests each passed three times with identical per-test lists (`Docs/tests/reports/F9-US6-run.md`). **Limits for review:** real mail clients (Gmail, Outlook, Apple Mail, phones, dark mode) are not covered by any automated test and the logo loads only once the site has a public address; use `Docs/email-templates/client-check.md`. The plain-text alternative of the three contact emails lives in the MailerSend dashboard and needs an action by Gustavo.
+
 **Tasks:**
 
-- [ ] Add HTML and plain-text templates through the shared mail sender, embedding the logo without third-party hosting.
+- [x] Add HTML and plain-text templates through the shared mail sender, embedding the logo without third-party hosting (logo on the site's own address).
 - [ ] Test rendering in representative clients and the automated mail-sink tests.
 
 ### User Story F9-US7: Verify Accessibility and Responsiveness After the Redesign
