@@ -1,4 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -70,6 +71,54 @@ describe('SignInPage', () => {
     fixture.detectChanges();
 
     expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Signed in as Site administrator');
+  });
+});
+
+// F9-US7: with the real AuthApi, a visitor who has no sign-in marker is signed out and the page does not ask the API.
+describe('SignInPage session probe', () => {
+  let controller: HttpTestingController;
+
+  async function open(): Promise<ComponentFixture<SignInPage>> {
+    await TestBed.configureTestingModule({
+      imports: [SignInPage],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
+      ],
+    }).compileComponents();
+    controller = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(SignInPage);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  afterEach(() => {
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
+  });
+
+  it('makes no request to /api/auth/me without the marker and says the visitor is not signed in', async () => {
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
+
+    const fixture = await open();
+    controller.expectOne('/api/auth/reader-registration').flush({ enabled: false });
+    fixture.detectChanges();
+
+    controller.expectNone('/api/auth/me');
+    expect(fixture.nativeElement.textContent).toContain('You are not currently signed in');
+    expect(fixture.nativeElement.querySelector('form')).not.toBeNull();
+  });
+
+  it('asks the API with the marker and shows who is signed in', async () => {
+    document.cookie = 'goosewebsite.signedin=1; path=/';
+
+    const fixture = await open();
+    controller.expectOne('/api/auth/reader-registration').flush({ enabled: false });
+    controller.expectOne('/api/auth/me').flush({ displayName: 'Site administrator', isAdmin: true });
+    fixture.detectChanges();
+
     expect(fixture.nativeElement.textContent).toContain('Signed in as Site administrator');
   });
 });

@@ -120,7 +120,7 @@ $verifyExit = $LASTEXITCODE
 Step 'Result'
 if (Test-Path (Join-Path $results 'latest.json')) {
   $summary = Get-Content (Join-Path $results 'latest.json') -Raw | ConvertFrom-Json
-  Write-Host "$($summary.passed) passed, $($summary.failed) failed, $($summary.skipped) skipped"
+  Write-Host "$($summary.passed) passed, $($summary.failed) failed, $($summary.skipped) skipped, $($summary.known) known (defects listed in verify/browser/known-issues.json)"
   Write-Host 'Log:  verify-results\latest.log'
   Write-Host 'JSON: verify-results\latest.json'
 } else {

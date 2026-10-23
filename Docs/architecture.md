@@ -184,9 +184,9 @@ Owns identity, sessions, and authorization. Source: `Modules/Accounts/`.
 | Role seeding | `Services/AccountRoleInitializer.cs` | Creates missing roles at startup, never users |
 | Admin provisioning | `Services/AdminProvisioningService.cs`, `AdminProvisioningCommand.cs` | Interactive operator command; refuses existing accounts; never promotes a user |
 | Reader accounts | `Services/IReaderAccountService.cs`, `ReaderAccountService.cs` | Registration, resend and email Verification return neutral outcomes (the controller maps them), so nothing reveals whether an address has an account. A role assignment that fails (or throws because the role is missing) removes the new account again |
-| Verification email | `Services/IAccountEmailSender.cs`, `SmtpAccountEmailSender.cs` | Separate from contact delivery on purpose |
+| Verification email | `Services/IAccountEmailSender.cs`, `SmtpAccountEmailSender.cs`, `AccountVerificationEmailRenderer.cs` | Separate from contact delivery on purpose. Sends a multipart message: branded HTML (tables and inline styles, no remote resources except the logo at `{PublicBaseUrl}/email/gcv-logo.png`, built with `PublicLinkBuilder.SiteLink`) plus a plain-text alternative. The display name is HTML-encoded in the HTML view. See `Docs/email-templates/README.md` |
 
-Security settings in force: unique email, password minimum 12 characters with no composition rule, lockout after 5 failures for 15 minutes, email confirmation required to sign in, confirmation token lifetime 24 hours, cookie `goosewebsite.auth` (HttpOnly, SameSite=Lax, Secure always in Production, 30-minute sliding expiry, not persistent), antiforgery cookie `goosewebsite.csrf` with header `X-CSRF-TOKEN`. Cookie events return 401 and 403 rather than redirecting. Signing out also rotates the account's security stamp, so a session cookie captured before sign-out stops working too (cookies are checked against the stamp on every request).
+Security settings in force: unique email, password minimum 12 characters with no composition rule, lockout after 5 failures for 15 minutes, email confirmation required to sign in, confirmation token lifetime 24 hours, cookie `goosewebsite.auth` (HttpOnly, SameSite=Lax, Secure always in Production, 30-minute sliding expiry, not persistent), antiforgery cookie `goosewebsite.csrf` with header `X-CSRF-TOKEN`. A sign-in marker cookie `goosewebsite.signedin` (F9-US7) is set with the value `1` when sign-in succeeds and cleared at sign-out; it is the one cookie that is deliberately not HttpOnly (Secure, SameSite=Lax, path `/`, no expiry, no identity or token in it) because the client reads it to decide whether to call `GET /api/auth/me`; it is a hint only and grants nothing. Cookie events return 401 and 403 rather than redirecting. Signing out also rotates the account's security stamp, so a session cookie captured before sign-out stops working too (cookies are checked against the stamp on every request).
 
 | Endpoint | Auth | Purpose |
 | --- | --- | --- |
@@ -194,7 +194,7 @@ Security settings in force: unique email, password minimum 12 characters with no
 | `GET /api/auth/reader-registration` | anonymous | Whether reader registration is enabled |
 | `POST /api/auth/login` | anonymous, CSRF | Sign in; same generic error for unknown, wrong, locked, or unconfirmed |
 | `POST /api/auth/logout` | signed in, CSRF | Sign out |
-| `GET /api/auth/me` | signed in | Display name and server-derived `isAdmin` |
+| `GET /api/auth/me` | signed in | Display name and server-derived `isAdmin` (the client calls it only while the sign-in marker cookie is present) |
 | `POST /api/auth/register` | anonymous, CSRF, rate limited | Create unconfirmed Reader; always the same response. Returns 404 unless `Auth:ReaderRegistration:Enabled` is true |
 | `POST /api/auth/verification/resend` | anonymous, CSRF, rate limited | Resend confirmation; generic response |
 | `POST /api/auth/verify-email` | anonymous, CSRF, rate limited | Confirm with `userId` and `token` from the link |
@@ -348,9 +348,10 @@ sequenceDiagram
         A-->>B: 401 generic error
     else success
         I-->>B: Set-Cookie goosewebsite.auth (HttpOnly)
+        A-->>B: Set-Cookie goosewebsite.signedin=1 (readable marker, no identity)
         A-->>B: 200 displayName, isAdmin
     end
-    B->>A: GET /api/auth/me
+    B->>A: GET /api/auth/me (only while the goosewebsite.signedin marker is present)
     A-->>B: displayName, isAdmin (UI hint only)
 ```
 
@@ -457,7 +458,7 @@ flowchart TD
 
 | Folder | Holds |
 | --- | --- |
-| `app/features/auth/` | `api/` (AuthApi with CSRF handling), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
+| `app/features/auth/` | `api/` (AuthApi with CSRF handling, and `session-marker.ts`: `getCurrentUser()` makes no request without the sign-in marker and clears the marker when the API answers 401), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
 | `app/features/editor/` | The editor workspace (`EditorPage`: stories with status filter, title search and confirmed deletion), the story form (`pages/story-form-page`), `StoryApi`, `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
 | `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
 | `app/features/home/` | The home page and its sections, all built from the design tokens: `hero` and `categories` over the animated scene, `approach` (About, with the portrait), `selected-work` (Projects: published projects from `/api/projects` as `ProjectPanel`s), `toolkit` (Skills). Stories (`features/blog`) and Contact (`features/contact`) follow, then the footer |
@@ -609,15 +610,22 @@ Continuous integration (`.github/workflows/ci.yml`) runs on every pull request a
 | Piece | Location | Notes |
 | --- | --- | --- |
 | Orchestrator | `scripts/verify.ps1` | Exit 0 only if everything passed; exit 2 means it stopped before verifying (CI red, no pull request, unhealthy stack) |
-| Stages | `verify/stages/NN-*.sh` | Sourced in name order and always run to the end: `10-unit-dotnet` (xUnit), `20-unit-angular` (Karma in headless Chrome, `karma.conf.js`), `30-runtime`. A new stack (React) is one more script |
+| Stages | `verify/stages/NN-*.sh` | Sourced in name order and always run to the end: `10-unit-dotnet` (xUnit), `20-unit-angular` (Karma in headless Chrome, `karma.conf.js`), `30-runtime`, `40-browser` (Playwright, below). A new stack (React) is one more script. `VERIFY_STAGES` (a prefix regular expression such as `40`) limits a run to some stages |
 | Runtime tests | `verify/runtime/NN-*.sh` | One file per feature: health, HTTPS (redirect, HSTS, certificate), pages, contact (refusals only), mail provider authorization (read-only call, no email sent), authentication, blog, reader registration state, operator commands and startup migrations. A new feature adds a file here |
-| Helpers | `verify/lib.sh` | `check`, `check_contains`, `skip`, and HTTP helpers that go through Caddy over HTTPS |
+| Browser tests | `verify/browser/` | Playwright 1.64.1 and axe-core 4.14.0 on Chromium, Firefox and WebKit (TE5); see below |
+| Helpers | `verify/lib.sh` | `check`, `check_contains`, `skip`, and HTTP helpers that go through Caddy over HTTPS. A result is `PASS`, `FAIL`, `SKIP` or `KNOWN` (a defect listed in `verify/browser/known-issues.json`, counted apart in the summary and the JSON) |
 | Results | `verify-results/` (git-ignored) | `latest.log` (one line per test), `latest.json`, raw `unit-*.out`, `ops.log`, `web.log`, and the last three data backups |
 | Test credentials | `.env.verify` (copied from `.env.verify.example`) | Test-only values; the stack's data is reset on every run |
 
 The run never sends an email: the contact form is only given requests it refuses, and the mail provider check is a read-only authorization call that prints no key. The data left in place after a run is the final state of the tests. The first run of this suite found a real defect (sign-out did not end the session on the server), now fixed under F3-US1.
 
-Current result (2026-10-14): 222 checks pass (108 .NET, 28 Angular, 86 runtime). Not covered: the rendered content of the Angular pages and the other browser-level acceptance tests (320 px, keyboard, contrast); see enabler TE5.
+### Browser tests (TE5)
+
+`Dockerfile.verify` installs the pinned Playwright browsers and system libraries (`PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`, a cached layer before the sources). `verify/stages/40-browser.sh` starts `verify/browser/helpers/forward.cjs`, a TCP forwarder from `localhost:443` in the verification container to Caddy, so the browsers use the real address `https://localhost` with the stack's own certificate (accepted with `ignoreHTTPSErrors`), then runs Playwright and turns its JSON-lines report (`helpers/jsonl-reporter.ts`) into one `PASS`/`FAIL`/`KNOWN` line per test per engine. A global setup signs the seeded test administrator in through the API with the `VERIFY_ADMIN_*` settings and keeps the session for the editor screens only for the length of the run. The checks per screen are load without failed requests or console errors, axe WCAG 2.1 A/AA, 320 px reflow, keyboard order and focus indicators, and reduced motion on the home page. Defects that a later story will fix are listed in `verify/browser/known-issues.json` and reported `KNOWN`; an entry that stops reproducing fails the test until it is removed. How to run one engine, add a test and read a failure: `Docs/tests/README.md`.
+
+Tightened checks (TE5 O3): the focus indicator must differ from the element's unfocused outline and box-shadow (an always-present decoration fails); the reachable-element list covers links, buttons, fields, `summary`, `contenteditable`, `iframe`, media with `controls` and anything with `tabindex` of 0 or more (the ARIA widgets button, link, checkbox, tab and menuitem when they get one); the keyboard check also runs on the home page at 320 px with the mobile menu open; axe known issues name rule and element (`axe:<rule>:<selector>`); the 320 px test asserts `innerWidth` is 320 first; `verify/browser/tests/selftest.spec.ts` keeps the negative controls. The stage fails on a known-issues entry whose screen, kind or engine matches no test ("orphan known issue"), counts its own failures, and fails when the number of results differs from the number of tests Playwright lists. Content checks (F9-US7): `profile.spec.ts` (home: the name, positioning line, bio and summary are visible text in About, not only screen-reader text; the portrait has descriptive alt text and loads; GitHub, LinkedIn and email links; no age or street address) and `contact.spec.ts` (F2-US1 tests 1 to 4 on the home page form: each invalid field shows a text error next to it in the shared alert style with `aria-invalid` and `aria-describedby`, the error goes away when corrected, Enter on an empty form shows every error and moves focus to the first invalid field, the submit button is not disabled by validity, and no request reaches `/api/contact`). The contact test never submits a valid form, because the stack may have a real mail provider configured; it stops at validation, and test 3 (the verification-pending message) is covered by the xUnit `ContactVerificationApiTests` and the Karma `contact-verify-page.spec.ts`. `verify/browser/known-issues.json` is empty since F9-US7 fixed the signed-out `GET /api/auth/me` 401 and the WebKit date-field focus indicator. Real Edge and Safari: `Docs/tests/browser-manual-check.md`. Known limits: a request that starts after `networkidle` is not seen by the load check; the content of iframes and positive `tabindex` ordering are not walked by the keyboard check.
+
+Current result (2026-10-22, after F9-US7, `./scripts/verify.ps1 -SkipCi`): 567 checks pass, 0 fail, 0 known (.NET, Angular and runtime checks, plus the browser stage: 126 tests on 3 engines, all pass, and 2 stage self-checks). Not covered by anything yet: visual regression, Lighthouse, real Edge and Safari, previous browser versions.
 
 ## 11. Known gaps and technical debt
 

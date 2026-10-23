@@ -30,6 +30,17 @@ check_contains "the session cookie is HttpOnly" "httponly" "$auth_cookie"
 check_contains "the session cookie is SameSite=Lax" "samesite=lax" "$auth_cookie"
 check_not_contains "the session cookie is a session cookie (no fixed expiry)" "expires=" "$auth_cookie"
 
+# The sign-in marker (F9-US7): a hint the browser app reads so it asks /api/auth/me only when signed in. It is the one
+# cookie that is NOT HttpOnly by design (the page's script must read it), so it is checked on its own terms: it
+# carries a constant, never an identity or a token, and the session cookie above stays HttpOnly.
+marker_cookie=$(grep -i '^set-cookie: goosewebsite.signedin=' "$JAR_DIR/login.headers" | tr -d '\r' | tr 'A-Z' 'a-z')
+check "the sign-in marker value is a constant with no identity" "set-cookie: goosewebsite.signedin=1" "$(cut -d';' -f1 <<<"$marker_cookie")"
+check_contains "the sign-in marker is Secure" "secure" "$marker_cookie"
+check_contains "the sign-in marker is SameSite=Lax" "samesite=lax" "$marker_cookie"
+check_contains "the sign-in marker is for the whole site (path=/)" "path=/" "$marker_cookie"
+check_not_contains "the sign-in marker is readable by the page (not HttpOnly, by design)" "httponly" "$marker_cookie"
+check_not_contains "the sign-in marker is a session cookie (no fixed expiry)" "expires=" "$marker_cookie"
+
 me=$(curl_https -b "$ADMIN_JAR" "$BASE/api/auth/me")
 check "the signed-in profile says administrator" true "$(jq -r .isAdmin <<<"$me")"
 check "the signed-in profile shows the display name" "Site administrator" "$(jq -r .displayName <<<"$me")"

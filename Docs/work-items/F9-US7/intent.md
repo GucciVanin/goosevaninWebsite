@@ -1,0 +1,1 @@
+Prove that the redesigned site is accessible and works at 320 px, by keyboard, with reduced motion and across the browser engines before launch, by fixing the defects the new browser tests found, re-running the F1 and F2-US1 acceptance tests against the new design, and recording exactly what could not be checked here (real Edge and Safari, previous versions).
