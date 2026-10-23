@@ -11,6 +11,8 @@ describe('editorGuard', () => {
   let router: Router;
 
   beforeEach(() => {
+    // The sign-in marker is present: the guard asks the API (the describe below covers a visitor with none).
+    document.cookie = 'goosewebsite.signedin=1; path=/';
     TestBed.configureTestingModule({
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     });
@@ -18,7 +20,10 @@ describe('editorGuard', () => {
     router = TestBed.inject(Router);
   });
 
-  afterEach(() => controller.verify());
+  afterEach(() => {
+    controller.verify();
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
+  });
 
   function visit(): Promise<boolean | UrlTree> {
     const result = TestBed.runInInjectionContext(() =>
@@ -45,6 +50,15 @@ describe('editorGuard', () => {
     const outcome = visit();
     controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
 
+    expect(router.serializeUrl((await outcome) as UrlTree)).toBe('/sign-in?returnUrl=%2Feditor');
+  });
+
+  it('sends a visitor with no sign-in marker to sign in without asking the API', async () => {
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
+
+    const outcome = visit();
+
+    controller.expectNone('/api/auth/me');
     expect(router.serializeUrl((await outcome) as UrlTree)).toBe('/sign-in?returnUrl=%2Feditor');
   });
 

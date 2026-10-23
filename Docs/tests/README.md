@@ -21,7 +21,7 @@ The runtime tests are the files in `verify/runtime/` plus the xUnit and Karma su
 
 ## Browser tests (TE5)
 
-Playwright and axe-core run as stage `40-browser` of `./scripts/verify.ps1`, inside the verification container, against the live stack, on Chromium, Firefox and WebKit (the engines behind Chrome and Edge, Firefox and Safari; real Edge and Safari are a manual pass, recorded in each report). Pinned: `@playwright/test` 1.64.1, `@axe-core/playwright` and `axe-core` 4.14.0 (`verify/browser/package.json` and lockfile); the engine builds are the ones that Playwright version installs, so rebuilding the image gives the same browsers.
+Playwright and axe-core run as stage `40-browser` of `./scripts/verify.ps1`, inside the verification container, against the live stack, on Chromium, Firefox and WebKit (the engines behind Chrome and Edge, Firefox and Safari; real Edge and Safari are a manual pass: the checklist is `Docs/tests/browser-manual-check.md`, and the result is recorded in each report). Pinned: `@playwright/test` 1.64.1, `@axe-core/playwright` and `axe-core` 4.14.0 (`verify/browser/package.json` and lockfile); the engine builds are the ones that Playwright version installs, so rebuilding the image gives the same browsers.
 
 | Check | File in `verify/browser/tests/` | Criterion | Runs on |
 | --- | --- | --- | --- |
@@ -33,6 +33,8 @@ Playwright and axe-core run as stage `40-browser` of `./scripts/verify.ps1`, ins
 | Self-tests of the checks (negative controls: static outline, selector coverage, axe element identity, known-issue masking, viewport width) | `selftest.spec.ts` | TE5-AC3 to AC5 | no application needed |
 | Reduced motion: nothing animates, content present | `motion.spec.ts` | TE5-AC6 | home |
 | Smoke: the layer works end to end | `smoke.spec.ts` | TE5-AC1 | home |
+| Profile: name, positioning line, bio and summary in visible text in About; portrait alt text and load; GitHub, LinkedIn and email links (`target`, `rel`); no age or street address | `profile.spec.ts` | F9-US7-AC6 (F1-US1 tests 1 and 2) | home |
+| Contact form (F2-US1 tests 1 to 4): fields, labels, exact reason choices; incomplete or malformed input is blocked and identified with no request to `/api/contact`; labels and layout at 375 px. A valid form is never submitted (the stack may have real mail configured): test 3 is covered by the xUnit and Karma tests named in the spec | `contact.spec.ts` | F9-US7-AC6 (F2-US1) | home |
 
 Screens (`verify/browser/helpers/screens.ts`): home, sign-in, email confirmation and contact confirmation (no token), access denied, and with the seeded test administrator the editor workspace, story form and project form.
 

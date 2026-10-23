@@ -97,6 +97,7 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 2. Given profile content is reviewed, when the page is inspected, then the photo and selected links are present and usable, and neither age, exact location, nor other sensitive detail is exposed.
 3. Given a visitor activates a profile link, when navigation completes, then the intended destination opens successfully.
 4. Given the first viewport is reviewed at desktop and mobile widths, when the profile is rendered, then name and positioning are the strongest text hierarchy, the portrait is visible, and a contact action is available without scrolling past a promotional hero.
+   **Amended 2026-10-22 (Gustavo, F9):** the landing-page design replaces this. The first viewport shows the headline Software Engineer with the eyebrow, intro and the Explore my work action, and the header carries the GitHub, LinkedIn and email links; Gustavo's name, the positioning line, the short bio and the professional summary are shown in the About section (with the portrait), where tests 1 and 2 are checked. A contact action stays reachable from the header without scrolling.
 
 **Tasks:**
 
@@ -120,6 +121,7 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 2. Given keyboard-only input, when the visitor tabs through the page, then every link is reachable in a logical order and has a visible focus state.
 3. Given an automated accessibility scan of the profile, when violations are reviewed, then there are zero critical or serious violations attributable to the profile feature.
 4. Given the profile and first viewport are inspected, when typography and colors are checked, then the display serif, sans-serif body, restrained monospace metadata, and stated color roles are used consistently.
+   **Amended 2026-10-22 (Gustavo, F9):** superseded by the F9 design tokens (Michroma display, DM Sans body, JetBrains Mono labels, the charcoal, cyan and magenta roles in tokens.scss); the check is that screens use tokens consistently (F9-US1, F9-US7).
 5. Given text and controls are tested against their backgrounds, when contrast is measured, then text meets WCAG AA contrast and focus/state information is not conveyed by color alone.
 
 **Tasks:**
@@ -874,7 +876,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US7: Verify Accessibility and Responsiveness After the Redesign
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-22, awaiting approval; real Edge and Safari still to be checked by hand)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I know the new design is still accessible and works on the supported devices and browsers before launch.
@@ -889,11 +891,13 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 6. Given the F1 and F2-US1 acceptance tests, when they are re-run against the new design, then they pass, or the failure is fixed before launch.
 7. Given an automated accessibility scan runs, when violations are reviewed, then there are zero critical or serious violations.
 
+**Implementation evidence (2026-10-22, start-dev work item `Docs/work-items/F9-US7`, built on the browser test layer TE5):** the seven known defects from TE5 are fixed and `known-issues.json` is empty: the signed-out `GET /api/auth/me` 401 (a session marker cookie with no identity in it, set at sign-in and cleared at sign-out; the API contract is unchanged) and the WebKit date-field focus indicator. The re-run of the F1 and F2-US1 acceptance tests found two real gaps that were fixed: the home page no longer showed Gustavo's name, positioning line, bio and summary (they are now in About; F1-US1 test 4 and F1-US2 test 4 were amended by Gustavo's decision), and the contact form only disabled its submit button (it now shows a text error beside each invalid field with `aria-invalid` and `aria-describedby`, and moves focus to the first invalid field). Reviewer accurate (two rounds), Security pass, Testing: .NET 175, Karma 120 and container 567 tests each passed three times with identical lists, 0 known (`Docs/tests/reports/F9-US7-run.md`). The browser stage runs 42 tests on each of Chromium, Firefox and WebKit: axe WCAG A and AA scan, 320 px, keyboard and focus, reduced motion, profile and contact checks on 8 screens. **Limits:** real Edge and Safari and previous browser versions are not run (manual checklist `Docs/tests/browser-manual-check.md` is for Gustavo); colour-not-alone is verified only through the axe scan and the state-in-words specs; F2-US1 test 3 (valid submit) is covered by xUnit and Karma, not in the browser (the verification stack has real SMTP settings); users who signed in before this change look signed out until they sign in again.
+
 **Tasks:**
 
-- [ ] Run contrast, 320 px, keyboard, reduced-motion, and browser-matrix checks and fix findings.
-- [ ] Re-run the F1 and F2-US1 acceptance tests and record evidence.
-- [ ] Run the automated accessibility scan (see enabler TE5) and record results.
+- [x] Run contrast, 320 px, keyboard, reduced-motion, and browser-matrix checks and fix findings (engines automated; real Edge and Safari by manual checklist).
+- [x] Re-run the F1 and F2-US1 acceptance tests and record evidence.
+- [x] Run the automated accessibility scan (see enabler TE5) and record results.
 
 **Feature estimate:** 14 US (168 hours)
 

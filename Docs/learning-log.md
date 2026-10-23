@@ -9,3 +9,8 @@ Gaps the gates missed: the gap type (missing requirements, unchecked work, lost 
 ## 2026-10-22 - F9-US6
 
 - **Gap type: unchecked work.** AC1 asks for real mail clients and "follows the approved design", which no automated test can assert, and the logo cannot load from `localhost`. What would have caught it: a rendered-email visual test in the browser layer (TE5) and a public staging address; until then the manual checklist `Docs/email-templates/client-check.md` is the check.
+
+## 2026-10-22 - F9-US7
+
+- **Gap type: missing requirements.** F2-US1 (marked Done) required the invalid field to be identified and errors to sit beside the fields, but the form only disabled the submit button; it went unnoticed until a browser test checked it. What would have caught it: a browser-level layer when F2-US1 was built (TE5 now exists), and acceptance criteria written as observable text rather than "identified".
+- **Gap type: unrecorded decision.** The F1-US1 text on the home page was lost when the hero was redesigned (F9-US3) and nobody re-ran F1 until F9-US7. What would have caught it: re-running earlier features acceptance tests when a screen is redesigned, not only at the end of the feature.

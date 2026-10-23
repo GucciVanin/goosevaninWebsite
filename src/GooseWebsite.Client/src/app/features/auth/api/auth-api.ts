@@ -1,15 +1,25 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, switchMap } from 'rxjs';
+import { Observable, switchMap, tap, throwError } from 'rxjs';
 import { AuthenticatedUser } from '../models/authenticated-user';
+import { clearSignInMarker, hasSignInMarker } from './session-marker';
 
 // Keeps session mutations on the same CSRF-protected request path.
 @Injectable({ providedIn: 'root' })
 export class AuthApi {
   constructor(private readonly http: HttpClient) {}
 
+  // Asks the API only when the sign-in marker is present. Without it nobody has signed in, so the answer is
+  // "not signed in" (a 401, as the API would say) without a request that the browser would report as a failure.
   getCurrentUser(): Observable<AuthenticatedUser> {
-    return this.http.get<AuthenticatedUser>('/api/auth/me');
+    if (!hasSignInMarker()) {
+      return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized', url: '/api/auth/me' }));
+    }
+
+    return this.http.get<AuthenticatedUser>('/api/auth/me').pipe(
+      // The session is gone (expired or ended elsewhere): forget the hint so no page asks again.
+      tap({ error: (error: unknown) => error instanceof HttpErrorResponse && error.status === 401 && clearSignInMarker() }),
+    );
   }
 
   getReaderRegistrationAvailability(): Observable<{ enabled: boolean }> {
@@ -33,7 +43,7 @@ export class AuthApi {
   }
 
   logout(): Observable<void> {
-    return this.postWithCsrf<void>('/api/auth/logout', {});
+    return this.postWithCsrf<void>('/api/auth/logout', {}).pipe(tap(() => clearSignInMarker()));
   }
 
   private postWithCsrf<TResponse>(url: string, body: unknown): Observable<TResponse> {

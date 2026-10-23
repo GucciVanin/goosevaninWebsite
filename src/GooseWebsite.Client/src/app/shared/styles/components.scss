@@ -103,7 +103,8 @@
 }
 .gcv-field input:focus-visible,
 .gcv-field textarea:focus-visible,
-.gcv-field select:focus-visible { border-color: var(--gcv-cyan); }
+.gcv-field select:focus-visible,
+.gcv-field input[type='date']:focus-within { border-color: var(--gcv-cyan); }
 
 .gcv-chip {
   border: 1px solid var(--gcv-line-strong);
@@ -127,7 +128,11 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
-summary:focus-visible {
+summary:focus-visible,
+/* WebKit does not match :focus-visible on a date field reached with Tab (its inner day, month and year parts hold the
+   focus), so the field would show no indicator there. :focus and :focus-within do match. */
+input[type='date']:focus,
+input[type='date']:focus-within {
   outline: var(--gcv-focus);
   outline-offset: var(--gcv-focus-offset);
 }

@@ -25,6 +25,11 @@ public sealed class AuthController(
     private const string VerificationPendingMessage = "If this account is eligible, you will receive a confirmation email.";
     private const string InvalidVerificationMessage = "Your verification link is invalid or expired.";
 
+    // A hint for the browser app, not a credential: present while a sign-in is believed to be active, so the app
+    // asks GET api/auth/me only then and a signed-out visitor never triggers a 401. It holds a constant, never an
+    // identity or a token, and grants nothing: the HttpOnly session cookie remains the only proof of a session.
+    internal const string SignedInMarkerCookie = "goosewebsite.signedin";
+
     private static readonly ApplicationUser DummyUser = new();
 
     // Equalizes unknown-user and locked-account work to reduce credential-timing leaks.
@@ -71,6 +76,7 @@ public sealed class AuthController(
             return Unauthorized(new { error = GenericSignInError });
         }
 
+        Response.Cookies.Append(SignedInMarkerCookie, "1", SignedInMarkerOptions());
         return Ok(await ToResponseAsync(user));
     }
 
@@ -126,6 +132,7 @@ public sealed class AuthController(
             await database.RotateSecurityStampAsync(user);
         }
 
+        Response.Cookies.Delete(SignedInMarkerCookie, SignedInMarkerOptions());
         return NoContent();
     }
 
@@ -136,6 +143,16 @@ public sealed class AuthController(
         var user = await database.GetUserAsync(User);
         return user is null ? Unauthorized() : Ok(await ToResponseAsync(user));
     }
+
+    // Readable by the page's script on purpose (no HttpOnly); a session cookie (no expiry) like the one it mirrors.
+    private static CookieOptions SignedInMarkerOptions() => new()
+    {
+        Path = "/",
+        Secure = true,
+        SameSite = SameSiteMode.Lax,
+        HttpOnly = false,
+        IsEssential = true
+    };
 
     private async Task<AuthenticatedUserResponse> ToResponseAsync(ApplicationUser user) =>
         new(user.DisplayName, await database.IsUserInRoleAsync(user, AccountRoles.Admin));

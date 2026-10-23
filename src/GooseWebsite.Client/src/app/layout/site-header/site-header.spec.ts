@@ -10,6 +10,8 @@ describe('SiteHeader', () => {
   let controller: HttpTestingController;
 
   beforeEach(async () => {
+    // The sign-in marker is present, so the header asks the API who is signed in (see the describe below for none).
+    document.cookie = 'goosewebsite.signedin=1; path=/';
     await TestBed.configureTestingModule({
       imports: [SiteHeader],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
@@ -19,6 +21,10 @@ describe('SiteHeader', () => {
     fixture = TestBed.createComponent(SiteHeader);
     fixture.componentRef.setInput('navItems', []);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
   });
 
   function editorLink(): HTMLAnchorElement | null {
@@ -94,5 +100,45 @@ describe('SiteHeader', () => {
 
       expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
     });
+  });
+});
+
+
+// F9-US7: a visitor with no sign-in marker is signed out, so the header does not ask the API (which would answer 401).
+describe('SiteHeader without a sign-in marker', () => {
+  let controller: HttpTestingController;
+
+  beforeEach(async () => {
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
+    await TestBed.configureTestingModule({
+      imports: [SiteHeader],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    controller = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    document.cookie = 'goosewebsite.signedin=; path=/; max-age=0';
+  });
+
+  it('makes no request to /api/auth/me and shows the sign-in link', () => {
+    const fixture = TestBed.createComponent(SiteHeader);
+    fixture.componentRef.setInput('navItems', []);
+    fixture.detectChanges();
+
+    controller.expectNone('/api/auth/me');
+    expect((fixture.nativeElement.querySelector('.topbar-login') as HTMLAnchorElement).getAttribute('href')).toBe('/sign-in');
+    expect(fixture.nativeElement.querySelector('.topbar-editor')).toBeNull();
+  });
+
+  it('forgets a marker the API does not honour, so the next page does not ask again', () => {
+    document.cookie = 'goosewebsite.signedin=1; path=/';
+    const fixture = TestBed.createComponent(SiteHeader);
+    fixture.componentRef.setInput('navItems', []);
+    fixture.detectChanges();
+
+    controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
+
+    expect(document.cookie).not.toContain('goosewebsite.signedin');
   });
 });
