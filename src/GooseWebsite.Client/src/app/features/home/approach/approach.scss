@@ -5,7 +5,11 @@
 .portrait::before { border-left-width: 1px; border-top-width: 1px; left: -8px; top: -8px; }
 .portrait::after { border-bottom-width: 1px; border-right-width: 1px; bottom: -8px; right: -8px; }
 .portrait img { background: radial-gradient(circle at 50% 40%, var(--gcv-bg-2), var(--gcv-bg-1)); border: 1px solid var(--gcv-line); display: block; height: auto; width: 100%; }
+.caption { color: var(--gcv-text-muted); font: 500 var(--gcv-text-sm) / 1.4 var(--gcv-font-mono); letter-spacing: 0.08em; margin-top: var(--gcv-space-3); }
 .text { display: grid; gap: var(--gcv-space-5); }
+.profile-text { display: grid; gap: var(--gcv-space-3); }
+.profile-text p { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; }
+.profile-text .positioning { color: var(--gcv-text); font-weight: 500; }
 h2 { font-size: var(--gcv-text-xl); line-height: 1.25; text-transform: none; }
 .principles { display: grid; gap: var(--gcv-space-4); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); list-style: none; margin: var(--gcv-space-7) 0 0; padding: 0; }
 .principles li { display: grid; gap: var(--gcv-space-3); }

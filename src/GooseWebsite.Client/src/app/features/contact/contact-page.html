@@ -15,21 +15,34 @@
           <button type="button" class="gcv-btn" (click)="submitted.set(false)">Send another message <span aria-hidden="true">↗</span></button>
         </div>
       } @else {
-        <form #contactForm="ngForm" (ngSubmit)="submit(contactForm.value)" novalidate>
-          <div class="gcv-field"><label for="contact-name">Your name</label><input id="contact-name" name="name" ngModel required placeholder="What should I call you?" autocomplete="name" /></div>
-          <div class="gcv-field"><label for="contact-email">Email address</label><input id="contact-email" name="email" ngModel required email type="email" placeholder="you@company.com" autocomplete="email" /></div>
+        <form #contactForm="ngForm" (ngSubmit)="submit(contactForm)" novalidate>
+          <div class="gcv-field">
+            <label for="contact-name">Your name</label>
+            <input id="contact-name" name="name" #name="ngModel" ngModel required placeholder="What should I call you?" autocomplete="name" [attr.aria-invalid]="shows(name) ? 'true' : null" [attr.aria-describedby]="shows(name) ? 'contact-name-error' : null" />
+            @if (shows(name)) { <p id="contact-name-error" class="gcv-status gcv-status--alert">Enter your name</p> }
+          </div>
+          <div class="gcv-field">
+            <label for="contact-email">Email address</label>
+            <input id="contact-email" name="email" #email="ngModel" ngModel required email type="email" placeholder="you@company.com" autocomplete="email" [attr.aria-invalid]="shows(email) ? 'true' : null" [attr.aria-describedby]="shows(email) ? 'contact-email-error' : null" />
+            @if (shows(email)) { <p id="contact-email-error" class="gcv-status gcv-status--alert">Enter a valid email address</p> }
+          </div>
           <div class="gcv-field">
             <label for="contact-reason">Reason</label>
-            <select id="contact-reason" name="reason" ngModel required>
+            <select id="contact-reason" name="reason" #reason="ngModel" ngModel required [attr.aria-invalid]="shows(reason) ? 'true' : null" [attr.aria-describedby]="shows(reason) ? 'contact-reason-error' : null">
               <option value="" disabled selected>Select a reason</option>
               <option value="Work or collaboration">Work or collaboration</option>
               <option value="Personal note">Personal note</option>
             </select>
+            @if (shows(reason)) { <p id="contact-reason-error" class="gcv-status gcv-status--alert">Choose a reason</p> }
           </div>
-          <div class="gcv-field"><label for="contact-message">What are you thinking about?</label><textarea id="contact-message" name="message" ngModel required rows="4" placeholder="A new product, a tricky system, a good question..."></textarea></div>
+          <div class="gcv-field">
+            <label for="contact-message">What are you thinking about?</label>
+            <textarea id="contact-message" name="message" #message="ngModel" ngModel required rows="4" placeholder="A new product, a tricky system, a good question..." [attr.aria-invalid]="shows(message) ? 'true' : null" [attr.aria-describedby]="shows(message) ? 'contact-message-error' : null"></textarea>
+            @if (shows(message)) { <p id="contact-message-error" class="gcv-status gcv-status--alert">Write a message</p> }
+          </div>
           <input type="text" name="website" ngModel autocomplete="off" tabindex="-1" aria-hidden="true" class="trap" />
-          <button class="gcv-btn gcv-btn--solid submit" type="submit" [disabled]="contactForm.invalid || isSubmitting()">{{ isSubmitting() ? 'Sending...' : 'Send message' }} <span aria-hidden="true">↗</span></button>
-          @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+          <button class="gcv-btn gcv-btn--solid submit" type="submit" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Sending...' : 'Send message' }} <span aria-hidden="true">↗</span></button>
+          @if (error()) { <p class="form-error gcv-status gcv-status--alert" role="alert">{{ error() }}</p> }
         </form>
       }
     </div>

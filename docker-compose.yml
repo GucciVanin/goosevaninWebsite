@@ -88,6 +88,10 @@ services:
       MAILERSEND_API_KEY: ${MAILERSEND_API_KEY:-}
       CADDY_IP: 172.30.100.2
       RESULTS_DIR: /results
+      # Optional narrowing for quick runs (see Docs/tests/README.md): stage prefixes, browser engines, test name.
+      VERIFY_STAGES: ${VERIFY_STAGES:-}
+      VERIFY_BROWSERS: ${VERIFY_BROWSERS:-}
+      VERIFY_BROWSER_GREP: ${VERIFY_BROWSER_GREP:-}
     volumes:
       - ./verify-results:/results
     networks:

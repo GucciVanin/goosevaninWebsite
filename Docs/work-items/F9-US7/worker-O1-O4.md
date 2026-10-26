@@ -1,0 +1,40 @@
+# Worker change record - F9-US7 O1 to O4
+
+## Result
+Final full run `./scripts/verify.ps1 -SkipCi` (2026-10-22, exit 0): **558 passed, 0 failed, 0 skipped, 0 known** (175 .NET, 111 Angular, 144 runtime, 128 browser = 126 tests on 3 engines + 2 stage self-checks). Before: 509 passed, 17 known. Stage-only runs `VERIFY_STAGES=40`: five consecutive runs, all identical (128 passed, 0 failed, 0 known; "126 of 126 listed tests reported"). Separate unit runs: `dotnet test` 175 passed; Karma 111 passed.
+`verify/browser/known-issues.json` is now `[]` (all 7 entries removed, as ordered).
+
+## O1 - About shows the profile text
+- Changed: `features/home/approach/approach.html` (figcaption with the name under the portrait; positioning line, bio and summary under the lede), `approach.ts` (exposes `profile`), `approach.scss` (tokens only).
+- New: `features/home/approach/approach.spec.ts` (4 Karma specs), `verify/browser/tests/profile.spec.ts` (kind `profile`, home, 3 engines).
+- Text is real visible text (the test checks a box of real size and that it is not inside `.sr-only`). Shows no age, address or location (the location is not shown at all; only name, positioning, bio, summary).
+- Red observed: Karma 2 of 4 new specs failed (no caption; positioning/bio/summary absent from About); the other 2 passed by nature (no age/address; alt text already existed). Browser test on the old stack: FAIL on 3 engines with `missing-visible-text:name`, `:positioning`, `:bio`, `:summary` (the name existed only in the hero's sr-only text). My first version of the test hung (45 s timeout) on the old stack because of a wait on a missing element; fixed with a count check and a short timeout, then re-ran red for the right reason.
+
+## O2 - Signed-out probe
+- API: `Modules/Accounts/Controllers/AuthController.cs`. Cookie `goosewebsite.signedin`, value constant `1`, set only after a successful `PasswordSignInAsync`, deleted in `Logout` (same path, Secure, SameSite). Flags: not HttpOnly (by design), Secure, SameSite=Lax, Path=/, no Expires/Max-Age (session cookie). No identity, no token. The HttpOnly session cookie, CSRF and `/api/auth/me` (contract and `[Authorize]`) are unchanged; the marker alone yields 401 (tested).
+- Client: new `features/auth/api/session-marker.ts` (`hasSignInMarker`, `clearSignInMarker`); `auth-api.ts` `getCurrentUser()` returns a synthetic 401 without any request when the marker is absent, clears the marker on a real 401, and `logout()` clears it on success. Header, sign-in page and editor guard needed no code change (they get the same 401 behaviour through `AuthApi`).
+- Tests: xUnit `tests/GooseWebsite.Api.Tests/SessionMarkerCookieTests.cs` (6: flags and value, session cookie stays HttpOnly+Secure, no marker on wrong password or unknown email, cleared on sign-out with matching scope, marker alone grants nothing). Karma: new `auth-api.spec.ts` (5), plus new/changed specs in `site-header.spec.ts` (existing ones now set the marker; 2 new), `editor.guard.spec.ts` (marker set in setup; 1 new), `sign-in-page.spec.ts` (2 new with the real AuthApi). Runtime: `verify/runtime/60-auth.sh` gains 6 marker checks (value, Secure, SameSite, path, not HttpOnly, no expiry). Existing cookie checks there are per cookie name, so none assumed all cookies are HttpOnly; no existing check had to change.
+- Red observed: xUnit 2 of 6 failed (marker missing on sign-in and on sign-out), the other 4 are guards that pass before and after. Karma 7 failures (no-marker header, guard, sign-in page and AuthApi still made the request; 401 and sign-out did not clear the marker). Browser stage on the old stack with the 5 entries removed: 15 FAIL `new defect request-401:GET /api/auth/me`.
+- Behaviour note: a visitor who is really signed in but has no marker (for example signed in before this change) is treated as signed out until the next sign-in. Acceptable on a testing environment; the API still decides on every request.
+
+## O3 - WebKit date-field focus indicator
+- Changed: `shared/styles/components.scss`: `input[type='date']:focus` and `:focus-within` get the shared `--gcv-focus` outline and offset (tokens only), and the field border turns cyan like other fields. Nothing else touched.
+- Test: the existing TE5 keyboard checks; the 2 known entries removed.
+- Red observed: with the entries removed and the old stack, `[webkit] story-form` and `[webkit] project-form` keyboard FAIL `new defect no-focus-indicator:input#story-date` and `#project-date`. Green after: all 3 engines.
+
+## O4 - F2-US1 in the browser, manual checklist
+- New: `verify/browser/tests/contact.spec.ts` (kind `contact`, home, 3 engines); `Docs/tests/browser-manual-check.md` (checklist for real Edge and Safari, latest two versions, with a results table to fill in). `Docs/tests/README.md` table rows added.
+- Covered: test 1 (four fields with accessible names tied to the right ids, reason choices exactly `Work or collaboration` and `Personal note`); test 2 (empty form, each field emptied in turn, four malformed emails: the field is identified by `:invalid`, the submit button is disabled, Enter in a field sends nothing; a request collector asserts zero requests to `/api/contact*`); test 4 in part (labels associated; at 375 px every label sits above its control and fits; no alert region outside the form).
+- Not submitted, as ordered: `docker-compose.yml` passes real SMTP/MailerSend settings from `.env` into the web container, so a valid submit could email a real address. Test 3 (UI says verification is required, not delivered) is therefore not run in the browser. Covered elsewhere: xUnit `ContactVerificationApiTests` (link emailed to the sender, nothing delivered before confirmation, token and URL never returned) and Karma `contact-verify-page.spec.ts` (confirmation screen); the pending-state text in `contact-page.html` is verified by reading only. Option for the Captain: stub `POST /api/contact` with `page.route` so a submit never leaves the browser; I did not do it because the order says do not submit.
+- Red: this is a regression test of existing behaviour, so it passed on the old app. Negative control: with the expected reason choices and one disabled-button assertion deliberately wrong, Chromium FAILed with both defects named (restored afterwards, verified by grep).
+- Flake found and fixed in my own test: in one stage-only run the valid-form check failed because the submit button state was read once, before Angular updated it. All button-state checks now wait (`expect.poll`) and the valid state is awaited before each "now invalid" step. Five runs after the fix were identical.
+
+## Findings for the Captain (real, not fixed: no order called for them)
+1. F2-US1 test 2 says the invalid field is "identified". In the current design the submit button is just disabled and no field shows a visible error message or `aria-invalid`; the invalid field is identified only programmatically (`required`, `type=email`, `:invalid`). Likewise test 4's "errors adjacent to the affected fields" has only the form-level server-error line. The automated test asserts what exists; the manual checklist asks Gustavo to judge whether it is obvious. This is a possible gap against the story wording (needs a decision, possibly a follow-up story).
+2. Karma run quirk: `npm test -- --watch=false ...` with Chrome (not headless) printed "Watch mode enabled" and did not exit when I piped it; I ran it with `ChromeHeadlessNoSandbox` and killed leftovers. Not a repo defect as far as I can tell.
+
+## Docs updated
+`Docs/architecture.md` (3.4 cookie and endpoint table, 5.1 flow, 6 AuthApi row, 10 browser tests paragraph and current result line), `Docs/tests/README.md`. Backlog, decision log and `captain-log.md` left to the Captain.
+
+## Not done
+Nothing ordered is undone. Not run: real Edge and Safari (manual by design). No git write command was run; everything is uncommitted. New files use LF in a few spots of CRLF-managed files were normalized to CRLF (spec files); `contact.spec.ts`, `profile.spec.ts`, `SessionMarkerCookieTests.cs` and the new client files were written as given (git will normalize).

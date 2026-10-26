@@ -1,10 +1,12 @@
 using System.Net.Mail;
+using System.Net.Mime;
 using GooseWebsite.Api.Shared.Email;
+using GooseWebsite.Api.Shared.Hosting;
 
 namespace GooseWebsite.Api.Modules.Accounts.Services;
 
-// Delivers account verification links through the shared SMTP transport.
-public sealed class SmtpAccountEmailSender(ISmtpMailSender mailSender) : IAccountEmailSender
+// Delivers account verification links through the shared SMTP transport, as HTML plus plain text.
+public sealed class SmtpAccountEmailSender(ISmtpMailSender mailSender, PublicLinkBuilder links) : IAccountEmailSender
 {
     public async Task<bool> SendVerificationEmailAsync(string email, string displayName, string verificationUrl)
     {
@@ -15,14 +17,21 @@ public sealed class SmtpAccountEmailSender(ISmtpMailSender mailSender) : IAccoun
             return await mailSender.SendAsync();
         }
 
+        var plain = AccountVerificationEmailRenderer.RenderPlainText(displayName, verificationUrl);
+        var html = AccountVerificationEmailRenderer.RenderHtml(
+            displayName,
+            verificationUrl,
+            links.SiteLink(AccountVerificationEmailRenderer.LogoPath),
+            links.SiteLink(string.Empty));
+
         using var message = new MailMessage
         {
             From = from,
-            Subject = "Confirm your email address",
-            Body = $"Hi {displayName},\n\nConfirm your email address to finish creating your Reader account:\n\n{verificationUrl}\n\nThis link expires in 24 hours. If you did not request this account, you can ignore this message.",
-            IsBodyHtml = false
+            Subject = AccountVerificationEmailRenderer.Subject
         };
         message.To.Add(new MailAddress(email, displayName));
+        message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(plain, null, MediaTypeNames.Text.Plain));
+        message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(html, null, MediaTypeNames.Text.Html));
 
         return await mailSender.SendAsync(message);
     }

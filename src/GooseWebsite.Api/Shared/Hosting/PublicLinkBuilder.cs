@@ -12,5 +12,8 @@ public sealed class PublicLinkBuilder(IConfiguration configuration)
     public string FragmentLink(string path, params (string Key, string Value)[] values) =>
         $"{BaseUrl}{path}#{string.Join('&', values.Select(pair => $"{pair.Key}={Uri.EscapeDataString(pair.Value)}"))}";
 
+    /// <summary>Builds <c>{PublicBaseUrl}{path}</c> for a file the site itself serves (for example the email logo).</summary>
+    public string SiteLink(string path) => $"{BaseUrl}{path}";
+
     private string BaseUrl => configuration["PublicBaseUrl"]?.TrimEnd('/') ?? DefaultBaseUrl;
 }
