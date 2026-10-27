@@ -321,7 +321,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Release:** R1  
 **Status:** Proposed  
 **Goal:** Let Gustavo manage project and story content without editing source code, while ensuring drafts remain private until he explicitly publishes them.  
-**Starting point in the code:** The `Blog` module already provides published-post reads and administrator-only create, update, and delete with draft/publish state, tags, and slugs, and the client has an in-page blog section that falls back to hard-coded sample posts. These are the seed for stories. F4 and F5 should evolve this module (adding projects, images, and the editor UI) rather than start a parallel one. The sample posts must be removed before R1 because R1 requires no sample content.
+**Starting point in the code:** The `Blog` module already provides published-post reads and administrator-only create, update, and delete with draft/publish state, tags, and slugs, and the client has an in-page blog section that loads published stories from `/api/blog` (its hard-coded sample posts were removed on 2026-10-26, enabler TE4, because R1 requires no sample content). F4 and F5 should evolve this module (adding projects, images, and the editor UI) rather than start a parallel one.
 
 **Feature is complete when:** Unauthenticated visitors and non-administrator readers cannot access editor operations; only authenticated accounts explicitly provisioned with the administrator role can create, update, preview, publish, and delete content; the agreed fields persist; uploaded images can be associated with content; and all F4 tests pass. R1 does not require public project/story browsing pages or published sample content. Content state and API behavior must be ready for the later public browsing release. The editor follows the compact, task-focused visual direction above and is not exposed in public navigation.
 
@@ -765,11 +765,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 - [x] Review with Gustavo and record approval (2026-10-20, pull request merged).
 
 
-**Implementation evidence (2026-10-16):** the logo renders from resized WebP copies with descriptive alt text and a 48 px minimum (spec `brand.spec.ts`, test 1); every colour, font, size, space, radius and timing is a named `--gcv-*` token in `tokens.scss` with its trace to the inspiration image in the file's header (test 2); the base components are global classes in `components.scss` and the token rule is written in `architecture.md` section 6.1 (test 3); the `/design` page applies everything, with the animated React scene and a sample project panel, for Gustavo's review (test 4, **pending his approval**; the last task stays open until then). Client specs: 66 pass, including the project panel opening in place with its link to the full post. The container run exercises `/design` in `30-pages.sh`.
+**Implementation evidence (2026-10-16):** the logo renders from resized WebP copies with descriptive alt text and a 48 px minimum (spec `brand.spec.ts`, test 1); every colour, font, size, space, radius and timing is a named `--gcv-*` token in `tokens.scss` with its trace to the inspiration image in the file's header (test 2); the base components are global classes in `components.scss` and the token rule is written in `architecture.md` section 6.1 (test 3); the `/design` page applied everything, with the animated React scene and a sample project panel, for Gustavo's review (test 4, approved 2026-10-20; the page was removed on 2026-10-26 by TE4, so the route check in `30-pages.sh` is gone too). Client specs: 66 pass, including the project panel opening in place with its link to the full post.
 
 ### User Story F9-US2: Redesign the Site Shell
 
-**Status:** In Progress (started 2026-10-16)  
+**Status:** Done (implemented 2026-10-16 to 2026-10-20; approved by the merge of the F9 pull requests; page transitions and the card copy review were not built and are not required for R1 unless Gustavo asks)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
@@ -791,7 +791,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US3: Redesign the Home Page
 
-**Status:** In Progress (started 2026-10-16)  
+**Status:** Done (implemented 2026-10-16 to 2026-10-20; approved by the merge of the F9 pull requests; page transitions and the card copy review were not built and are not required for R1 unless Gustavo asks)  
 **Release:** R1  
 **Estimate:** 3 US (36 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see a home page whose layout and section order follow Gustavo's inspiration image closely and still make who he is and how to contact him clear.
@@ -813,7 +813,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US4: Redesign Contact, Blog, and Account Pages
 
-**Status:** In Progress (implemented 2026-10-20, awaiting approval)  
+**Status:** Done (approved by the merge of the pull request)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor or account holder, I see the same design on the contact form, the blog or story section, and the sign-in and email-verification screens.
@@ -835,7 +835,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US5: Apply the Design to the Editor
 
-**Status:** In Progress (implemented 2026-10-22, awaiting approval)  
+**Status:** Done (approved by the merge of the pull request)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I use a private editor that matches the new design while staying compact and task-focused.
@@ -876,7 +876,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US7: Verify Accessibility and Responsiveness After the Redesign
 
-**Status:** In Progress (implemented 2026-10-22, awaiting approval; real Edge and Safari still to be checked by hand)  
+**Status:** Done (implemented 2026-10-22; approved 2026-10-26, pull request merged; real Edge and Safari still to be checked by hand with `Docs/tests/browser-manual-check.md`)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As Gustavo, I know the new design is still accessible and works on the supported devices and browsers before launch.
@@ -935,6 +935,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 
 | Date | Decision | Reason / impact |
 | --- | --- | --- |
+| 2026-10-26 | TE4: removed the sample content. The Stories section starts empty and shows only what `/api/blog` returns (loading, empty and failure states in words; categories derived from the data; the reading view renders the Markdown body with the safe renderer, loaded on first reading). The `/design` review page, its route, its shell rule and its runtime check are removed. A repository sweep for the sample strings found nothing else. Operator note for demo posts in existing local databases: `Docs/architecture.md` section 11. | Sample content must not reach a deployment (R1 decision). |
 | 2026-09-25 | Created backlog from the confirmed purpose, profile/contact/editor scope, later public browsing, and later verified-reader comments. | Establishes a measurable product source of truth; no completion status is inferred from existing implementation. |
 | 2026-09-25 | Added Gustavo's confirmed persona and a proposed humanist engineering journal visual direction. | Makes profile language, public/private detail boundaries, and design acceptance checks specific; palette and visual metaphor remain subject to Gustavo's explicit approval. |
 | 2026-09-30 | Added F4-US1 for Gustavo's editor workspace, content lists, search/filter, create/edit entry points, and confirmed deletion. | Makes the editor's basic interface and management workflow explicit; adds 3 US / 36 hours to the editor feature and R1. |
@@ -976,7 +977,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
-| F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Proposed | 0 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **13 of 30** |
+| F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Done | 7 of 7 |
+| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **20 of 30** |
 
 By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.

@@ -25,52 +25,24 @@ export class BlogPage implements OnInit {
   protected readonly query = signal('');
   protected readonly category = signal('All');
   protected readonly selected = signal<BlogPost | null>(null);
-  protected readonly categories = ['All', 'Security', 'Field notes', 'Build log'];
-  protected readonly posts = signal<BlogPost[]>([
-    {
-      slug: 'the-first-signal',
-      title: 'The first signal',
-      excerpt: 'Notes from building a quieter, sharper security practice.',
-      category: 'Field notes',
-      tags: ['security', 'systems', 'life'],
-      date: '22 Sep 2026',
-      readTime: '4 min',
-      content:
-        'A daily field note about curiosity, systems, and the small signals that make software safer.',
-    },
-    {
-      slug: 'threat-modeling-my-morning',
-      title: 'Threat modeling my morning',
-      excerpt: 'What a commute, a coffee, and a curious brain have in common.',
-      category: 'Security',
-      tags: ['threat-modeling', 'habits'],
-      date: '18 Sep 2026',
-      readTime: '6 min',
-      content:
-        'The best threat models begin with observing what is actually happening, not what we wish were happening.',
-    },
-    {
-      slug: 'shipping-a-tiny-tool',
-      title: 'Shipping a tiny tool',
-      excerpt: 'A build log for a terminal utility that stayed deliberately small.',
-      category: 'Build log',
-      tags: ['dotnet', 'tools'],
-      date: '09 Sep 2026',
-      readTime: '5 min',
-      content:
-        'Small tools are a useful constraint: every command earns its place and every sharp edge becomes visible.',
-    },
+  protected readonly status = signal<'loading' | 'loaded' | 'failed'>('loading');
+  protected readonly posts = signal<BlogPost[]>([]);
+  protected readonly detailHtml = signal('');
+  // "All" plus the categories present in the data, so the buttons never offer an empty category.
+  protected readonly categories = computed(() => [
+    'All',
+    ...Array.from(new Set(this.posts().map((post) => post.category).filter((value) => !!value))).sort(),
   ]);
 
   ngOnInit(): void {
     this.http
       .get<Array<Partial<BlogPost> & { createdAtUtc?: string; tags?: string[] }>>('/api/blog')
       .subscribe({
-        next: (posts) =>
+        next: (posts) => {
           this.posts.set(
             posts.map((post) => ({
               slug: post.slug ?? '',
-              title: post.title ?? 'Untitled signal',
+              title: post.title ?? 'Untitled story',
               excerpt: post.excerpt ?? '',
               category: post.category ?? 'Field notes',
               tags: post.tags ?? [],
@@ -84,9 +56,24 @@ export class BlogPage implements OnInit {
               readTime: '5 min',
               content: post.content ?? post.excerpt ?? '',
             })),
-          ),
+          );
+          this.status.set('loaded');
+        },
+        error: () => this.status.set('failed'),
       });
   }
+
+  // The body is Markdown. The renderer (raw HTML off, unsafe links refused) is loaded on first reading, so visitors
+  // who only browse the list never download it; Angular sanitizes the result again when it is bound.
+  protected async open(post: BlogPost): Promise<void> {
+    this.detailHtml.set('');
+    this.selected.set(post);
+    const { renderMarkdown } = await import('../editor/markdown');
+    if (this.selected() === post) {
+      this.detailHtml.set(renderMarkdown(post.content));
+    }
+  }
+
   protected readonly filteredPosts = computed(() =>
     this.posts().filter((post) => {
       const needle = this.query().toLowerCase();

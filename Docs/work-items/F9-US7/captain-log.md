@@ -11,3 +11,4 @@
 | 6 | Security report O6: pass, no findings (payload unchanged, focus selector built from static control names, no logging, no real submit in tests) | Security | pass | route-verify after the Reviewer round 2 |
 | 7 | Reviewer verdict O6 (round 2): accurate; round-1 mismatch closed; advisories: first Karma focus assertion trivial (second is real), lookup by [name] low risk | Reviewer | accurate | route-verify |
 | 8 | Testing report: A .NET 175/175 x3, B Karma 120/120 x3, C container 567 pass, 0 fail, 0 known x3 (identical lists; 128 browser results = 126 on 3 engines + 2 self-checks); AC5 engines only, real Edge/Safari manual checklist not yet run | Testing | pass | escalate-human at review (after commit and CI) |
+| 9 | Gustavo merged the pull request (acceptance) | Human | accept | close-item (F9-US7 Done; Feature F9 complete) |

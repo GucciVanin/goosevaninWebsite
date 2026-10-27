@@ -19,5 +19,5 @@
 .back { justify-self: start; }
 .title { text-transform: none; }
 .lede { color: var(--gcv-text); font-size: var(--gcv-text-lg); line-height: var(--gcv-leading-body); margin: 0; }
-.content { color: var(--gcv-text-muted); line-height: 1.8; margin: 0; max-width: 70ch; white-space: pre-line; }
+.content { color: var(--gcv-text-muted); line-height: 1.8; margin: 0; max-width: 70ch; }
 @media (max-width: 600px) { .post { grid-template-columns: 1fr; } .index, .arrow { display: none; } }
