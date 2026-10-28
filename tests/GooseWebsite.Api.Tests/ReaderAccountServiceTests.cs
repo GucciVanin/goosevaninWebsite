@@ -28,7 +28,7 @@ public sealed class ReaderAccountServiceTests
         var outcome = await readers.RegisterAsync(NewReader(), inputIsValid: true);
 
         Assert.Equal(ReaderRegistrationOutcome.Disabled, outcome);
-        Assert.Empty(factory.AccountEmailSender.SentMessages);
+        Assert.Empty(factory.Mail.AccountMessages);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class ReaderAccountServiceTests
         Assert.Equal(ReaderRegistrationOutcome.Accepted, outcome);
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         Assert.Null(await users.FindByEmailAsync("reader@example.test"));
-        Assert.Empty(factory.AccountEmailSender.SentMessages);
+        Assert.Empty(factory.Mail.AccountMessages);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class ReaderAccountServiceTests
         var again = await readers.RegisterAsync(NewReader(), inputIsValid: true);
 
         Assert.Equal(first, again);
-        Assert.Single(factory.AccountEmailSender.SentMessages);
+        Assert.Single(factory.Mail.AccountMessages);
     }
 
     [Fact]

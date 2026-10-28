@@ -25,9 +25,9 @@ services:
       Email__Smtp__FromEmail: ${SMTP_FROM_EMAIL:-}
       Email__Smtp__FromName: ${SMTP_FROM_NAME:-Gustavo Couto Vanin}
       # MailerSend HTTP API: sends the templated contact emails. The sender defaults to the SMTP sender.
-      MailerSend__ApiKey: ${MAILERSEND_API_KEY:-}
-      MailerSend__FromEmail: ${MAILERSEND_FROM_EMAIL:-${SMTP_FROM_EMAIL:-}}
-      MailerSend__FromName: ${SMTP_FROM_NAME:-Gustavo Couto Vanin}
+      Email__MailerSend__ApiKey: ${MAILERSEND_API_KEY:-}
+      Email__MailerSend__FromEmail: ${MAILERSEND_FROM_EMAIL:-${SMTP_FROM_EMAIL:-}}
+      Email__MailerSend__FromName: ${SMTP_FROM_NAME:-Gustavo Couto Vanin}
       Contact__RecipientEmail: ${CONTACT_RECIPIENT_EMAIL:-}
     volumes:
       - web-data:/data

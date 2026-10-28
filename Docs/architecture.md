@@ -114,7 +114,7 @@ flowchart TB
 
     subgraph shared [Shared]
         persistence[Persistence<br/>DatabaseService gateway<br/>ApplicationDbContext]
-        email[Email<br/>ISmtpMailSender]
+        email[Email<br/>IMailService]
         hosting[Hosting<br/>trusted proxy headers]
         mod[Modules<br/>IModuleInitializer<br/>IModuleCommand]
     end
@@ -148,8 +148,8 @@ flowchart TB
 | `Shared/Persistence/DatabaseInitializer` | First `IModuleInitializer`: applies EF Core migrations, adopting a database that `EnsureCreated` made earlier | startup |
 | `Shared/Modules/IModuleInitializer` | A module's startup hook (for example, create roles). Run in registration order after the database exists. | Accounts, Persistence |
 | `Shared/Modules/IModuleCommand` | A module's operator command-line entry point. If one handles the arguments, the web host does not start. | Accounts (`admin provision`, `admin reset-password`) |
-| `Shared/Email/ISmtpMailSender` | The only class that talks to SMTP. Returns `false` and logs only the exception type on failure. | Accounts, Contact |
-| `Shared/Email/IMailerSendClient` | The only class that talks to the MailerSend HTTP API. Sends one templated email (template id plus variables). Returns `false` and logs only the HTTP status code on failure. | Contact |
+| `Shared/Email/IMailService` (`MailService`) | The only mail interface modules use (TE8). `SendAsync(RenderedMail)` sends content the caller rendered (recipient, subject, HTML, plain text) over SMTP; `SendTemplateAsync(TemplateMail)` sends a MailerSend template (template id plus variables). Returns a `MailResult` (success or a `MailFailure` category) and never throws. It is also the one place mail is logged: categories only (kind, transport, failure, HTTP or SMTP status, exception type), never an address, name, subject, body, link, token, key or provider response text. `MailServiceTests` captures the log for success, failure, unconfigured and throwing transports. | Accounts, Contact |
+| `Shared/Email/SmtpMailTransport`, `MailerSendTransport` | The two transports behind `IMailService` (`IRenderedMailTransport`, `ITemplateMailTransport`). Each is the only class that talks to its provider; they never log and report back a failure category plus log-safe diagnostics. Modules must not reference them (`MailServiceTests.NoModuleTalksToSmtpOrMailerSendDirectly`). | `IMailService` only |
 | `Shared/Hosting/AddTrustedProxyHeaders` | Forwarded-header trust from configuration | `Program.cs` |
 
 Startup order in `Program.cs`: register shared services, register modules, build, run all `IModuleInitializer`s, offer the arguments to all `IModuleCommand`s, then configure the pipeline.
@@ -184,7 +184,7 @@ Owns identity, sessions, and authorization. Source: `Modules/Accounts/`.
 | Role seeding | `Services/AccountRoleInitializer.cs` | Creates missing roles at startup, never users |
 | Admin provisioning | `Services/AdminProvisioningService.cs`, `AdminProvisioningCommand.cs` | Interactive operator command; refuses existing accounts; never promotes a user |
 | Reader accounts | `Services/IReaderAccountService.cs`, `ReaderAccountService.cs` | Registration, resend and email Verification return neutral outcomes (the controller maps them), so nothing reveals whether an address has an account. A role assignment that fails (or throws because the role is missing) removes the new account again |
-| Verification email | `Services/IAccountEmailSender.cs`, `SmtpAccountEmailSender.cs`, `AccountVerificationEmailRenderer.cs` | Separate from contact delivery on purpose. Sends a multipart message: branded HTML (tables and inline styles, no remote resources except the logo at `{PublicBaseUrl}/email/gcv-logo.png`, built with `PublicLinkBuilder.SiteLink`) plus a plain-text alternative. The display name is HTML-encoded in the HTML view. See `Docs/email-templates/README.md` |
+| Verification email | `Services/IAccountEmailSender.cs`, `AccountEmailSender.cs`, `AccountVerificationEmailRenderer.cs` | Separate from contact delivery on purpose. Sends a multipart message: branded HTML (tables and inline styles, no remote resources except the logo at `{PublicBaseUrl}/email/gcv-logo.png`, built with `PublicLinkBuilder.SiteLink`) plus a plain-text alternative. The display name is HTML-encoded in the HTML view. See `Docs/email-templates/README.md` |
 
 Security settings in force: unique email, password minimum 12 characters with no composition rule, lockout after 5 failures for 15 minutes, email confirmation required to sign in, confirmation token lifetime 24 hours, cookie `goosewebsite.auth` (HttpOnly, SameSite=Lax, Secure always in Production, 30-minute sliding expiry, not persistent), antiforgery cookie `goosewebsite.csrf` with header `X-CSRF-TOKEN`. A sign-in marker cookie `goosewebsite.signedin` (F9-US7) is set with the value `1` when sign-in succeeds and cleared at sign-out; it is the one cookie that is deliberately not HttpOnly (Secure, SameSite=Lax, path `/`, no expiry, no identity or token in it) because the client reads it to decide whether to call `GET /api/auth/me`; it is a hint only and grants nothing. Cookie events return 401 and 403 rather than redirecting. Signing out also rotates the account's security stamp, so a session cookie captured before sign-out stops working too (cookies are checked against the stamp on every request).
 
@@ -210,7 +210,7 @@ Owns the public contact form. Source: `Modules/Contact/`. It keeps no durable da
 | Endpoints | `Controllers/ContactController.cs` | Maps outcomes to status codes only. `POST /api/contact` (emails the link to the sender), `POST /api/contact/verify` (body `{token}`; the emailed link opens the client page `/contact/verify#token=...`) |
 | Abuse guard | `Services/ContactSubmissionAbuseGuard.cs` | Thread-safe sliding windows in two separate bounded stores: per socket IP, and per submitted address (stored only as a SHA-256 hash, case-insensitive). Configured under `Contact:RateLimit` |
 | Pending store | `Services/ContactVerificationService.cs` | In-memory, 30-minute lifetime, single use, removed on use or expiry |
-| Delivery | `Services/ContactEmailDeliveryService.cs` | Three MailerSend templates through `IMailerSendClient`: the confirm link to the sender, then the notice to Gustavo, then the receipt to the sender. Template ids come from `Contact:Templates`; the variables each template needs are in `Models/ContactEmailTemplateVariables.cs` and pinned by `ContactEmailTemplateTests` |
+| Delivery | `Services/ContactEmailDeliveryService.cs` | Three MailerSend templates through `IMailService.SendTemplateAsync`: the confirm link to the sender, then the notice to Gustavo, then the receipt to the sender. Template ids come from `Contact:Templates`; the variables each template needs are in `Models/ContactEmailTemplateVariables.cs` and pinned by `ContactEmailTemplateTests` |
 
 Validation on `POST /api/contact` (performed by `ContactSubmissionService`, which the controller calls): honeypot field `website` must be empty, all four fields required, `reason` must be `Work or collaboration` or `Personal note`, email must be well formed, then the rate limit applies (HTTP 429 before any token is created). Logs carry the reason and a client key, never the sender's address or the message body.
 
@@ -405,7 +405,7 @@ sequenceDiagram
     participant R as Reader
     participant B as Angular client
     participant A as AuthController
-    participant M as SmtpAccountEmailSender (called by ReaderAccountService)
+    participant M as AccountEmailSender (called by ReaderAccountService)
 
     R->>B: display name, email, password
     B->>A: POST /api/auth/register (CSRF, rate limited)
@@ -496,7 +496,7 @@ Configuration binds in this order of precedence, last wins: `appsettings.json`, 
 | --- | --- | --- |
 | `ConnectionStrings:Default` | SQLite database; a relative path resolves against the project folder | `Data Source=Data/goosewebsite.db` |
 | `Email:Smtp:Host`, `Port`, `Username`, `Password`, `FromEmail`, `FromName` | The shared SMTP sender. **Secrets: user-secrets or environment only** | empty; mail is skipped with a warning |
-| `MailerSend:ApiKey`, `FromEmail`, `FromName` | MailerSend HTTP API for the templated contact emails. **The API key is a secret: user-secrets or environment only** (Docker: `MAILERSEND_API_KEY`, sender defaults to `SMTP_FROM_EMAIL`) | empty; contact emails are not sent |
+| `Email:MailerSend:ApiKey`, `FromEmail`, `FromName` | MailerSend HTTP API for the templated contact emails. Both mail transports sit under the one `Email` section; the older `MailerSend:*` keys (existing user-secrets, environment `MailerSend__*`) are still read as a fallback, and `Email:MailerSend:*` wins when both are set. **The API key is a secret: user-secrets or environment only** (Docker: `MAILERSEND_API_KEY`, sender defaults to `SMTP_FROM_EMAIL`) | empty; contact emails are not sent |
 | `Contact:Templates:SenderConfirmation`, `SenderReceipt`, `OwnerNotification` | MailerSend template ids (identifiers, not secrets) | the three ids in `appsettings.json` |
 | `Contact:LogoUrl` | Public address of the email logo | `{PublicBaseUrl}/email/gcv-logo.png` |
 | `Contact:RecipientEmail` | Inbox for verified contact messages | empty; delivery is skipped |
@@ -543,7 +543,7 @@ flowchart LR
 - **Trusting the local CA:** the CA lives in the `goosewebsite_caddy-data` volume, so it survives restarts but a new volume (for example after a project rename or `docker compose down -v`) creates a new CA that the machine does not trust, and the browser shows a certificate error. After that, export the root with `docker cp goosewebsite-caddy:/data/caddy/pki/authorities/local/root.crt certs/caddy-root.crt`, import it with `certutil -user -addstore Root certs\caddy-root.crt` (Windows asks for confirmation), and remove the stale root with `certutil -user -delstore Root <old thumbprint>`. Compare `openssl x509 -in certs/caddy-root.crt -noout -fingerprint -sha256` with what is trusted.
 - **Renamed volumes:** the Compose project is `goosewebsite` (containers `goosewebsite-web` and `goosewebsite-caddy`, image `goosewebsite-web`, volumes `goosewebsite_web-data`, `goosewebsite_caddy-data`, `goosewebsite_caddy-config`, network `goosewebsite_app-private`). Stacks created under the earlier names `testwebsite` (volume `testwebsite_portfolio-data`, database `testwebsite.db`) or `vaninwebsite` (database `vaninwebsite.db`) keep their data in the old volumes. To keep it, stop the old stack with `docker compose -p testwebsite down` (or `-p vaninwebsite`) (never `-v`), copy the old volume's contents into `goosewebsite_web-data`, and rename the database file to `goosewebsite.db*`. An old stack left running also blocks the new one, because it holds ports 80 and 443 and the `172.30.100.0/24` subnet.
 - **Logging policy:** log categories and counts only. Never log message bodies, email addresses, tokens, or passwords. Keep this when adding log lines.
-- **Mail troubleshooting:** the API logs `SMTP delivery failed` with the exception type and SMTP status code. `smtpStatusCode=MustIssueStartTlsFirst` is .NET's name for any 530 reply, and it usually means the provider rejected the credentials (a `535` on AUTH). Confirm with a handshake that sends no data: `openssl s_client -connect smtp.mailersend.net:587 -starttls smtp -crlf -quiet`, then `EHLO`, `AUTH PLAIN <base64 of \0user\0pass>`, `MAIL FROM`, `RCPT TO`, `QUIT`. `235` means the credentials work. For a MailerSend trial domain, send from an address on that domain.
+- **Mail troubleshooting:** the API logs `Mail delivery failed; kind=rendered; transport=SMTP` with the exception type and SMTP status code. `smtpStatusCode=MustIssueStartTlsFirst` is .NET's name for any 530 reply, and it usually means the provider rejected the credentials (a `535` on AUTH). Confirm with a handshake that sends no data: `openssl s_client -connect smtp.mailersend.net:587 -starttls smtp -crlf -quiet`, then `EHLO`, `AUTH PLAIN <base64 of \0user\0pass>`, `MAIL FROM`, `RCPT TO`, `QUIT`. `235` means the credentials work. For a MailerSend trial domain, send from an address on that domain.
 
 ## 8. Conventions
 
@@ -553,7 +553,7 @@ flowchart LR
 - **Contracts:** never return an entity from an endpoint. Use a request and response type in `Contracts/` with validation attributes. Never bind privilege-bearing fields (role, `EmailConfirmed`, ids of other users) from a request.
 - **Authorization:** protect every write with a policy from `AuthorizationPolicies`, not bare `[Authorize]`, and add `[ValidateAntiForgeryToken]` to cookie-authenticated mutations.
 - **Configuration:** bind settings to an options class (see `SmtpOptions`, `ContactOptions`). Do not read `IConfiguration` ad hoc in new code, and never hard-code addresses or credentials.
-- **Mail:** account emails are built in the module and sent through `ISmtpMailSender`. Contact emails are MailerSend templates sent through `IMailerSendClient`: the module picks the template id and supplies every variable it reads (case-sensitive names, constants in `ContactEmailTemplateVariables`), and a test pins them. A variable the request omits renders as its own name in the inbox.
+- **Mail:** modules send only through `IMailService` and read the `MailResult`; they never touch SMTP or MailerSend. Account emails are rendered in the module and sent with `SendAsync`. Contact emails are MailerSend templates sent with `SendTemplateAsync`: the module picks the template id and supplies every variable it reads (case-sensitive names, constants in `ContactEmailTemplateVariables`), and a test pins them. A variable the request omits renders as its own name in the inbox.
 - **Style:** C# with nullable references enabled, file-scoped namespaces, primary constructors for dependency injection, `sealed` classes by default, a short comment saying why a type exists. TypeScript uses standalone components, signals, and typed models; one feature per folder under `app/features/`.
 - **Naming:** `I<Name>` for seams, `<Name>Module`, `<Name>Controller`, `<Name>Repository`, `<Name>Configuration` for EF mappings.
 
@@ -605,7 +605,7 @@ Delete the module folder, its registration line in `Program.cs`, its tests, and 
 | Unit and service | `AdminProvisioningTests.cs`, `EditorAccessTests.cs`, `AdminPasswordResetTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `DatabaseInitializerTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
 | Client | `*.spec.ts` beside components | Header sign-in and Editor links; verify-email page; sign-in page (expired-session notice, safe return address); `editorGuard`; `sessionInterceptor`; `safeReturnUrl` |
 
-Test doubles: `TestAccountEmailSender` captures verification links; `StubContactEmailDeliveryService` replaces the contact mail transport; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
+Test doubles: `TestMailService` captures verification links; `StubContactEmailDeliveryService` replaces the contact mail transport; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
 
 Continuous integration (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: the client build and tests, then the API build and tests against that built client, then a Docker image build. Make the three jobs required checks on `main` in the repository settings so a failing run blocks the merge.
 

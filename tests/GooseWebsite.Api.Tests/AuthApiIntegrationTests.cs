@@ -178,7 +178,7 @@ public sealed class AuthApiIntegrationTests
         var authorization = scope.ServiceProvider.GetRequiredService<IAuthorizationService>();
         Assert.False((await authorization.AuthorizeAsync(unverifiedPrincipal, "VerifiedReader")).Succeeded);
 
-        var sentMessage = Assert.Single(factory.AccountEmailSender.SentMessages);
+        var sentMessage = Assert.Single(factory.Mail.AccountMessages);
         Assert.Equal(user.Email, sentMessage.Email);
         Assert.Equal(user.DisplayName, sentMessage.DisplayName);
         Assert.Contains("/verify-email#", sentMessage.Url, StringComparison.Ordinal);
@@ -265,13 +265,13 @@ public sealed class AuthApiIntegrationTests
         var duplicateRegistration = await PostWithCsrfAsync(client, "/api/auth/register", csrf, registrationRequest);
         Assert.Equal(firstRegistration.StatusCode, duplicateRegistration.StatusCode);
         Assert.Equal(await firstRegistration.Content.ReadAsStringAsync(), await duplicateRegistration.Content.ReadAsStringAsync());
-        Assert.Single(factory.AccountEmailSender.SentMessages);
+        Assert.Single(factory.Mail.AccountMessages);
 
         var resendExisting = await PostWithCsrfAsync(client, "/api/auth/verification/resend", csrf, new { email = "reader@example.test" });
         var resendUnknown = await PostWithCsrfAsync(client, "/api/auth/verification/resend", csrf, new { email = "unknown@example.test" });
         Assert.Equal(resendExisting.StatusCode, resendUnknown.StatusCode);
         Assert.Equal(await resendExisting.Content.ReadAsStringAsync(), await resendUnknown.Content.ReadAsStringAsync());
-        Assert.Equal(2, factory.AccountEmailSender.SentMessages.Count);
+        Assert.Equal(2, factory.Mail.AccountMessages.Count);
         Assert.DoesNotContain("unknown@example.test", await resendUnknown.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
     }
 
@@ -287,7 +287,7 @@ public sealed class AuthApiIntegrationTests
             password = "Strong-password-123",
             displayName = "Expired Reader"
         });
-        var sentMessage = Assert.Single(factory.AccountEmailSender.SentMessages);
+        var sentMessage = Assert.Single(factory.Mail.AccountMessages);
         var verificationQuery = HttpUtility.ParseQueryString(new Uri(sentMessage.Url).Fragment.TrimStart('#'));
         await Task.Delay(TimeSpan.FromSeconds(1.2));
 
@@ -310,7 +310,7 @@ public sealed class AuthApiIntegrationTests
     public async Task FailedVerificationEmailCanBeRecoveredByResending()
     {
         using var factory = new AuthApiFactory();
-        factory.AccountEmailSender.ShouldFail = true;
+        factory.Mail.ShouldFail = true;
         using var client = factory.CreateHttpsClient();
         var csrf = await GetCsrfTokenAsync(client);
         var registration = await PostWithCsrfAsync(client, "/api/auth/register", csrf, new
@@ -326,12 +326,12 @@ public sealed class AuthApiIntegrationTests
         var user = await users.FindByEmailAsync("retry-reader@example.test");
         Assert.NotNull(user);
         Assert.False(user!.EmailConfirmed);
-        Assert.Empty(factory.AccountEmailSender.SentMessages);
+        Assert.Empty(factory.Mail.AccountMessages);
 
-        factory.AccountEmailSender.ShouldFail = false;
+        factory.Mail.ShouldFail = false;
         var resend = await PostWithCsrfAsync(client, "/api/auth/verification/resend", csrf, new { email = "retry-reader@example.test" });
         Assert.Equal(HttpStatusCode.OK, resend.StatusCode);
-        Assert.Single(factory.AccountEmailSender.SentMessages);
+        Assert.Single(factory.Mail.AccountMessages);
         Assert.False((await users.FindByEmailAsync("retry-reader@example.test"))!.EmailConfirmed);
     }
 
@@ -356,7 +356,7 @@ public sealed class AuthApiIntegrationTests
 
         Assert.All(statuses.Take(5), status => Assert.Equal(HttpStatusCode.OK, status));
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[5]);
-        Assert.Equal(5, factory.AccountEmailSender.SentMessages.Count);
+        Assert.Equal(5, factory.Mail.AccountMessages.Count);
     }
 
     [Fact]
@@ -376,7 +376,7 @@ public sealed class AuthApiIntegrationTests
         });
 
         Assert.Equal(HttpStatusCode.NotFound, registration.StatusCode);
-        Assert.Empty(factory.AccountEmailSender.SentMessages);
+        Assert.Empty(factory.Mail.AccountMessages);
     }
 
     [Fact]

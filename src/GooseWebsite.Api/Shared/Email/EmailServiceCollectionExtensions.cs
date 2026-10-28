@@ -2,19 +2,20 @@ namespace GooseWebsite.Api.Shared.Email;
 
 public static class EmailServiceCollectionExtensions
 {
-    /// <summary>Registers the shared SMTP transport used by every module that sends mail.</summary>
-    public static IServiceCollection AddSmtpEmail(this IServiceCollection services, IConfiguration configuration)
+    /// <summary>
+    /// Registers the one mail service and its two transports (SMTP for rendered mail, MailerSend for
+    /// template mail). Settings live under <c>Email:Smtp</c> and <c>Email:MailerSend</c>; the older
+    /// <c>MailerSend</c> section is still read so existing secrets and environment keep working.
+    /// </summary>
+    public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
-        services.AddTransient<ISmtpMailSender, SmtpMailSender>();
-        return services;
-    }
-
-    /// <summary>Registers the MailerSend HTTP API client used to send templated email.</summary>
-    public static IServiceCollection AddMailerSendEmail(this IServiceCollection services, IConfiguration configuration)
-    {
+        services.Configure<MailerSendOptions>(configuration.GetSection(MailerSendOptions.LegacySectionName));
         services.Configure<MailerSendOptions>(configuration.GetSection(MailerSendOptions.SectionName));
-        services.AddHttpClient<IMailerSendClient, MailerSendClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
+
+        services.AddTransient<IRenderedMailTransport, SmtpMailTransport>();
+        services.AddHttpClient<ITemplateMailTransport, MailerSendTransport>(client => client.Timeout = TimeSpan.FromSeconds(30));
+        services.AddTransient<IMailService, MailService>();
         return services;
     }
 }

@@ -19,7 +19,7 @@ Gustavo Couto Vanin's personal website: a public profile, a verified contact for
 - **Backend:** ASP.NET Core on .NET 10, modular monolith (`src/GooseWebsite.Api/Modules/{Accounts,Blog,Contact,Media,Projects}` over `Shared/`)
 - **Database:** SQLite through EF Core, with ASP.NET Core Identity (file `Data/goosewebsite.db` in development)
 - **Frontend:** Angular 20, standalone components and signals, SCSS (`src/GooseWebsite.Client`). It builds into `src/GooseWebsite.Api/wwwroot`. Animated art is React, built as web-component islands from `src/GooseWebsite.Client/art` (see `Docs/architecture.md` 6.1).
-- **Email:** SMTP through `ISmtpMailSender` (MailerSend today)
+- **Email:** one `IMailService` (`Shared/Email`) over two transports: SMTP for rendered mail, MailerSend templates for contact mail
 - **Deployment:** Docker; Caddy reverse proxy in `docker-compose.yml`
 - **Tests:** xUnit (`tests/GooseWebsite.Api.Tests`), Jasmine/Karma (client)
 
@@ -55,7 +55,7 @@ Build the client at least once before running the .NET tests; some tests expect 
 1. **Follow the module conventions** in `Docs/architecture.md` section 8. Keep a feature's controllers, contracts, domain, and services inside its module. Do not add a dependency that points the wrong way (section 3.1).
 2. **All database reads and writes go through `DatabaseService`** (`Shared/Persistence`). Modules keep their query logic but never inject `ApplicationDbContext`, `UserManager`, or `RoleManager`. Sanitization, access rules and one-click-one-unit-of-work are applied beneath it (story F7-US1): declare an `EntityAccessRule<T>` next to every new entity.
 3. **Add features as modules.** One `Add<Name>Module` extension, one line in `Program.cs`. Startup work goes in an `IModuleInitializer`, operator commands in an `IModuleCommand`.
-4. **Never put secrets in the repository.** This includes `appsettings*.json`, this file, docs, tests, and logs. SMTP settings (`Email:Smtp:*`) and `Contact:RecipientEmail` come from `dotnet user-secrets` (id `goosewebsite-api`) in development and from environment variables or `.env` in Docker.
+4. **Never put secrets in the repository.** This includes `appsettings*.json`, this file, docs, tests, and logs. SMTP and MailerSend settings (`Email:Smtp:*`, `Email:MailerSend:*`) and `Contact:RecipientEmail` come from `dotnet user-secrets` (id `goosewebsite-api`) in development and from environment variables or `.env` in Docker.
 5. **Authorization is enforced in the API.** Use the policies in `AuthorizationPolicies` and `[ValidateAntiForgeryToken]` on cookie-authenticated writes. Never accept roles or user ids from a request.
 6. **Privacy:** do not store contact messages durably, and never log message bodies, email addresses, tokens, or passwords.
 7. **Do not mark a story Done from reading code.** Run its acceptance tests, record the evidence in `Docs/product-backlog.md`, and follow the Definition of Done in `Docs/project.md`.

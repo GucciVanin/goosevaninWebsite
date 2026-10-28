@@ -20,3 +20,6 @@ Draft acceptance criteria for B:
 - **TE8-AC5** One set of mail settings documented in `Docs/architecture.md` section 7 and `.env.example`, and the architecture and tech-stack lines updated.
 
 | 2026-10-26 | Gustavo chose approach B (one module, two transports) and approved the draft acceptance criteria TE8-AC1 to AC5. | Runs after TE4. |
+| 2026-10-28 | Gustavo: move to the next tasks (R1 sign-off: TE8, then F3-US1 evidence, then the R1 gate). Branch r1-signoff, stacked on f5-public-browsing because PR #23 could not be checked (GitHub unreachable from this machine). | Status plan -> execute. |
+| 2026-10-28 | Worker O1 implemented approach B: `IMailService` with `MailService` (one logging rule), `SmtpMailTransport` and `MailerSendTransport`, `Email:MailerSend:*` settings with the older `MailerSend:*` as fallback, `TestMailService` as the one mail double. Verification pending; TE8 not Done. | Awaiting review. |
+| 2026-10-28 | AC4 read as "one test double for the mail seam": `TestMailService` replaces the per-module mail doubles; `StubContactEmailDeliveryService` stays because it doubles the Contact-level service, not a mail seam. In Docker only the `.env` variable names are supported: compose always sets `Email__MailerSend__*`, so a raw `MailerSend__*` container variable would be shadowed by empty values. | Recorded (Reviewer advisories 2 and 3). |

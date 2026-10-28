@@ -11,7 +11,7 @@ using Xunit;
 
 namespace GooseWebsite.Api.Tests;
 
-// Pins the variables each MailerSend template receives, so a missing one fails here instead of
+// Pins the variables each MailerSend template receives (and the transport request), so a missing one fails here instead of
 // rendering as its own name in a real inbox.
 public sealed class ContactEmailTemplateTests
 {
@@ -25,13 +25,13 @@ public sealed class ContactEmailTemplateTests
     [Fact]
     public async Task VerificationRequest_UsesConfirmationTemplate_WithItsVariablesAndNeverTheMessage()
     {
-        var mailer = new RecordingMailerSendClient();
+        var mailer = new TestMailService();
         var service = CreateService(mailer);
 
         var delivered = await service.SendVerificationRequestAsync("Alex Rivera", "alex@example.test", "https://site.test/contact/verify#token=abc");
 
         Assert.True(delivered);
-        var email = Assert.Single(mailer.Sent);
+        var email = Assert.Single(mailer.Templated);
         Assert.Equal(ConfirmationId, email.TemplateId);
         Assert.Equal("alex@example.test", email.To.Email);
         Assert.Equal(
@@ -48,25 +48,25 @@ public sealed class ContactEmailTemplateTests
     [Fact]
     public async Task Delivery_SendsOwnerNoticeThenSenderReceipt_EachWithEveryVariable()
     {
-        var mailer = new RecordingMailerSendClient();
+        var mailer = new TestMailService();
         var service = CreateService(mailer);
 
         var delivered = await service.SendAsync(Pending);
 
         Assert.Equal(ContactDeliveryOutcome.Delivered, delivered);
-        Assert.Equal(2, mailer.Sent.Count);
+        Assert.Equal(2, mailer.Templated.Count);
 
-        var owner = mailer.Sent[0];
+        var owner = mailer.Templated[0];
         Assert.Equal(OwnerId, owner.TemplateId);
         Assert.Equal("gustavo@example.test", owner.To.Email);
         Assert.Equal("alex@example.test", owner.ReplyTo?.Email);
 
-        var receipt = mailer.Sent[1];
+        var receipt = mailer.Templated[1];
         Assert.Equal(ReceiptId, receipt.TemplateId);
         Assert.Equal("alex@example.test", receipt.To.Email);
         Assert.Equal("gustavo@example.test", receipt.ReplyTo?.Email);
 
-        foreach (var email in mailer.Sent)
+        foreach (var email in mailer.Templated)
         {
             foreach (var variable in new[] { "name", "sender_email", "reason", "message", "site_url", "logo_url" })
             {
@@ -84,37 +84,37 @@ public sealed class ContactEmailTemplateTests
     [Fact]
     public async Task Delivery_WhenOwnerNoticeFails_DoesNotSendReceipt()
     {
-        var mailer = new RecordingMailerSendClient { Succeeds = false };
+        var mailer = new TestMailService { ShouldFail = true };
 
         var delivered = await CreateService(mailer).SendAsync(Pending);
 
         Assert.Equal(ContactDeliveryOutcome.Failed, delivered);
-        Assert.Single(mailer.Sent);
+        Assert.Single(mailer.Templated);
     }
 
     [Fact]
     public async Task Delivery_WhenReceiptFails_ReportsItAndTheRetryOnlySendsTheReceipt()
     {
-        var mailer = new RecordingMailerSendClient { FailTemplateId = ReceiptId };
+        var mailer = new TestMailService { FailTemplateId = ReceiptId };
         var service = CreateService(mailer);
 
         var first = await service.SendAsync(Pending);
 
         Assert.Equal(ContactDeliveryOutcome.OwnerNotifiedReceiptFailed, first);
-        Assert.Equal([OwnerId, ReceiptId], mailer.Sent.Select(email => email.TemplateId));
+        Assert.Equal([OwnerId, ReceiptId], mailer.Templated.Select(email => email.TemplateId));
 
         mailer.FailTemplateId = null;
-        mailer.Sent.Clear();
+        mailer.Reset();
         var retry = await service.SendAsync(Pending with { OwnerNotified = true });
 
         Assert.Equal(ContactDeliveryOutcome.Delivered, retry);
-        Assert.Equal([ReceiptId], mailer.Sent.Select(email => email.TemplateId));
+        Assert.Equal([ReceiptId], mailer.Templated.Select(email => email.TemplateId));
     }
 
     [Fact]
     public async Task Delivery_WithoutTemplateIdsOrRecipient_SendsNothing()
     {
-        var mailer = new RecordingMailerSendClient();
+        var mailer = new TestMailService();
         var noTemplates = CreateService(mailer, new ContactOptions { RecipientEmail = "gustavo@example.test" });
         var noRecipient = CreateService(mailer, new ContactOptions
         {
@@ -124,13 +124,13 @@ public sealed class ContactEmailTemplateTests
         Assert.Equal(ContactDeliveryOutcome.Failed, await noTemplates.SendAsync(Pending));
         Assert.False(await noTemplates.SendVerificationRequestAsync("Alex", "alex@example.test", "https://site.test/x"));
         Assert.Equal(ContactDeliveryOutcome.Failed, await noRecipient.SendAsync(Pending));
-        Assert.Empty(mailer.Sent);
+        Assert.Empty(mailer.Templated);
     }
 
     [Fact]
     public async Task LogoUrl_IsTheSiteAddressUnlessOverridden()
     {
-        var mailer = new RecordingMailerSendClient();
+        var mailer = new TestMailService();
         var overridden = new ContactOptions
         {
             LogoUrl = "https://cdn.test/logo.png",
@@ -140,24 +140,24 @@ public sealed class ContactEmailTemplateTests
         await CreateService(mailer).SendAsync(Pending);
         await CreateService(mailer, overridden).SendVerificationRequestAsync("Alex", "alex@example.test", "https://site.test/x");
 
-        Assert.Equal("https://site.test/email/gcv-logo.png", mailer.Sent[0].Variables["logo_url"]);
-        Assert.Equal("https://cdn.test/logo.png", mailer.Sent[2].Variables["logo_url"]);
+        Assert.Equal("https://site.test/email/gcv-logo.png", mailer.Templated[0].Variables["logo_url"]);
+        Assert.Equal("https://cdn.test/logo.png", mailer.Templated[2].Variables["logo_url"]);
     }
 
     [Fact]
-    public async Task MailerSendClient_PostsTemplateRequestWithBearerKey()
+    public async Task MailerSendTransport_PostsTemplateRequestWithBearerKey()
     {
         var handler = new CapturingHandler(HttpStatusCode.Accepted);
         var client = CreateClient(handler);
 
-        var sent = await client.SendTemplateAsync(new MailerSendTemplateEmail(
+        var sent = await client.SendTemplateAsync(new TemplateMail(
             "tpl-1",
             "Subject",
-            new MailerSendRecipient("to@example.test", "To Name"),
+            new MailAddressee("to@example.test", "To Name"),
             new Dictionary<string, string> { ["name"] = "To Name", ["message"] = "line1\nline2" },
-            new MailerSendRecipient("reply@example.test", "Reply Name")));
+            new MailAddressee("reply@example.test", "Reply Name")), CancellationToken.None);
 
-        Assert.True(sent);
+        Assert.Equal(MailFailure.None, sent.Failure);
         Assert.Equal(HttpMethod.Post, handler.Method);
         Assert.Equal("https://api.test/v1/email", handler.Uri);
         Assert.Equal("Bearer test-api-key", handler.Authorization);
@@ -176,52 +176,33 @@ public sealed class ContactEmailTemplateTests
     }
 
     [Fact]
-    public async Task MailerSendClient_OmitsReplyToWhenNotGiven()
+    public async Task MailerSendTransport_OmitsReplyToWhenNotGiven()
     {
         var handler = new CapturingHandler(HttpStatusCode.Accepted);
 
-        await CreateClient(handler).SendTemplateAsync(new MailerSendTemplateEmail(
-            "tpl-1", "Subject", new MailerSendRecipient("to@example.test", "To"), new Dictionary<string, string>()));
+        await CreateClient(handler).SendTemplateAsync(new TemplateMail(
+            "tpl-1", "Subject", new MailAddressee("to@example.test", "To"), new Dictionary<string, string>()), CancellationToken.None);
 
         using var body = JsonDocument.Parse(handler.Body);
         Assert.False(body.RootElement.TryGetProperty("reply_to", out _));
     }
 
     [Fact]
-    public async Task MailerSendClient_OnFailureReturnsFalseAndLogsNoSecretsOrAddresses()
-    {
-        var logger = new CapturingLogger<MailerSendClient>();
-        var handler = new CapturingHandler(HttpStatusCode.UnprocessableEntity, "{\"message\":\"bad to@example.test\"}");
-        var client = CreateClient(handler, logger);
-
-        var sent = await client.SendTemplateAsync(new MailerSendTemplateEmail(
-            "tpl-1", "Subject", new MailerSendRecipient("to@example.test", "To"), new Dictionary<string, string> { ["message"] = "secret body" }));
-
-        Assert.False(sent);
-        var log = string.Join(Environment.NewLine, logger.Messages);
-        Assert.Contains("422", log);
-        Assert.DoesNotContain("test-api-key", log, StringComparison.Ordinal);
-        Assert.DoesNotContain("to@example.test", log, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("secret body", log, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task MailerSendClient_WithoutApiKeyMakesNoRequest()
+    public async Task MailerSendTransport_WithoutApiKeyMakesNoRequest()
     {
         var handler = new CapturingHandler(HttpStatusCode.Accepted);
-        var client = new MailerSendClient(
+        var client = new MailerSendTransport(
             new HttpClient(handler),
-            Options.Create(new MailerSendOptions { FromEmail = "sender@example.test" }),
-            NullLogger<MailerSendClient>.Instance);
+            Options.Create(new MailerSendOptions { FromEmail = "sender@example.test" }));
 
-        var sent = await client.SendTemplateAsync(new MailerSendTemplateEmail(
-            "tpl-1", "Subject", new MailerSendRecipient("to@example.test", "To"), new Dictionary<string, string>()));
+        var sent = await client.SendTemplateAsync(new TemplateMail(
+            "tpl-1", "Subject", new MailAddressee("to@example.test", "To"), new Dictionary<string, string>()), CancellationToken.None);
 
-        Assert.False(sent);
+        Assert.Equal(MailFailure.NotConfigured, sent.Failure);
         Assert.Null(handler.Uri);
     }
 
-    private static ContactEmailDeliveryService CreateService(IMailerSendClient mailer, ContactOptions? contact = null, string publicBaseUrl = "https://site.test/") =>
+    private static ContactEmailDeliveryService CreateService(IMailService mailer, ContactOptions? contact = null, string publicBaseUrl = "https://site.test/") =>
         new(
             mailer,
             Options.Create(contact ?? new ContactOptions
@@ -232,25 +213,10 @@ public sealed class ContactEmailTemplateTests
             new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PublicBaseUrl"] = publicBaseUrl }).Build(),
             NullLogger<ContactEmailDeliveryService>.Instance);
 
-    private static MailerSendClient CreateClient(CapturingHandler handler, ILogger<MailerSendClient>? logger = null) =>
+    private static MailerSendTransport CreateClient(CapturingHandler handler) =>
         new(
             new HttpClient(handler),
-            Options.Create(new MailerSendOptions { ApiKey = "test-api-key", BaseUrl = "https://api.test/v1/", FromEmail = "sender@example.test", FromName = "Sender" }),
-            logger ?? NullLogger<MailerSendClient>.Instance);
-
-    private sealed class RecordingMailerSendClient : IMailerSendClient
-    {
-        public List<MailerSendTemplateEmail> Sent { get; } = [];
-        public bool Succeeds { get; init; } = true;
-        public string? FailTemplateId { get; set; }
-        public bool IsConfigured => true;
-
-        public Task<bool> SendTemplateAsync(MailerSendTemplateEmail email, CancellationToken cancellationToken = default)
-        {
-            Sent.Add(email);
-            return Task.FromResult(Succeeds && email.TemplateId != FailTemplateId);
-        }
-    }
+            Options.Create(new MailerSendOptions { ApiKey = "test-api-key", BaseUrl = "https://api.test/v1/", FromEmail = "sender@example.test", FromName = "Sender" }));
 
     private sealed class CapturingHandler(HttpStatusCode status, string responseBody = "") : HttpMessageHandler
     {

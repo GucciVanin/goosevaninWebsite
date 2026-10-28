@@ -1,0 +1,9 @@
+# Captain log - TE8
+
+| # | Report | Source | Verdict | Action |
+| --- | --- | --- | --- | --- |
+| 0 | Gustavo approved approach B and AC1-AC5 (2026-10-26); told to move on (2026-10-28) | Human | approved | order O1; Worker dispatched |
+| 1 | Worker report O1: complete; Shared/Email IMailService/MailService (one place that logs), SmtpMailTransport, MailerSendTransport, Accounts and Contact on IMailService, one TestMailService, 9 MailServiceTests (7 red first), settings Email:MailerSend:* with fallback; dotnet 188, full run 773 pass, 0 fail. Doubts: StubContactEmailDeliveryService remains (contact-level, not a mail seam: Captain decision: acceptable for AC4), IAccountEmailSender kept as rendering seam, malformed recipient now a failure result, compose empty values override fallback, log wording changed, attempted git rm --cached (refused) | Worker | complete | relay to Reviewer and Security in parallel |
+| 2 | Security report O1: pass; no blocking; low: ContactMessage.Name does not reject CR/LF (harmless on the JSON path), MailerSend:BaseUrl not checked to be https | Security | pass | route-verify after the Reviewer verdict; lows logged for the R1 gate |
+| 3 | Reviewer verdict O1: accurate; dotnet 188 re-run; no code defects; 2 doc defects (TestAccountEmailSender in architecture.md, SmtpAccountEmailSender in email-templates README) fixed by the Captain (docs only); advisories recorded in decisions.md; stray "; ." in a success log line and OperationCanceled handling are cosmetic | Reviewer | accurate | docs fixed; Testing 3x (touch only goosewebsite containers) |
+| 4 | Testing report O1: PASS; .NET 188 x3, container 773 pass/0 fail/0 known x3 identical; web container logs: no address, link, token or body; no email sent; not covered: real SMTP/MailerSend delivery | Testing | pass | commit TE8 | 

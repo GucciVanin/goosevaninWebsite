@@ -1,12 +1,14 @@
 namespace GooseWebsite.Api.Shared.Email;
 
 /// <summary>
-/// MailerSend HTTP API settings bound from the <c>MailerSend</c> configuration section. The API key is
+/// MailerSend HTTP API settings bound from the <c>Email:MailerSend</c> configuration section (the older
+/// <c>MailerSend</c> section is still read as a fallback). The API key is
 /// a secret: supply it through user-secrets or environment variables, never source control.
 /// </summary>
 public sealed class MailerSendOptions
 {
-    public const string SectionName = "MailerSend";
+    public const string SectionName = "Email:MailerSend";
+    public const string LegacySectionName = "MailerSend";
 
     public string ApiKey { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = "https://api.mailersend.com/v1/";

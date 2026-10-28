@@ -1,4 +1,3 @@
-using System.Net.Mail;
 using System.Text.RegularExpressions;
 using GooseWebsite.Api.Modules.Accounts.Services;
 using GooseWebsite.Api.Shared.Email;
@@ -13,38 +12,6 @@ public sealed class AccountVerificationEmailTests
 {
     private const string Link = "https://gustavo.example/verify-email#userId=u1&token=t%2B1";
 
-    private sealed class CapturingSmtpMailSender(MailAddress? from) : ISmtpMailSender
-    {
-        public List<(string To, string Subject, string Plain, string Html)> Sent { get; } = [];
-
-        public MailAddress? FromAddress => from;
-
-        public Task<bool> SendAsync(params MailMessage[] messages)
-        {
-            foreach (var message in messages)
-            {
-                string Read(string type)
-                {
-                    var view = message.AlternateViews.SingleOrDefault(v => v.ContentType.MediaType == type);
-                    if (view is null)
-                    {
-                        return string.Empty;
-                    }
-
-                    using var reader = new StreamReader(view.ContentStream);
-                    var text = reader.ReadToEnd();
-                    view.ContentStream.Position = 0;
-                    return text;
-                }
-
-                Sent.Add((message.To.Single().Address, message.Subject, Read("text/plain"), Read("text/html")));
-            }
-
-            // Like the real sender, an empty call (no SMTP settings) reports failure.
-            return Task.FromResult(messages.Length > 0 || from is not null);
-        }
-    }
-
     private static PublicLinkBuilder Links(string? baseUrl = "https://gustavo.example/")
     {
         var settings = new Dictionary<string, string?>();
@@ -58,12 +25,13 @@ public sealed class AccountVerificationEmailTests
 
     private static async Task<(string To, string Subject, string Plain, string Html)> SendAsync(string displayName = "Ada")
     {
-        var sink = new CapturingSmtpMailSender(new MailAddress("noreply@gustavo.example", "Gustavo"));
-        var sender = new SmtpAccountEmailSender(sink, Links());
+        var sink = new TestMailService();
+        var sender = new AccountEmailSender(sink, Links());
 
         Assert.True(await sender.SendVerificationEmailAsync("ada@example.test", displayName, Link));
 
-        return Assert.Single(sink.Sent);
+        var mail = Assert.Single(sink.Rendered);
+        return (mail.To.Email, mail.Subject, mail.PlainText, mail.Html);
     }
 
     [Fact]
@@ -148,12 +116,12 @@ public sealed class AccountVerificationEmailTests
     [Fact]
     public async Task LogoAddressIsBuiltFromThePublicBaseUrl()
     {
-        var sink = new CapturingSmtpMailSender(new MailAddress("noreply@other.example"));
-        var sender = new SmtpAccountEmailSender(sink, Links("https://other.example"));
+        var sink = new TestMailService();
+        var sender = new AccountEmailSender(sink, Links("https://other.example"));
 
         await sender.SendVerificationEmailAsync("ada@example.test", "Ada", Link);
 
-        Assert.Contains("src=\"https://other.example/email/gcv-logo.png\"", sink.Sent.Single().Html);
+        Assert.Contains("src=\"https://other.example/email/gcv-logo.png\"", sink.Rendered.Single().Html);
     }
 
     [Fact]
@@ -189,15 +157,15 @@ public sealed class AccountVerificationEmailTests
     }
 
     [Fact]
-    public async Task WhenSmtpIsNotConfiguredNothingIsSentAndItReportsFailure()
+    public async Task WhenMailIsNotConfiguredNothingIsSentAndItReportsFailure()
     {
-        var sink = new CapturingSmtpMailSender(null);
-        var sender = new SmtpAccountEmailSender(sink, Links());
+        var sink = new TestMailService { Unconfigured = true };
+        var sender = new AccountEmailSender(sink, Links());
 
         var result = await sender.SendVerificationEmailAsync("ada@example.test", "Ada", Link);
 
         Assert.False(result);
-        Assert.Empty(sink.Sent);
+        Assert.Empty(sink.Rendered);
     }
 
     [Fact]

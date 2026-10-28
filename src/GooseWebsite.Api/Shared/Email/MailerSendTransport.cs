@@ -5,18 +5,21 @@ using Microsoft.Extensions.Options;
 
 namespace GooseWebsite.Api.Shared.Email;
 
-public sealed class MailerSendClient(HttpClient http, IOptions<MailerSendOptions> options, ILogger<MailerSendClient> logger) : IMailerSendClient
+/// <summary>
+/// The only place the application talks to the MailerSend HTTP API. It reports categories back to
+/// <see cref="MailService"/>; it never logs.
+/// </summary>
+public sealed class MailerSendTransport(HttpClient http, IOptions<MailerSendOptions> options) : ITemplateMailTransport
 {
     private readonly MailerSendOptions _options = options.Value;
 
-    public bool IsConfigured => _options.IsConfigured;
+    public string Name => "MailerSend";
 
-    public async Task<bool> SendTemplateAsync(MailerSendTemplateEmail email, CancellationToken cancellationToken = default)
+    public async Task<MailTransportOutcome> SendTemplateAsync(TemplateMail email, CancellationToken cancellationToken)
     {
         if (!_options.IsConfigured)
         {
-            logger.LogWarning("MailerSend configuration is incomplete; email delivery was skipped.");
-            return false;
+            return MailTransportOutcome.NotConfigured;
         }
 
         var payload = new SendRequest(
@@ -38,20 +41,15 @@ public sealed class MailerSendClient(HttpClient http, IOptions<MailerSendOptions
         {
             using var response = await http.SendAsync(request, cancellationToken);
 
-            // Log the status code only: error bodies can echo recipient addresses.
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogError("MailerSend delivery failed; templateId={TemplateId}; httpStatus={HttpStatus}.", email.TemplateId, (int)response.StatusCode);
-                return false;
-            }
-
-            logger.LogInformation("MailerSend delivery accepted; templateId={TemplateId}; httpStatus={HttpStatus}.", email.TemplateId, (int)response.StatusCode);
-            return true;
+            // Report the status code only: error bodies can echo recipient addresses.
+            var diagnostics = $"templateId={email.TemplateId}; httpStatus={(int)response.StatusCode}";
+            return response.IsSuccessStatusCode
+                ? new MailTransportOutcome(MailFailure.None, diagnostics)
+                : new MailTransportOutcome(MailFailure.Rejected, diagnostics);
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
         {
-            logger.LogError("MailerSend delivery failed; templateId={TemplateId}; exceptionType={ExceptionType}.", email.TemplateId, exception.GetType().Name);
-            return false;
+            return new MailTransportOutcome(MailFailure.TransportError, $"templateId={email.TemplateId}; exceptionType={exception.GetType().Name}");
         }
     }
 

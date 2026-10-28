@@ -14,6 +14,7 @@ using Microsoft.Data.Sqlite;
 using GooseWebsite.Api.Modules.Accounts.Domain;
 using GooseWebsite.Api.Modules.Accounts.Services;
 using GooseWebsite.Api.Modules.Contact.Services;
+using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Persistence;
 using Xunit;
 
@@ -80,9 +81,9 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IContactEmailDeliveryService>();
             services.AddSingleton<StubContactEmailDeliveryService>();
             services.AddSingleton<IContactEmailDeliveryService>(provider => provider.GetRequiredService<StubContactEmailDeliveryService>());
-            services.RemoveAll<IAccountEmailSender>();
-            services.AddSingleton<TestAccountEmailSender>();
-            services.AddSingleton<IAccountEmailSender>(provider => provider.GetRequiredService<TestAccountEmailSender>());
+            services.RemoveAll<IMailService>();
+            services.AddSingleton<TestMailService>();
+            services.AddSingleton<IMailService>(provider => provider.GetRequiredService<TestMailService>());
             if (_cookieLifetime is not null)
             {
                 services.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
@@ -126,7 +127,8 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         Assert.True(result.Succeeded, result.ErrorMessage);
     }
 
-    public TestAccountEmailSender AccountEmailSender => Services.GetRequiredService<TestAccountEmailSender>();
+    /// <summary>The one mail double: records every email the application would send.</summary>
+    public TestMailService Mail => Services.GetRequiredService<TestMailService>();
 
     public StubContactEmailDeliveryService ContactEmail => Services.GetRequiredService<StubContactEmailDeliveryService>();
 
