@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { Categories } from './categories/categories';
 import { Hero } from './hero/hero';
-import { StoryFilter } from '../../shared/story-filter';
 
 // The landing page follows the mockup: headline, three-line intro, one action, and three category cards.
 describe('Landing page', () => {
@@ -27,10 +27,10 @@ describe('Landing page', () => {
     expect(targets).toEqual(['work']);
   });
 
-  it('shows the three category cards, each with an image strip and a link to its section', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'projects', children: [] }, { path: 'stories', children: [] }])] }));
+
+  it('shows the three category cards, each with an image strip and a link to its own page', () => {
     const fixture = TestBed.createComponent(Categories);
-    const targets: string[] = [];
-    fixture.componentInstance.navigate.subscribe((id) => targets.push(id));
     fixture.detectChanges();
     const cards = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('li'));
 
@@ -44,8 +44,17 @@ describe('Landing page', () => {
       '/brand/cards/projects.webp', '/brand/cards/life-stories.webp', '/brand/cards/competitions.webp',
     ]);
 
-    cards.forEach((card) => card.querySelector('a')!.click());
-    expect(targets).toEqual(['work', 'blog', 'blog']);
+  });
+
+  it('opens the projects page from the Projects card', async () => {
+    const fixture = TestBed.createComponent(Categories);
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('a')!.click();
+    await fixture.whenStable();
+
+    expect(router.url).toBe('/projects');
   });
 
   it('never links to a removed section', () => {
@@ -53,21 +62,20 @@ describe('Landing page', () => {
     fixture.detectChanges();
     const hrefs = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('a')).map((a) => a.getAttribute('href'));
 
-    expect(hrefs).toEqual(['#work', '#blog', '#blog']);
+    expect(hrefs).toEqual(['/projects', '/stories', '/stories?tag=competition']);
   });
 
-  it('pre-applies the competition tag only from the Competitions card, and clears it from the others', () => {
+  it('opens the stories page from the Life stories card and the tagged stories from the Competitions card', async () => {
     const fixture = TestBed.createComponent(Categories);
     fixture.detectChanges();
-    const filter = TestBed.inject(StoryFilter);
+    const router = TestBed.inject(Router);
     const links = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('a'));
 
     links[2].click();
-    expect(filter.tag()).toBe('competition');
+    await fixture.whenStable();
+    expect(router.url).toBe('/stories?tag=competition');
     links[1].click();
-    expect(filter.tag()).toBe('');
-    links[2].click();
-    links[0].click();
-    expect(filter.tag()).toBe('');
+    await fixture.whenStable();
+    expect(router.url).toBe('/stories');
   });
 });

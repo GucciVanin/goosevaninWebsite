@@ -8,6 +8,8 @@ export interface Screen {
 
 export const screens: Screen[] = [
   { id: 'home', path: '/' },
+  { id: 'projects', path: '/projects' },
+  { id: 'stories', path: '/stories' },
   { id: 'sign-in', path: '/sign-in' },
   { id: 'email-confirmation', path: '/verify-email' },
   { id: 'contact-confirmation', path: '/contact/verify' },

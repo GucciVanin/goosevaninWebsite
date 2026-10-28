@@ -6,9 +6,15 @@
 
   <nav class="gcv-nav" aria-label="Primary navigation">
     @for (item of navItems(); track item.id) {
-      <a [class.active]="activeSection() === item.id" [attr.aria-current]="activeSection() === item.id ? 'true' : null" [href]="'#' + item.id" (click)="onNavigate(item.id, $event)">
-        {{ item.label }}
-      </a>
+      @if (item.route) {
+        <a [class.active]="activeSection() === item.id" [attr.aria-current]="activeSection() === item.id ? 'true' : null" [routerLink]="item.route" (click)="menuOpen.set(false)">
+          {{ item.label }}
+        </a>
+      } @else {
+        <a [class.active]="activeSection() === item.id" [attr.aria-current]="activeSection() === item.id ? 'true' : null" [href]="'#' + item.id" (click)="onNavigate(item.id, $event)">
+          {{ item.label }}
+        </a>
+      }
     }
   </nav>
 
@@ -39,7 +45,11 @@
   @if (menuOpen()) {
     <nav id="gcv-drawer" class="gcv-drawer" aria-label="Menu" (keydown.escape)="menuOpen.set(false)">
       @for (item of navItems(); track item.id) {
-        <a [href]="'#' + item.id" (click)="onNavigate(item.id, $event)">{{ item.label }}</a>
+        @if (item.route) {
+          <a [routerLink]="item.route" (click)="menuOpen.set(false)">{{ item.label }}</a>
+        } @else {
+          <a [href]="'#' + item.id" (click)="onNavigate(item.id, $event)">{{ item.label }}</a>
+        }
       }
       @if (isAdmin()) {
         <a routerLink="/editor" (click)="menuOpen.set(false)">Editor</a>

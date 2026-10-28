@@ -7,7 +7,7 @@ The Testing role runs the list below as the last check, three times per test, an
 | Layer | Command | Notes |
 | --- | --- | --- |
 | .NET unit and API tests | `dotnet test GooseWebsite.slnx -p:SkipClientBuild=true` | Build the client once first. |
-| Angular unit tests | `cd src/GooseWebsite.Client; $env:CHROME_BIN="C:\Program Files\Google\Chrome\Application\chrome.exe"; npm test -- --watch=false --karma-config=karma.conf.js --browsers=ChromeHeadlessNoSandbox` | |
+| Angular unit tests | `cd src/GooseWebsite.Client; $env:CHROME_BIN="C:\Program Files\Google\Chrome\Application\chrome.exe"; npm test -- --watch=false --karma-config=karma.conf.js --browsers=ChromeHeadlessNoSandbox` | When capturing the output to a file use `cmd /c "<command> > file 2>&1"`: with PowerShell `*>` Karma prints the progress reporter and may not exit by itself. |
 | Container runtime tests | `./scripts/verify.ps1 -SkipCi` (PowerShell) | Resets and rebuilds the stack; writes `verify-results/`. Use the CI gate (without `-SkipCi`) once the branch has a pull request. |
 | CI | `gh pr checks <number> --watch` | First check; must be green before the container run is reported. |
 

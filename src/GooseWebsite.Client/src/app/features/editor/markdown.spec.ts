@@ -11,6 +11,16 @@ describe('renderMarkdown', () => {
     expect(html).toContain('<li>one</li>');
   });
 
+  it('moves headings down when asked, so a public page keeps a single h1, and stops at h6', () => {
+    const html = renderMarkdown('# One\n\n## Two\n\n###### Six', { headingOffset: 1 });
+
+    expect(html).not.toContain('<h1');
+    expect(html).toContain('<h2>One</h2>');
+    expect(html).toContain('<h3>Two</h3>');
+    expect(html).toContain('<h6>Six</h6>');
+  });
+
+
   it('keeps paragraphs apart', () => {
     expect(renderMarkdown('first\n\nsecond')).toContain('<p>first</p>');
     expect(renderMarkdown('first\n\nsecond')).toContain('<p>second</p>');

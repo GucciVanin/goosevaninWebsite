@@ -1,0 +1,1 @@
+Visitors can browse and read what Gustavo has published: a projects index and project pages first (F5-US1), then a stories index and story pages (F5-US2), each reachable by a direct link, with drafts never visible. Projects are the main aspect of the site.

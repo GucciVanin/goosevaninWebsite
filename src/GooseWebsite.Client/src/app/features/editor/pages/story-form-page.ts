@@ -75,6 +75,9 @@ import { Story, StoryDraft } from '../models/story';
           <app-image-controls [(coverImage)]="coverImage" [(coverImageAlt)]="coverImageAlt" (insert)="addToText($event)" />
         }
 
+        @if (!loadFailed() && !isPublished()) {
+          <p class="publish-reminder gcv-status">Before you publish: read the story once more for personal or sensitive details. Publishing makes it public; saving a draft does not.</p>
+        }
         @if (!loadFailed()) {
           <div class="gcv-actions">
             <button type="button" class="gcv-btn gcv-btn--solid" [disabled]="isBusy()" (click)="saveDraft()">{{ isPublished() ? 'Save changes' : 'Save draft' }}</button>

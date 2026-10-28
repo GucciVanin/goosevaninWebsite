@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { SelectedWork, plainSummary } from './selected-work';
+import { SelectedWork } from './selected-work';
 
 // The projects section shows what Gustavo has published, and never sample content.
 describe('SelectedWork', () => {
@@ -39,6 +39,19 @@ describe('SelectedWork', () => {
     expect(panel.querySelector('.case p')?.textContent).toBe('About A personal site with a link.');
   });
 
+  it('previews at most three projects and links to all of them on the projects page', () => {
+    const { fixture, http } = open();
+    const project = (n: number) => ({ title: `Project ${n}`, slug: `project-${n}`, overview: 'x', technologies: [], coverImage: '', coverImageAlt: '', demoUrl: null, sourceUrl: null });
+
+    http.expectOne('/api/projects').flush([1, 2, 3, 4].map(project));
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelectorAll('app-project-panel').length).toBe(3);
+    expect(element.querySelector('a.all-projects')?.getAttribute('href')).toBe('/projects');
+    expect(element.querySelector('a.all-projects')?.textContent).toContain('All projects');
+  });
+
   it('tells the visitor when the projects cannot be loaded', () => {
     const { fixture, http } = open();
 
@@ -46,13 +59,5 @@ describe('SelectedWork', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('could not be loaded');
-  });
-
-  it('cuts a long summary at a word boundary', () => {
-    const text = plainSummary('word '.repeat(100), 50);
-
-    expect(text.length).toBeLessThanOrEqual(51);
-    expect(text.endsWith('…')).toBeTrue();
-    expect(text).not.toContain('wor…');
   });
 });

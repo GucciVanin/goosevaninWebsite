@@ -1,8 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { StoryFilter } from '../../shared/story-filter';
+import { Router, provideRouter } from '@angular/router';
 import { SiteHeader } from './site-header';
 
 // Guards the shared header route contract used by every page.
@@ -89,26 +88,47 @@ describe('SiteHeader', () => {
       expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
     });
 
-    // TE4 O6: the Stories link shows all stories, so it clears a tag left by the Competitions card.
-    it('clears the story tag from the Stories link in the header and in the menu, but not from other links', () => {
-      const filter = TestBed.inject(StoryFilter);
-      fixture.componentRef.setInput('navItems', [{ label: 'Projects', id: 'work' }, { label: 'Stories', id: 'blog' }]);
+    // F5-US2: the Stories item is a page link to /stories (no query), so plain navigation clears a ?tag= filter.
+    it('links a Stories item with a route to /stories, in the header and in the menu', () => {
+      fixture.componentRef.setInput('navItems', [{ label: 'Projects', id: 'work', route: '/projects' }, { label: 'Stories', id: 'blog', route: '/stories' }]);
       fixture.detectChanges();
       controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
-      const nav = () => Array.from(fixture.nativeElement.querySelectorAll('.gcv-nav a') as NodeListOf<HTMLAnchorElement>);
+      const hrefOf = (selector: string) => Array.from(fixture.nativeElement.querySelectorAll(selector) as NodeListOf<HTMLAnchorElement>).find((a) => a.textContent.trim() === 'Stories')!.getAttribute('href');
 
-      filter.tag.set('competition');
-      nav().find((a) => a.textContent.trim() === 'Projects')!.click();
-      expect(filter.tag()).toBe('competition');
-      nav().find((a) => a.textContent.trim() === 'Stories')!.click();
-      expect(filter.tag()).toBe('');
-
-      filter.tag.set('competition');
+      expect(hrefOf('.gcv-nav a')).toBe('/stories');
       toggle().click();
       fixture.detectChanges();
-      const drawerLink = Array.from(fixture.nativeElement.querySelectorAll('.gcv-drawer a') as NodeListOf<HTMLAnchorElement>).find((a) => a.textContent.trim() === 'Stories')!;
+      expect(hrefOf('.gcv-drawer a')).toBe('/stories');
+    });
+
+    // F5-US1: an item with a route is a real page link (header and menu); the others keep scrolling home sections.
+    it('sends a routed item to its page from the header and from the menu, and still scrolls the other items', async () => {
+      TestBed.inject(Router).resetConfig([{ path: 'projects', children: [] }]);
+      fixture.componentRef.setInput('navItems', [{ label: 'Projects', id: 'work', route: '/projects' }, { label: 'Stories', id: 'blog' }]);
+      fixture.detectChanges();
+      controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
+      const emitted: string[] = [];
+      fixture.componentInstance.navigate.subscribe((id) => emitted.push(id));
+      const headerLink = (label: string) => Array.from(fixture.nativeElement.querySelectorAll('.gcv-nav a') as NodeListOf<HTMLAnchorElement>).find((a) => a.textContent.trim() === label)!;
+
+      expect(headerLink('Projects').getAttribute('href')).toBe('/projects');
+      expect(headerLink('Stories').getAttribute('href')).toBe('#blog');
+      headerLink('Projects').click();
+      await fixture.whenStable();
+      expect(emitted).toEqual([]);
+      expect(TestBed.inject(Router).url).toBe('/projects');
+
+      headerLink('Stories').click();
+      expect(emitted).toEqual(['blog']);
+
+      toggle().click();
+      fixture.detectChanges();
+      const drawerLink = Array.from(fixture.nativeElement.querySelectorAll('.gcv-drawer a') as NodeListOf<HTMLAnchorElement>).find((a) => a.textContent.trim() === 'Projects')!;
+      expect(drawerLink.getAttribute('href')).toBe('/projects');
       drawerLink.click();
-      expect(filter.tag()).toBe('');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
+      expect(emitted).toEqual(['blog']);
     });
 
     it('closes the menu after choosing a section', () => {
