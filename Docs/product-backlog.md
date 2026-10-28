@@ -461,7 +461,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F5-US1: Explore Published Projects
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-28; awaiting review, not yet Done)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a visitor, I can browse Gustavo's projects and inspect his contribution and supporting links.
 
@@ -474,9 +474,11 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] Implement a public query/API that returns published projects only.
-- [ ] Implement project index and detail views using the agreed project fields.
-- [ ] Seed test data with both draft and published projects; test index filtering, details, direct navigation, and missing IDs.
+- [x] Implement a public query/API that returns published projects only (exists since F4-US4: `GET /api/projects`, `GET /api/projects/{slug}`).
+- [x] Implement project index and detail views using the agreed project fields.
+- [ ] Seed test data with both draft and published projects; test index filtering, details, direct navigation, and missing IDs. (The API tests already cover draft filtering and the 404; the client tests use a stubbed API; the verification stack publishes nothing, so the browser tests cover the empty and not-found states. A runtime check with a published project in the stack is still to be decided.)
+
+**Implementation evidence (2026-10-28, branch `f5-public-browsing`):** routes `/projects` (`ProjectsIndexPage`) and `/projects/:slug` (`ProjectPage`) and the wildcard not-found page (`NotFoundPage`) are lazy routes rendered inside the site shell. Test 1: Karma `ProjectsIndexPage` lists every project the API sends (the API sends published ones only) as links with title, one-line overview, technologies and thumbnail; test 4 (index): the entries have no side or bottom border, radius or fill. Test 2: Karma `ProjectPage` checks the DOM order title, overview, contribution, technologies, cover image, links, the cover image alt text, and that demo and source are external links with `rel="noopener noreferrer"`, `target="_blank"` and "(opens in a new tab)" text. Test 3: Karma 404 shows `NotFoundPage`; `verify/runtime/30-pages.sh` checks that `/projects`, `/projects/<unknown>` and an unknown URL serve the app on a direct load; the browser test `projects.spec.ts` loads `/projects` (empty state) and `/projects/nope` (not-found) directly. Test 4 (detail/mobile): browser tests find no sideways scroll at 375 px and 1280 px and no critical or serious axe violation on both pages, and the new `projects` screen is covered by the load, axe, 320 px and keyboard checks on the three engines. After the reviewer's follow-up (O3: scroll reset on route change, the header Projects item links to `/projects`, a document title on each new page, tests for the home-bound header link and the shell-free screens): Karma 165 pass, `dotnet test` 175 pass, `scripts/verify.ps1 -SkipCi` 649 passed, 0 failed, 0 known. Not yet verified: a project page with real published content in a browser (the stack publishes none).
 
 ### User Story F5-US2: Read Published Personal Stories
 

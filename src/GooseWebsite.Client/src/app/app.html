@@ -1,14 +1,18 @@
 <!-- Keeps route content inside one shared shell so navigation stays consistent. -->
-<router-outlet />
-@if (!authRoute()) {
-  <div class="site-shell">
+<!-- The home page is the shell's own sections; the project pages and the not-found page are routed into the same shell; sign-in and the editor have none. -->
+<div [class.site-shell]="!authRoute()">
+  @if (!authRoute()) {
     <app-site-header [activeSection]="activeSection()" [hidden]="headerHidden()" [navItems]="navItems" (navigate)="scrollTo($event)"></app-site-header>
-
+  }
+  @if (homeRoute()) {
     <main>
       <app-home-page (navigate)="scrollTo($event)"></app-home-page>
       <app-blog-page></app-blog-page>
       <app-contact-page></app-contact-page>
     </main>
+  }
+  <router-outlet />
+  @if (!authRoute()) {
     <app-site-footer (navigate)="scrollTo($event)"></app-site-footer>
-  </div>
-}
+  }
+</div>

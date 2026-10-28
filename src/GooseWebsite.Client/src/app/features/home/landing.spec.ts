@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { Categories } from './categories/categories';
 import { Hero } from './hero/hero';
 import { StoryFilter } from '../../shared/story-filter';
@@ -27,6 +28,8 @@ describe('Landing page', () => {
     expect(targets).toEqual(['work']);
   });
 
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'projects', children: [] }])] }));
+
   it('shows the three category cards, each with an image strip and a link to its section', () => {
     const fixture = TestBed.createComponent(Categories);
     const targets: string[] = [];
@@ -45,7 +48,19 @@ describe('Landing page', () => {
     ]);
 
     cards.forEach((card) => card.querySelector('a')!.click());
-    expect(targets).toEqual(['work', 'blog', 'blog']);
+    // Projects opens its own page (/projects); the other two scroll to the Stories section.
+    expect(targets).toEqual(['blog', 'blog']);
+  });
+
+  it('opens the projects page from the Projects card', async () => {
+    const fixture = TestBed.createComponent(Categories);
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('a')!.click();
+    await fixture.whenStable();
+
+    expect(router.url).toBe('/projects');
   });
 
   it('never links to a removed section', () => {
@@ -53,7 +68,7 @@ describe('Landing page', () => {
     fixture.detectChanges();
     const hrefs = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('a')).map((a) => a.getAttribute('href'));
 
-    expect(hrefs).toEqual(['#work', '#blog', '#blog']);
+    expect(hrefs).toEqual(['/projects', '#blog', '#blog']);
   });
 
   it('pre-applies the competition tag only from the Competitions card, and clears it from the others', () => {

@@ -1,4 +1,5 @@
 import { Component, inject, output } from '@angular/core';
+import { Router } from '@angular/router';
 import { StoryFilter } from '../../../shared/story-filter';
 
 interface Category {
@@ -9,11 +10,13 @@ interface Category {
   imageAlt: string;
   icon: 'code' | 'book' | 'trophy';
   tag: string;
+  /** A card that opens its own page instead of scrolling to a section on the home page. */
+  route?: string;
 }
 
 // The three category cards: Projects, Life stories and Competitions (competitions are life stories tagged "competition").
-// Each card has its own accent, icon and image strip and takes the visitor to an existing section; Competitions opens
-// Stories already filtered by that tag, the others clear any earlier tag.
+// Each card has its own accent, icon and image strip. Projects opens its own page (/projects); the other two take the
+// visitor to the Stories section, Competitions already filtered by that tag, the other clearing any earlier tag.
 @Component({
   selector: 'app-categories',
   template: `
@@ -21,7 +24,7 @@ interface Category {
       <ul>
         @for (card of cards; track card.title) {
           <li [style.--card]="'var(' + card.token + ')'">
-            <a [href]="'#' + card.target" (click)="onOpen(card, $event)">
+            <a [href]="card.route ?? '#' + card.target" (click)="onOpen(card, $event)">
               <span class="icon" aria-hidden="true">
                 @switch (card.icon) {
                   @case ('code') {
@@ -65,9 +68,10 @@ interface Category {
 export class Categories {
   readonly navigate = output<string>();
   private readonly storyFilter = inject(StoryFilter);
+  private readonly router = inject(Router);
 
   protected readonly cards: Category[] = [
-    { title: 'Projects', target: 'work', token: '--gcv-magenta', image: '/brand/cards/projects.webp', imageAlt: 'Source code on a computer screen', icon: 'code', tag: '' },
+    { title: 'Projects', target: 'work', route: '/projects', token: '--gcv-magenta', image: '/brand/cards/projects.webp', imageAlt: 'Source code on a computer screen', icon: 'code', tag: '' },
     { title: 'Life stories', target: 'blog', token: '--gcv-cyan', image: '/brand/cards/life-stories.webp', imageAlt: 'A neon city skyline at dusk', icon: 'book', tag: '' },
     { title: 'Competitions', target: 'blog', token: '--gcv-orange', image: '/brand/cards/competitions.webp', imageAlt: 'A glowing neon sign on a city street', icon: 'trophy', tag: 'competition' },
   ];
@@ -75,6 +79,10 @@ export class Categories {
   protected onOpen(card: Category, event: Event): void {
     event.preventDefault();
     this.storyFilter.tag.set(card.tag);
+    if (card.route) {
+      this.router.navigateByUrl(card.route);
+      return;
+    }
     this.navigate.emit(card.target);
   }
 }
