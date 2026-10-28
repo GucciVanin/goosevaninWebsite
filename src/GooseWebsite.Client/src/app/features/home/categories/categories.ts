@@ -1,4 +1,5 @@
-import { Component, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
+import { StoryFilter } from '../../../shared/story-filter';
 
 interface Category {
   title: string;
@@ -6,32 +7,31 @@ interface Category {
   token: string;
   image: string;
   imageAlt: string;
-  icon: 'code' | 'cloud' | 'shield' | 'gear';
+  icon: 'code' | 'book' | 'trophy';
+  tag: string;
 }
 
-// The four category cards from the landing-page mockup, each with its own accent, icon and image strip. Each card
-// takes the visitor to the part of the page about that kind of work.
+// The three category cards: Projects, Life stories and Competitions (competitions are life stories tagged "competition").
+// Each card has its own accent, icon and image strip and takes the visitor to an existing section; Competitions opens
+// Stories already filtered by that tag, the others clear any earlier tag.
 @Component({
   selector: 'app-categories',
   template: `
-    <section class="categories" aria-label="Areas of work">
+    <section class="categories" aria-label="Kinds of content">
       <ul>
         @for (card of cards; track card.title) {
           <li [style.--card]="'var(' + card.token + ')'">
-            <a [href]="'#' + card.target" (click)="onOpen(card.target, $event)">
+            <a [href]="'#' + card.target" (click)="onOpen(card, $event)">
               <span class="icon" aria-hidden="true">
                 @switch (card.icon) {
                   @case ('code') {
                     <svg viewBox="0 0 32 32"><path d="M11 9 4 16l7 7M21 9l7 7-7 7M18 6l-4 20" /></svg>
                   }
-                  @case ('cloud') {
-                    <svg viewBox="0 0 32 32"><path d="M9 24a6 6 0 0 1-.8-11.9A8 8 0 0 1 23.6 11 6.5 6.5 0 0 1 23 24Z" /></svg>
+                  @case ('book') {
+                    <svg viewBox="0 0 32 32"><path d="M16 8c-2.5-2-6-3-11-3v18c5 0 8.5 1 11 3 2.5-2 6-3 11-3V5c-5 0-8.5 1-11 3ZM16 8v18" /></svg>
                   }
-                  @case ('shield') {
-                    <svg viewBox="0 0 32 32"><path d="M16 3 5 7v8c0 7 4.6 11.6 11 14 6.4-2.4 11-7 11-14V7Z" /><path d="M13 15h6v6h-6zM14.5 15v-2a1.5 1.5 0 0 1 3 0v2" /></svg>
-                  }
-                  @case ('gear') {
-                    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="4.5" /><path d="m16 3 2 3.4 3.9-.9.9 3.9L26.2 11 24.5 14.6l1.7 3.6-3.4 2 -.9 3.9-3.9-.9L16 27l-2-3.4-3.9.9-.9-3.9L5.8 21l1.7-3.6L5.8 13.8l3.4-2 .9-3.9 3.9.9Z" /></svg>
+                  @case ('trophy') {
+                    <svg viewBox="0 0 32 32"><path d="M10 4h12v8a6 6 0 0 1-12 0ZM10 7H5c0 4 2 6 5 6.5M22 7h5c0 4-2 6-5 6.5M16 18v5M11 28h10M13 23h6" /></svg>
                   }
                 }
               </span>
@@ -51,7 +51,7 @@ interface Category {
     .categories { margin: 0 auto; max-width: 1500px; padding: 0 var(--gcv-gutter); }
     ul { display: grid; gap: var(--gcv-space-5); grid-template-columns: 1fr; list-style: none; margin: 0; padding: 0; }
     @media (min-width: 560px) { ul { grid-template-columns: repeat(2, 1fr); } }
-    @media (min-width: 1000px) { ul { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1000px) { ul { grid-template-columns: repeat(3, 1fr); } }
     li { background: rgba(5, 6, 13, 0.78); border: 1px solid var(--card); border-radius: var(--gcv-radius-card); overflow: hidden; transition: box-shadow var(--gcv-motion-base) var(--gcv-ease), transform var(--gcv-motion-base) var(--gcv-ease); }
     li:hover { box-shadow: 0 0 24px color-mix(in srgb, var(--card) 35%, transparent); transform: translateY(-3px); }
     a { color: var(--gcv-text); display: grid; gap: var(--gcv-space-3); padding: var(--gcv-space-5) var(--gcv-space-5) 0; text-decoration: none; }
@@ -64,16 +64,17 @@ interface Category {
 })
 export class Categories {
   readonly navigate = output<string>();
+  private readonly storyFilter = inject(StoryFilter);
 
   protected readonly cards: Category[] = [
-    { title: 'Applications', target: 'work', token: '--gcv-magenta', image: '/brand/cards/applications.webp', imageAlt: 'Source code on a screen', icon: 'code' },
-    { title: 'Cloud & DevOps', target: 'skills', token: '--gcv-cyan', image: '/brand/cards/cloud.webp', imageAlt: 'A glowing server room', icon: 'cloud' },
-    { title: 'Security', target: 'skills', token: '--gcv-green', image: '/brand/cards/security.webp', imageAlt: 'A padlock made of light', icon: 'shield' },
-    { title: 'Systems & Tools', target: 'skills', token: '--gcv-orange', image: '/brand/cards/systems.webp', imageAlt: 'A network of glowing circuit lines', icon: 'gear' },
+    { title: 'Projects', target: 'work', token: '--gcv-magenta', image: '/brand/cards/projects.webp', imageAlt: 'Source code on a computer screen', icon: 'code', tag: '' },
+    { title: 'Life stories', target: 'blog', token: '--gcv-cyan', image: '/brand/cards/life-stories.webp', imageAlt: 'A neon city skyline at dusk', icon: 'book', tag: '' },
+    { title: 'Competitions', target: 'blog', token: '--gcv-orange', image: '/brand/cards/competitions.webp', imageAlt: 'A glowing neon sign on a city street', icon: 'trophy', tag: 'competition' },
   ];
 
-  protected onOpen(id: string, event: Event): void {
+  protected onOpen(card: Category, event: Event): void {
     event.preventDefault();
-    this.navigate.emit(id);
+    this.storyFilter.tag.set(card.tag);
+    this.navigate.emit(card.target);
   }
 }

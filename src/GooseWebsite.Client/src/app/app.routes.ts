@@ -23,5 +23,4 @@ export const routes: Routes = [
     ],
   },
   { path: 'access-denied', loadComponent: () => import('./features/editor/access-denied-page').then((m) => m.AccessDeniedPage) },
-  { path: 'design', loadComponent: () => import('./features/design/design-page').then((m) => m.DesignPage) },
 ];

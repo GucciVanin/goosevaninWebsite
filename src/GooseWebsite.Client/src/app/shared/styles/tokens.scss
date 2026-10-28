@@ -8,7 +8,7 @@
  *   cyan accent      #06a3f5 rule, #0297bf card edge  -> --gcv-cyan #00d9ff (the value the animated scene uses for its glow)
  *   magenta accent   #fb2ffa rule                     -> --gcv-magenta #ff2ccf (scene value)
  *   violet           the button brackets              -> --gcv-violet #a52bff (scene value)
- *   card accents     green (Security), orange (Systems & Tools) -> --gcv-green, --gcv-orange (category cards only)
+ *   card accents     orange (Competitions) -> --gcv-orange (category cards only; --gcv-green is no longer used by a card)
  */
 :root {
   /* Surfaces, darkest first */

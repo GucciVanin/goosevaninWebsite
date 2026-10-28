@@ -16,7 +16,7 @@ Tick each line for each browser and version. Write anything odd in the Notes col
 
 ### 1. Home (`/`)
 
-- [ ] **Layout:** hero, About (portrait, your name under it, the positioning line, short bio and summary), Work, Skills, Stories, Contact, footer. Nothing overlaps, is cut off, or sits outside the page. Nothing scrolls sideways.
+- [ ] **Layout:** hero, About (portrait, your name under it, the positioning line, short bio and summary), Work, Stories, Contact, footer (no Skills section since TE4). Nothing overlaps, is cut off, or sits outside the page. Nothing scrolls sideways.
 - [ ] **The animated scene** in the hero moves smoothly (no stutter, no blank or broken canvas), text over it stays readable, and the page is usable while it runs.
 - [ ] **Reduced motion:** turn on "Reduce motion" (Windows: Settings, Accessibility, Visual effects, Animation effects off; macOS: System Settings, Accessibility, Display, Reduce motion). Reload. The scene and the other animations stop or become minimal, and no content is missing.
 - [ ] **Focus:** press Tab from the top. Every link, button, field and menu item gets a clear, visible outline, in a sensible order. Buttons work with Enter or Space.

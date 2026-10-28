@@ -12,6 +12,10 @@ const expected = {
   summary: 'I build scalable security programs, automate complex workflows, and partner directly with engineering teams to ship secure software fast.',
 };
 
+// TE4-AC6: statements about Gustavo that he has not written must not appear (the removed Skills section, the About
+// lede and principles, the Stories intro) and nothing may link to the removed Skills section.
+const unverified = ['Good software makes hard things feel simple', 'I care about the details', 'The best engineering work', 'Clarity first', 'Human by default', 'Ship with intent', 'Signals from the field', 'keep me curious', 'Event-driven systems'];
+
 // A small deny-list: an age or a street address must never appear on the public page.
 const denied: { id: string; pattern: RegExp }[] = [
   { id: 'age', pattern: /\b\d{1,3}[\s-]+years?[\s-]+old\b/i },
@@ -69,6 +73,15 @@ eachScreen(
         }
       }
     }
+
+    // TE4-AC6: no removed statement, no Skills section or link, and the three category cards point at existing sections.
+    const pageText = (await page.locator('body').textContent()) ?? '';
+    for (const phrase of unverified) {
+      if (pageText.includes(phrase)) defects.push({ id: `unverified-text:${phrase.slice(0, 24)}`, detail: `found "${phrase}"` });
+    }
+    if ((await page.locator('#skills, a[href="#skills"]').count()) > 0) defects.push({ id: 'skills-section-present', detail: 'the removed Skills section or a link to it is still on the page' });
+    const cardTitles = await page.locator('app-categories li .gcv-heading').allTextContents();
+    if (cardTitles.map((title) => title.trim()).join('|') !== 'Projects|Life stories|Competitions') defects.push({ id: 'category-cards', detail: `cards are ${cardTitles.join(', ')}` });
 
     // Deny-list over all the text of the page.
     const text = await page.locator('body').innerText();
