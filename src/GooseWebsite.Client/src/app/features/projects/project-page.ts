@@ -28,7 +28,7 @@ import { PublicProject, PublicProjectApi } from './public-project-api';
         } @else if (project(); as p) {
           <article class="column">
             <h1 id="project-title" class="gcv-heading gcv-heading--section">{{ p.title }}</h1>
-            <div class="overview gcv-preview" [innerHTML]="overviewHtml()"></div>
+            <div class="overview gcv-preview gcv-reading" [innerHTML]="overviewHtml()"></div>
             @if (p.contribution) {
               <section class="contribution" aria-labelledby="contribution-title">
                 <h2 id="contribution-title" class="gcv-heading gcv-heading--card">Gustavo's contribution</h2>
@@ -69,7 +69,8 @@ import { PublicProject, PublicProjectApi } from './public-project-api';
     .column { display: grid; gap: var(--gcv-space-6); max-width: 70ch; min-width: 0; }
     .column > * { min-width: 0; }
     .gcv-heading { margin: 0; overflow-wrap: anywhere; text-transform: none; }
-    .overview, .contribution p { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; overflow-wrap: anywhere; }
+    .overview { color: var(--gcv-text-muted); overflow-wrap: anywhere; }
+    .contribution p { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; overflow-wrap: anywhere; }
     .contribution, .technologies { display: grid; gap: var(--gcv-space-3); }
     .stack { display: flex; flex-wrap: wrap; gap: var(--gcv-space-2); list-style: none; margin: 0; padding: 0; }
     .cover { display: block; height: auto; max-width: 100%; }

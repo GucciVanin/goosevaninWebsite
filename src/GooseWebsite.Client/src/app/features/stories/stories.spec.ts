@@ -64,6 +64,24 @@ describe('StoriesIndexPage', () => {
     expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
   });
 
+  it('asks the API for every story, not for a page of them', async () => {
+    const { http, page } = await open();
+    const request = http.expectOne((r) => r.url === '/api/blog');
+
+    expect(Number(request.request.params.get('pageSize'))).toBeGreaterThan(50);
+    expect(page).toBeTruthy();
+    request.flush([]);
+  });
+
+  it('shows the excerpt and emojis of an entry whole', async () => {
+    const emojis = '👨‍👩‍👧 🇧🇷 👍🏽';
+    const { el, flush } = await open();
+    flush([apiStory({ title: `T ${emojis}`, excerpt: `E ${emojis}` })]);
+
+    expect(entries(el())[0].querySelector('h2')?.textContent).toBe(`T ${emojis}`);
+    expect(entries(el())[0].querySelector('.excerpt')?.textContent).toBe(`E ${emojis}`);
+  });
+
   it('has a neutral search placeholder that suggests no topics', async () => {
     const { el, flush } = await open();
     flush([alpha]);
@@ -214,6 +232,52 @@ describe('StoryPage', () => {
 
     expect(cover.getAttribute('src')).toBe('/media/cover.webp');
     expect(cover.getAttribute('alt')).toBe('A desk at dusk');
+  });
+
+  it('shows the summary (excerpt) under the title, before the body', async () => {
+    const { harness, http, el } = await open();
+    http.expectOne('/api/blog/alpha').flush(alpha);
+    harness.detectChanges();
+    const main = el().querySelector('main') as HTMLElement;
+    const summary = main.querySelector('.summary') as HTMLElement;
+    const order = Array.from(main.querySelectorAll('*'));
+
+    expect(summary.textContent).toContain('First excerpt');
+    expect(order.indexOf(main.querySelector('h1')!)).toBeLessThan(order.indexOf(summary));
+    expect(order.indexOf(summary)).toBeLessThan(order.indexOf(main.querySelector('.body')!));
+  });
+
+  it('shows no summary line when the excerpt is empty', async () => {
+    const { harness, http, el } = await open();
+    http.expectOne('/api/blog/alpha').flush(apiStory({ excerpt: '' }));
+    harness.detectChanges();
+
+    expect(el().querySelector('.summary')).toBeNull();
+  });
+
+  it('shows an animated GIF as the cover and inline in the body, each with its alt text', async () => {
+    const { harness, http, el } = await open();
+    http.expectOne('/api/blog/alpha').flush(apiStory({ coverImage: '/uploads/0123456789abcdef0123456789abcdef.gif', coverImageAlt: 'A looping wave', content: 'Look:\n\n![A waving hand](/uploads/fedcba9876543210fedcba9876543210.gif)' }));
+    harness.detectChanges();
+    const cover = el().querySelector('img.cover') as HTMLImageElement;
+    const inline = el().querySelector('.body img') as HTMLImageElement;
+
+    expect(cover.getAttribute('src')).toBe('/uploads/0123456789abcdef0123456789abcdef.gif');
+    expect(cover.getAttribute('alt')).toBe('A looping wave');
+    expect(inline.getAttribute('src')).toBe('/uploads/fedcba9876543210fedcba9876543210.gif');
+    expect(inline.getAttribute('alt')).toBe('A waving hand');
+  });
+
+  it('keeps multi-code-point emojis whole in the title, the document title, the summary and the body', async () => {
+    const emojis = '👨‍👩‍👧 🇧🇷 👍🏽 1️⃣ ❤️';
+    const { harness, http, el } = await open();
+    http.expectOne('/api/blog/alpha').flush(apiStory({ title: `Hi ${emojis}`, excerpt: `Summary ${emojis}`, content: `Body ${emojis}` }));
+    harness.detectChanges();
+
+    expect(el().querySelector('h1')?.textContent).toBe(`Hi ${emojis}`);
+    expect(el().querySelector('.summary')?.textContent).toContain(`Summary ${emojis}`);
+    expect(el().querySelector('.body')?.textContent).toContain(`Body ${emojis}`);
+    expect(TestBed.inject(Title).getTitle()).toBe(`Hi ${emojis} - Gustavo Couto Vanin`);
   });
 
   it('renders the Markdown body safely', async () => {

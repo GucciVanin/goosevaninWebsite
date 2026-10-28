@@ -32,6 +32,9 @@ import { PublicStoryApi, Story } from './public-story-api';
             @if (s.coverImage) {
               <img class="cover" [src]="s.coverImage" [alt]="s.coverImageAlt" />
             }
+            @if (s.excerpt) {
+              <p class="summary">{{ s.excerpt }}</p>
+            }
             <div class="body gcv-preview gcv-reading" [innerHTML]="bodyHtml()"></div>
             <div class="meta">
               <p class="gcv-label">{{ s.category }} / <time [attr.datetime]="moment(s)">{{ date(s) }}</time></p>
@@ -56,6 +59,7 @@ import { PublicStoryApi, Story } from './public-story-api';
     .column > * { min-width: 0; }
     .gcv-heading { margin: 0; overflow-wrap: anywhere; text-transform: none; }
     .cover { display: block; height: auto; max-width: 100%; }
+    .summary { color: var(--gcv-text-muted); font-size: var(--gcv-text-lg); line-height: var(--gcv-leading-body); margin: 0; overflow-wrap: anywhere; }
     .body { color: var(--gcv-text); overflow-wrap: anywhere; }
     .meta { display: grid; gap: var(--gcv-space-3); }
     .meta p { margin: 0; }

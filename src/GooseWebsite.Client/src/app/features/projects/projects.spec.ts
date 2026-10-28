@@ -52,6 +52,16 @@ describe('ProjectsIndexPage', () => {
     expect((entries[1].querySelector('.overview') as HTMLElement).textContent!.length).toBeLessThan(200);
   });
 
+  it('does not cut an emoji in half when it shortens the overview', async () => {
+    const { http, harness, page } = await open();
+    await page;
+    http.expectOne('/api/projects').flush([{ ...goose, overview: '👨‍👩‍👧'.repeat(100) }]);
+    harness.detectChanges();
+    const text = (harness.routeNativeElement as HTMLElement).querySelector('.overview')?.textContent ?? '';
+
+    expect(text).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+  });
+
   it('keeps the entries compact and unframed (AC1)', async () => {
     const { harness, http, page } = await open();
     await page;
@@ -118,6 +128,33 @@ describe('ProjectPage', () => {
     expect(main.querySelector('.contribution')?.textContent).toContain('I built all of it.');
     expect(main.querySelectorAll('.technologies .gcv-chip').length).toBe(2);
     expect(main.querySelector('img.cover')?.getAttribute('alt')).toBe('The home page of the site');
+  });
+
+  it('gives the overview the same reading styles as a story body', async () => {
+    const { harness, http } = await open();
+    http.expectOne('/api/projects/goose-website').flush({ ...goose, overview: 'Quote:\n\n> wise words\n\n`code`' });
+    harness.detectChanges();
+    const overview = (harness.routeNativeElement as HTMLElement).querySelector('.overview') as HTMLElement;
+
+    expect(overview.classList).toContain('gcv-reading');
+    const quote = overview.querySelector('blockquote') as HTMLElement;
+    expect(getComputedStyle(quote).borderLeftWidth).toBe('2px');
+    expect(getComputedStyle(overview.querySelector('code') as HTMLElement).fontFamily).toContain('mono');
+  });
+
+  it('shows an animated GIF as the cover and inline in the overview, each with its alt text, and keeps emojis whole', async () => {
+    const emojis = '👨‍👩‍👧 🇧🇷 👍🏽 1️⃣ ❤️';
+    const { harness, http } = await open();
+    http.expectOne('/api/projects/goose-website').flush({ ...goose, title: `P ${emojis}`, overview: `O ${emojis}\n\n![A demo loop](/uploads/fedcba9876543210fedcba9876543210.gif)`, coverImage: '/uploads/0123456789abcdef0123456789abcdef.gif', coverImageAlt: 'A looping demo' });
+    harness.detectChanges();
+    const element = harness.routeNativeElement as HTMLElement;
+
+    expect(element.querySelector('img.cover')?.getAttribute('src')).toBe('/uploads/0123456789abcdef0123456789abcdef.gif');
+    expect(element.querySelector('img.cover')?.getAttribute('alt')).toBe('A looping demo');
+    expect(element.querySelector('.overview img')?.getAttribute('alt')).toBe('A demo loop');
+    expect(element.querySelector('h1')?.textContent).toBe(`P ${emojis}`);
+    expect(element.querySelector('.overview')?.textContent).toContain(`O ${emojis}`);
+    expect(TestBed.inject(Title).getTitle()).toBe(`P ${emojis} - Gustavo Couto Vanin`);
   });
 
   it('keeps a single h1 when the overview has a "#" heading', async () => {

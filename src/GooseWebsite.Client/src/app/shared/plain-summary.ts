@@ -10,5 +10,15 @@ export function plainSummary(markdown: string, limit = 220): string {
     return text;
   }
 
-  return text.slice(0, text.lastIndexOf(' ', limit) > 0 ? text.lastIndexOf(' ', limit) : limit) + '…';
+  let end = text.lastIndexOf(' ', limit) > 0 ? text.lastIndexOf(' ', limit) : limit;
+  // Never cut inside an emoji: back up to the last whole character (grapheme) that fits, and never inside a surrogate pair.
+  let boundary = 0;
+  for (const part of new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text.slice(0, end + 2))) {
+    if (part.index + part.segment.length > end) break;
+    boundary = part.index + part.segment.length;
+  }
+
+  end = boundary;
+
+  return text.slice(0, end).trimEnd() + '…';
 }

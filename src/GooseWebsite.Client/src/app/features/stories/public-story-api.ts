@@ -16,13 +16,15 @@ export interface Story {
   createdAtUtc: string;
 }
 
+const everyStory = 2147483647;
+
 // The visitor's view of the stories API (the API calls them blog posts): reads only. It answers 404 for an unknown or draft slug.
 @Injectable({ providedIn: 'root' })
 export class PublicStoryApi {
   private readonly http = inject(HttpClient);
 
-  /** Published stories, newest first. `pageSize` is capped by the API at 50. */
-  list(pageSize = 50): Observable<Story[]> {
+  /** Published stories, newest first. By default every story: the API has no upper limit on `pageSize`. */
+  list(pageSize = everyStory): Observable<Story[]> {
     return this.http.get<Story[]>('/api/blog', { params: new HttpParams().set('pageSize', pageSize) });
   }
 

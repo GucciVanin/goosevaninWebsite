@@ -9,8 +9,6 @@ namespace GooseWebsite.Api.Modules.Blog.Controllers;
 [Route("api/blog")]
 public sealed class BlogController(IBlogPostRepository posts) : ControllerBase
 {
-    private const int MaxPageSize = 50;
-
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<BlogPostResponse>>> List(
         [FromQuery] string? search,
@@ -19,7 +17,13 @@ public sealed class BlogController(IBlogPostRepository posts) : ControllerBase
         [FromQuery] int pageSize = 12)
     {
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
+        // No upper bound: this API is internal (Gustavo, 2026-10-28) and the stories index asks for every story.
+        pageSize = Math.Max(1, pageSize);
+        if ((long)(page - 1) * pageSize > int.MaxValue)
+        {
+            return Ok(Array.Empty<BlogPostResponse>());
+        }
+
         var results = await posts.GetPublishedAsync(search, category, page, pageSize);
         return Ok(results.Select(BlogPostMapping.ToResponse).ToList());
     }
