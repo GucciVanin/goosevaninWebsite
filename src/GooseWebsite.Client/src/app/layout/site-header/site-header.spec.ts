@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { StoryFilter } from '../../shared/story-filter';
 import { SiteHeader } from './site-header';
 
 // Guards the shared header route contract used by every page.
@@ -86,6 +87,28 @@ describe('SiteHeader', () => {
       toggle().click();
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('.gcv-drawer')).toBeNull();
+    });
+
+    // TE4 O6: the Stories link shows all stories, so it clears a tag left by the Competitions card.
+    it('clears the story tag from the Stories link in the header and in the menu, but not from other links', () => {
+      const filter = TestBed.inject(StoryFilter);
+      fixture.componentRef.setInput('navItems', [{ label: 'Projects', id: 'work' }, { label: 'Stories', id: 'blog' }]);
+      fixture.detectChanges();
+      controller.expectOne('/api/auth/me').flush({}, { status: 401, statusText: 'Unauthorized' });
+      const nav = () => Array.from(fixture.nativeElement.querySelectorAll('.gcv-nav a') as NodeListOf<HTMLAnchorElement>);
+
+      filter.tag.set('competition');
+      nav().find((a) => a.textContent.trim() === 'Projects')!.click();
+      expect(filter.tag()).toBe('competition');
+      nav().find((a) => a.textContent.trim() === 'Stories')!.click();
+      expect(filter.tag()).toBe('');
+
+      filter.tag.set('competition');
+      toggle().click();
+      fixture.detectChanges();
+      const drawerLink = Array.from(fixture.nativeElement.querySelectorAll('.gcv-drawer a') as NodeListOf<HTMLAnchorElement>).find((a) => a.textContent.trim() === 'Stories')!;
+      drawerLink.click();
+      expect(filter.tag()).toBe('');
     });
 
     it('closes the menu after choosing a section', () => {

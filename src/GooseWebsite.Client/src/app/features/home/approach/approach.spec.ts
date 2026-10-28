@@ -27,6 +27,18 @@ describe('About (Approach)', () => {
     expect(element.querySelectorAll('.sr-only').length).toBe(0);
   });
 
+  // TE4-AC6: only what Gustavo wrote is shown; the invented lede, heading statement and principles are gone.
+  it('has the plain heading About and none of the removed statements', () => {
+    const element = render();
+    const text = element.textContent!.replace(/\s+/g, ' ');
+
+    expect(element.querySelector('h2')?.textContent?.trim()).toBe('About');
+    for (const removed of ['Good software makes hard things feel simple', 'I care about the details', 'The best engineering work', 'Clarity first', 'Human by default', 'Ship with intent']) {
+      expect(text).not.toContain(removed);
+    }
+    expect(element.querySelectorAll('.principles, .gcv-lede').length).toBe(0);
+  });
+
   it('shows at most the broad location and no age or street address', () => {
     const text = render().textContent!;
 

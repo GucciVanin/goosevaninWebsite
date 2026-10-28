@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { StoryFilter } from '../../shared/story-filter';
 
 interface BlogPost {
   slug: string;
@@ -22,6 +23,7 @@ interface BlogPost {
 })
 export class BlogPage implements OnInit {
   private readonly http = inject(HttpClient);
+  protected readonly storyFilter = inject(StoryFilter);
   protected readonly query = signal('');
   protected readonly category = signal('All');
   protected readonly selected = signal<BlogPost | null>(null);
@@ -82,7 +84,9 @@ export class BlogPage implements OnInit {
         [post.title, post.excerpt, ...post.tags].some((value) =>
           value.toLowerCase().includes(needle),
         );
-      return matchesQuery && (this.category() === 'All' || post.category === this.category());
+      const tag = this.storyFilter.tag().toLowerCase();
+      const matchesTag = !tag || post.tags.some((value) => value.toLowerCase() === tag);
+      return matchesQuery && matchesTag && (this.category() === 'All' || post.category === this.category());
     }),
   );
 }

@@ -14,6 +14,8 @@
 .excerpt { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); }
 .arrow { color: var(--gcv-cyan); font-size: var(--gcv-text-lg); }
 .tags { display: flex; flex-wrap: wrap; gap: var(--gcv-space-2); list-style: none; margin: 0; padding: 0; }
+.tag-filter { align-items: center; color: var(--gcv-text-muted); display: flex; flex-wrap: wrap; gap: var(--gcv-space-3); margin: 0 0 var(--gcv-space-5); }
+.tag-filter b { color: var(--gcv-text); }
 .empty { background: var(--gcv-bg-1); border: 1px dashed var(--gcv-line-strong); color: var(--gcv-text-muted); font: var(--gcv-text-sm) var(--gcv-font-mono); padding: var(--gcv-space-6) var(--gcv-space-5); }
 .detail { display: grid; gap: var(--gcv-space-4); padding: var(--gcv-space-6); }
 .back { justify-self: start; }

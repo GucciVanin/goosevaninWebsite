@@ -1,9 +1,9 @@
 <!-- Stories: search, category filter and the reading view, in the site's design. -->
 <section class="gcv-section" id="blog" aria-labelledby="blog-title">
-  <p class="gcv-section__label"><b>04</b> Stories</p>
+  <p class="gcv-section__label"><b>03</b> Stories</p>
   <div class="intro">
-    <h2 id="blog-title" class="gcv-heading gcv-heading--section">Signals from <em>the field.</em></h2>
-    <p class="gcv-lede">Daily life, security engineering, and the projects that keep me curious.</p>
+    <h2 id="blog-title" class="gcv-heading gcv-heading--section">Stories</h2>
+    <p class="gcv-lede">Stories Gustavo has published.</p>
   </div>
   <div class="controls">
     <div class="gcv-field search">
@@ -18,6 +18,11 @@
       }
     </div>
   </div>
+  @if (storyFilter.tag(); as tag) {
+    @if (!selected()) {
+    <p class="tag-filter" role="status">Showing stories tagged <b>#{{ tag }}</b>. <button type="button" class="gcv-btn" (click)="storyFilter.tag.set('')">Show all stories</button></p>
+    }
+  }
   @if (selected(); as post) {
     <article class="detail gcv-card">
       <button class="gcv-btn back" type="button" (click)="selected.set(null)"><span aria-hidden="true">←</span> All stories</button>
@@ -57,6 +62,8 @@
           <li class="empty" role="status">Stories could not be loaded right now. Please try again later.</li>
         } @else if (posts().length === 0) {
           <li class="empty">Stories will appear here as soon as Gustavo publishes them.</li>
+        } @else if (storyFilter.tag(); as tag) {
+          <li class="empty">No stories tagged #{{ tag }} yet.</li>
         } @else {
           <li class="empty">No story found. Try another search.</li>
         }

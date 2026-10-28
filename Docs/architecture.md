@@ -441,7 +441,6 @@ flowchart TD
     home --> hero[Hero]
     home --> work[SelectedWork]
     home --> approach[Approach]
-    home --> toolkit[Toolkit]
 
     signin --> authapi[AuthApi]
     verify --> authapi
@@ -461,7 +460,7 @@ flowchart TD
 | `app/features/auth/` | `api/` (AuthApi with CSRF handling, and `session-marker.ts`: `getCurrentUser()` makes no request without the sign-in marker and clears the marker when the API answers 401), `models/`, `pages/` (sign-in, verify-email). Authentication pages hide the public shell. |
 | `app/features/editor/` | The editor workspace (`EditorPage`: stories with status filter, title search and confirmed deletion), the story form (`pages/story-form-page`), `StoryApi`, `editorGuard` (administrator in; Reader to `/access-denied`; not signed in to `/sign-in?returnUrl=`) and the no-access page. Standalone routes, like the authentication pages |
 | `app/shared/http/` | `sessionInterceptor`: gives every non-GET request to `/api/` the CSRF token and, when a non-auth API call answers 401, sends the person to sign in with `reason=session-expired` and the page they were on |
-| `app/features/home/` | The home page and its sections, all built from the design tokens: `hero` and `categories` over the animated scene, `approach` (About, with the portrait), `selected-work` (Projects: published projects from `/api/projects` as `ProjectPanel`s), `toolkit` (Skills). Stories (`features/blog`) and Contact (`features/contact`) follow, then the footer |
+| `app/features/home/` | The home page and its sections, all built from the design tokens: `hero` and `categories` over the animated scene, `approach` (About: the portrait and only the name, positioning line, short bio and professional summary from `shared/models/profile.ts`, nothing Gustavo has not written), `selected-work` (Projects: published projects from `/api/projects` as `ProjectPanel`s). `categories` shows three cards (Projects to the Projects section, Life stories to Stories, Competitions to Stories pre-filtered by the tag `competition` through the root `StoryFilter` service in `shared/story-filter.ts`; the Stories section shows a "Showing stories tagged" line with a clear button). The Skills section was removed 2026-10-27 (TE4). Stories (`features/blog`) and Contact (`features/contact`) follow, then the footer |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles |
 | `app/layout/` | `site-header`, `site-footer` |
 | `app/shared/` | `models/` (profile, navigation item), `styles/site.scss` shared layout rules |
@@ -473,7 +472,7 @@ Build facts: output goes to `../GooseWebsite.Api/wwwroot`; production budgets wa
 
 ### 6.1 Design system (F9-US1)
 
-Direction (Gustavo, 2026-10-16): a mostly black/charcoal interface that stays extremely clean, with electric cyan as the main accent and magenta as the small secondary one; the artwork carries the visual complexity. The category cards keep their own green (Security) and orange (Systems & Tools) accents. Source material is in `Docs/Inspirations/`.
+Direction (Gustavo, 2026-10-16): a mostly black/charcoal interface that stays extremely clean, with electric cyan as the main accent and magenta as the small secondary one; the artwork carries the visual complexity. The three category cards keep their own magenta (Projects), cyan (Life stories) and orange (Competitions) accents. Source material is in `Docs/Inspirations/`.
 
 - **Tokens** are CSS custom properties in `app/shared/styles/tokens.scss`, all named `--gcv-*`: surfaces (`bg-0..2`, `line`), text (`text`, `text-muted`, `text-faint`), accents (`cyan`, `magenta`, `violet`, `green`, `orange`), type (families Michroma / DM Sans / JetBrains Mono, a size scale, tracking), space (4 px base), shape (`radius-card`, `bracket-size`), motion (`motion-fast/base/slow`, which become instant under `prefers-reduced-motion`) and focus. The file records how each value traces to `LandingPageInspiration.png`. The old names (`--paper`, `--accent`...) remain as aliases so earlier screens already follow the palette; they are removed once F9-US2 to F9-US5 have moved every screen to the `gcv` names. **Rule: no screen uses a colour, font, size or spacing literal; it uses a token.**
 - **Base components** are global classes in `app/shared/styles/components.scss`: `gcv-eyebrow`, `gcv-heading` (with `--hero`, `--section`, `--card`; an `<em>` inside gets the cyan-to-white gradient), `gcv-label`, `gcv-link`, `gcv-btn` (corner brackets; `--solid`), `gcv-field`, `gcv-chip`, `gcv-rule`, and one site-wide visible focus style.

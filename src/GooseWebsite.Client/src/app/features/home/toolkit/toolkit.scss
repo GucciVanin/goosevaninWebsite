@@ -1,6 +1,0 @@
-:host { display: block; }
-h2 { margin: 0 0 var(--gcv-space-6); }
-.areas { display: grid; gap: var(--gcv-space-4); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); list-style: none; margin: 0; padding: 0; }
-.areas > li { border-top: 2px solid var(--area); display: grid; gap: var(--gcv-space-4); }
-.dot { background: var(--area); border-radius: 50%; display: inline-block; height: 6px; margin-right: var(--gcv-space-2); vertical-align: middle; width: 6px; }
-.skills { display: flex; flex-wrap: wrap; gap: var(--gcv-space-2); list-style: none; margin: 0; padding: 0; }
