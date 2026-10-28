@@ -1,49 +1,24 @@
-<!-- Stories: search, category filter and the reading view, in the site's design. -->
+<!-- Stories: a preview of the latest published stories; the full list, search and reading live on /stories. -->
 <section class="gcv-section" id="blog" aria-labelledby="blog-title">
   <p class="gcv-section__label"><b>03</b> Stories</p>
   <div class="intro">
     <h2 id="blog-title" class="gcv-heading gcv-heading--section">Stories</h2>
     <p class="gcv-lede">Stories Gustavo has published.</p>
   </div>
-  <div class="controls">
-    <div class="gcv-field search">
-      <label for="story-search">Search stories</label>
-      <input id="story-search" type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="try systems or tools" />
-    </div>
-    <div class="categories" role="group" aria-label="Filter by category">
-      @for (item of categories(); track item) {
-        <button type="button" class="filter" [class.active]="category() === item" [attr.aria-pressed]="category() === item" (click)="category.set(item)">
-          {{ item }}
-        </button>
-      }
-    </div>
-  </div>
-  @if (storyFilter.tag(); as tag) {
-    @if (!selected()) {
-    <p class="tag-filter" role="status">Showing stories tagged <b>#{{ tag }}</b>. <button type="button" class="gcv-btn" (click)="storyFilter.tag.set('')">Show all stories</button></p>
-    }
-  }
-  @if (selected(); as post) {
-    <article class="detail gcv-card">
-      <button class="gcv-btn back" type="button" (click)="selected.set(null)"><span aria-hidden="true">←</span> All stories</button>
-      <p class="gcv-label">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</p>
-      <h3 class="gcv-heading gcv-heading--section title">{{ post.title }}</h3>
-      <p class="lede">{{ post.excerpt }}</p>
-      <div class="content gcv-preview" [innerHTML]="detailHtml()"></div>
-      <ul class="tags">
-        @for (tag of post.tags; track tag) {
-          <li class="gcv-chip">#{{ tag }}</li>
-        }
-      </ul>
-    </article>
+  @if (status() === 'loading') {
+    <p class="notice" role="status">Loading stories...</p>
+  } @else if (status() === 'failed') {
+    <p class="notice" role="status">Stories could not be loaded right now. Please try again later.</p>
+  } @else if (posts().length === 0) {
+    <p class="notice">Stories will appear here as soon as Gustavo publishes them.</p>
   } @else {
     <ul class="list">
-      @for (post of filteredPosts(); track post.slug) {
+      @for (post of posts(); track post.slug) {
         <li>
-          <button type="button" class="post gcv-card" (click)="open(post)">
+          <a class="post gcv-card" [routerLink]="['/stories', post.slug]">
             <span class="index" aria-hidden="true">{{ $index + 1 < 10 ? '0' : '' }}{{ $index + 1 }}</span>
             <span class="body">
-              <span class="gcv-label">{{ post.category }} / {{ post.date }} / {{ post.readTime }}</span>
+              <span class="gcv-label">{{ post.category }} / {{ date(post) }}</span>
               <span class="gcv-heading gcv-heading--card">{{ post.title }}</span>
               <span class="excerpt">{{ post.excerpt }}</span>
               <span class="tags">
@@ -53,21 +28,10 @@
               </span>
             </span>
             <span class="arrow" aria-hidden="true">→</span>
-          </button>
+          </a>
         </li>
-      } @empty {
-        @if (status() === 'loading') {
-          <li class="empty" role="status">Loading stories...</li>
-        } @else if (status() === 'failed') {
-          <li class="empty" role="status">Stories could not be loaded right now. Please try again later.</li>
-        } @else if (posts().length === 0) {
-          <li class="empty">Stories will appear here as soon as Gustavo publishes them.</li>
-        } @else if (storyFilter.tag(); as tag) {
-          <li class="empty">No stories tagged #{{ tag }} yet.</li>
-        } @else {
-          <li class="empty">No story found. Try another search.</li>
-        }
       }
     </ul>
+    <p class="all"><a class="gcv-link all-stories" routerLink="/stories">All stories <span aria-hidden="true">→</span></a></p>
   }
 </section>

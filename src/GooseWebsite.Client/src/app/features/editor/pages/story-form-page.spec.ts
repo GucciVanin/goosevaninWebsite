@@ -222,4 +222,47 @@ describe('StoryFormPage', () => {
     const alert = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]') as HTMLElement;
     expect(alert.classList).toContain('gcv-status--alert');
   });
+
+  // F5-US2 task 4: publishing stays Gustavo's explicit action, and a visible reminder asks him to review the story for
+  // personal or sensitive details first. It informs; it never blocks, and saving a draft never publishes.
+  describe('pre-publish reminder', () => {
+    const reminder = () => (fixture.nativeElement as HTMLElement).querySelector('.publish-reminder') as HTMLElement | null;
+
+    it('shows, above the Publish button, a visible reminder to review the story for personal or sensitive details', async () => {
+      await open('5');
+      const element = fixture.nativeElement as HTMLElement;
+      const publish = Array.from(element.querySelectorAll<HTMLButtonElement>('.gcv-actions button')).find((b) => b.textContent?.trim() === 'Publish')!;
+
+      expect(reminder()).not.toBeNull();
+      expect(reminder()!.textContent).toContain('personal or sensitive details');
+      expect(reminder()!.textContent).toContain('public');
+      expect(getComputedStyle(reminder()!).display).not.toBe('none');
+      const order = Array.from(element.querySelectorAll('*'));
+      expect(order.indexOf(reminder()!)).toBeLessThan(order.indexOf(publish));
+    });
+
+    it('shows it for a new story too, and not for a story that is already published', async () => {
+      await open(null);
+      expect(reminder()).not.toBeNull();
+
+      TestBed.resetTestingModule();
+      await open('5', story({ isPublished: true, publishedAtUtc: '2026-10-15T10:00:00Z' }));
+      expect(reminder()).toBeNull();
+    });
+
+    it('does not block: Publish stays enabled, the reminder is not an alert, and saving the draft never publishes', async () => {
+      const form = await open('5');
+      const publish = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.gcv-actions button')).find((b) => b.textContent?.trim() === 'Publish')!;
+      api.update.and.returnValue(of(story()));
+
+      form.saveDraft();
+      fixture.detectChanges();
+
+      expect(api.publish).not.toHaveBeenCalled();
+      expect(publish.disabled).toBeFalse();
+      expect(reminder()!.getAttribute('role')).not.toBe('alert');
+      expect(reminder()!.querySelector('input, button')).toBeNull();
+      expect(reminder()).not.toBeNull();
+    });
+  });
 });

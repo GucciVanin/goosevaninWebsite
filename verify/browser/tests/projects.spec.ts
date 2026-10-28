@@ -43,6 +43,20 @@ for (const target of pages) {
     });
   }
 
+  for (const width of [375, 1280]) {
+    test(`${target.id}: the first line sits below the fixed header at ${width} px`, { tag: [`@screen:${target.id}`, '@kind:projects'] }, async ({ page }, info) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(target.path, { waitUntil: 'networkidle' });
+      await expect(page.getByRole('heading', { level: 1, name: target.heading })).toBeVisible();
+      const gap = await page.evaluate(() => {
+        const bar = document.querySelector('.gcv-bar')!.getBoundingClientRect();
+        const first = document.querySelector('main > :first-child')!.getBoundingClientRect();
+        return first.top - bar.bottom;
+      });
+      settle(info, target.id, 'projects', gap < 0 ? [{ id: `under-header:${width}`, detail: `the first line starts ${-gap} px under the header` }] : []);
+    });
+  }
+
   test(`${target.id}: axe finds no critical or serious violation`, { tag: [`@screen:${target.id}`, '@kind:projects'] }, async ({ page }, info) => {
     await page.goto(target.path, { waitUntil: 'networkidle' });
     await expect(page.getByRole('heading', { level: 1, name: target.heading })).toBeVisible();

@@ -26,6 +26,8 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', children: [] }, // the one-page home is rendered by the shell itself
   { path: 'projects', title: 'Projects', loadComponent: () => import('./features/projects/projects-index-page').then((m) => m.ProjectsIndexPage) },
   { path: 'projects/:slug', title: 'Project', loadComponent: () => import('./features/projects/project-page').then((m) => m.ProjectPage) },
+  { path: 'stories', title: 'Stories', loadComponent: () => import('./features/stories/stories-index-page').then((m) => m.StoriesIndexPage) },
+  { path: 'stories/:slug', title: 'Story', loadComponent: () => import('./features/stories/story-page').then((m) => m.StoryPage) },
   // Last: any other URL.
   { path: '**', title: 'Page not found', loadComponent: () => import('./features/not-found/not-found-page').then((m) => m.NotFoundPage) },
 ];

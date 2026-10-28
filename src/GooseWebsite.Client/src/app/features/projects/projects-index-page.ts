@@ -17,7 +17,7 @@ interface Entry {
   selector: 'app-projects-index-page',
   imports: [RouterLink],
   template: `
-    <main class="gcv-section" aria-labelledby="projects-title">
+    <main class="gcv-section gcv-section--page" aria-labelledby="projects-title">
       <p class="gcv-section__label">Projects</p>
       <div class="intro">
         <h1 id="projects-title" class="gcv-heading gcv-heading--section">Projects</h1>

@@ -4,7 +4,6 @@ import { BrandLogo } from '../../shared/brand/brand-logo';
 import { AuthApi } from '../../features/auth/api/auth-api';
 import { NavigationItem } from '../../shared/models/navigation-item';
 import { profile } from '../../shared/models/profile';
-import { StoryFilter } from '../../shared/story-filter';
 
 // Keeps navigation behavior and accessibility shared across all site pages.
 @Component({
@@ -15,7 +14,6 @@ import { StoryFilter } from '../../shared/story-filter';
 })
 export class SiteHeader {
   protected readonly profile = profile;
-  private readonly storyFilter = inject(StoryFilter);
   readonly activeSection = input('home');
   readonly hidden = input(false);
   readonly navItems = input.required<NavigationItem[]>();
@@ -34,8 +32,6 @@ export class SiteHeader {
   protected onNavigate(id: string, event: Event): void {
     event.preventDefault();
     this.menuOpen.set(false);
-    // The Stories link shows all stories; only the Competitions card sets a tag.
-    if (id === 'blog') this.storyFilter.tag.set('');
     this.navigate.emit(id);
   }
 }

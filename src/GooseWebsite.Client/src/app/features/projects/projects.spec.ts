@@ -120,6 +120,16 @@ describe('ProjectPage', () => {
     expect(main.querySelector('img.cover')?.getAttribute('alt')).toBe('The home page of the site');
   });
 
+  it('keeps a single h1 when the overview has a "#" heading', async () => {
+    const { harness, http } = await open();
+    http.expectOne('/api/projects/goose-website').flush({ ...goose, overview: '# Big heading\n\ntext' });
+    harness.detectChanges();
+    const main = (harness.routeNativeElement as HTMLElement).querySelector('main') as HTMLElement;
+
+    expect(main.querySelectorAll('h1').length).toBe(1);
+    expect(main.querySelector('.overview h2')?.textContent).toBe('Big heading');
+  });
+
   it('marks the demo and source as external links that say so (AC2)', async () => {
     const { harness, http } = await open();
     http.expectOne('/api/projects/goose-website').flush(goose);

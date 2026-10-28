@@ -42,6 +42,57 @@ describe('App shell', () => {
     expect(element.querySelector('app-home-page')).toBeNull();
   });
 
+  it('shows the header, the stories page and the footer, and none of the home sections, on /stories', async () => {
+    const { element } = await open('/stories');
+
+    expect(element.querySelector('app-site-header')).not.toBeNull();
+    expect(element.querySelector('app-site-footer')).not.toBeNull();
+    expect(element.querySelector('app-stories-index-page')).not.toBeNull();
+    expect(element.querySelector('app-home-page')).toBeNull();
+    expect(element.querySelector('app-blog-page')).toBeNull();
+    expect(element.querySelectorAll('main').length).toBe(1);
+  });
+
+  it('highlights Stories on /stories and Projects on /projects, and neither on an unknown project or story', async () => {
+    const active = (element: HTMLElement) => Array.from(element.querySelectorAll('app-site-header .gcv-nav a.active')).map((a) => a.textContent!.trim());
+
+    const stories = await open('/stories');
+    expect(active(stories.element)).toEqual(['Stories']);
+
+    TestBed.resetTestingModule();
+    const projects = await open('/projects');
+    expect(active(projects.element)).toEqual(['Projects']);
+
+    TestBed.resetTestingModule();
+    const unknown = await open('/projects/nope');
+    unknown.http.expectOne('/api/projects/nope').flush('', { status: 404, statusText: 'Not Found' });
+    await unknown.fixture.whenStable();
+    unknown.fixture.detectChanges();
+    expect(unknown.element.querySelector('app-not-found-page')).not.toBeNull();
+    expect(active(unknown.element)).toEqual([]);
+
+    TestBed.resetTestingModule();
+    const story = await open('/stories/nope');
+    story.http.expectOne('/api/blog/nope').flush('', { status: 404, statusText: 'Not Found' });
+    await story.fixture.whenStable();
+    story.fixture.detectChanges();
+    expect(active(story.element)).toEqual([]);
+  });
+
+  it('sends the Stories item of the header to /stories from the home page', async () => {
+    const { fixture, http, element } = await open('/');
+    http.match(() => true);
+    const link = Array.from(element.querySelectorAll<HTMLAnchorElement>('app-site-header .gcv-nav a')).find((a) => a.textContent!.trim() === 'Stories')!;
+
+    expect(link.getAttribute('href')).toBe('/stories');
+    link.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(Router).url).toBe('/stories');
+    expect(element.querySelector('app-stories-index-page')).not.toBeNull();
+  });
+
   it('keeps the one-page home with its sections on /', async () => {
     const { element } = await open('/');
 
@@ -98,7 +149,7 @@ describe('App shell', () => {
     const { fixture, http, element } = await open('/projects');
     http.match('/api/projects').forEach((request) => request.flush([]));
     const scrollIntoView = spyOn(Element.prototype, 'scrollIntoView');
-    const link = Array.from(element.querySelectorAll<HTMLAnchorElement>('app-site-header .gcv-nav a')).find((a) => a.textContent!.trim() === 'Stories')!;
+    const link = Array.from(element.querySelectorAll<HTMLAnchorElement>('app-site-header .gcv-nav a')).find((a) => a.textContent!.trim() === 'About')!;
 
     link.click();
     await fixture.whenStable();
@@ -110,7 +161,7 @@ describe('App shell', () => {
     expect(element.querySelector('app-home-page')).not.toBeNull();
     expect(element.querySelector('app-projects-index-page')).toBeNull();
     expect(scrollIntoView).toHaveBeenCalled();
-    expect((scrollIntoView.calls.mostRecent().object as HTMLElement).id).toBe('blog');
+    expect((scrollIntoView.calls.mostRecent().object as HTMLElement).id).toBe('approach');
   });
 
   it('sends the Projects item of the header to /projects from the home page', async () => {
@@ -136,6 +187,10 @@ describe('App routing configuration', () => {
     spacer.style.height = '4000px';
     const host = document.createElement('app-root');
     document.body.append(spacer, host);
+    // The site styles scroll smoothly; the test must not depend on that animation (the cause of the earlier flake),
+    // so scrolling jumps instantly for its duration. It still reads the real position, so it fails if restoration is off.
+    const previousBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
     const application = await bootstrapApplication(App, { providers: [...appConfig.providers, provideHttpClientTesting()] });
     try {
       const router = application.injector.get(Router);
@@ -150,6 +205,7 @@ describe('App routing configuration', () => {
       expect(window.scrollY).toBe(0);
     } finally {
       application.destroy();
+      document.documentElement.style.scrollBehavior = previousBehavior;
       spacer.remove();
       host.remove();
     }

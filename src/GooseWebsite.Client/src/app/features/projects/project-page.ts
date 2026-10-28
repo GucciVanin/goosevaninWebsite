@@ -17,7 +17,7 @@ import { PublicProject, PublicProjectApi } from './public-project-api';
     @if (status() === 'missing') {
       <app-not-found-page />
     } @else {
-      <main class="gcv-section" aria-labelledby="project-title">
+      <main class="gcv-section gcv-section--page" aria-labelledby="project-title">
         <p class="back"><a class="gcv-link" routerLink="/projects"><span aria-hidden="true">←</span> All projects</a></p>
         @if (status() === 'loading') {
           <h1 id="project-title" class="gcv-heading gcv-heading--section">Project</h1>
@@ -95,7 +95,7 @@ export class ProjectPage implements OnInit {
     this.status.set('loading');
     this.api.get(slug).subscribe({
       next: (project) => {
-        this.overviewHtml.set(renderMarkdown(project.overview));
+        this.overviewHtml.set(renderMarkdown(project.overview, { headingOffset: 1 }));
         this.project.set(project);
         this.title.setTitle(pageTitle(project.title));
         this.status.set('ready');

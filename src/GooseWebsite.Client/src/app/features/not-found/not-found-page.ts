@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
+import { PageState } from '../../shared/page-state';
 import { pageTitle } from '../../shared/site-title-strategy';
 
 // The site's not-found state: any unknown URL (the wildcard route) and any project or story slug the API does not know.
@@ -9,7 +10,7 @@ import { pageTitle } from '../../shared/site-title-strategy';
   selector: 'app-not-found-page',
   imports: [RouterLink],
   template: `
-    <main class="gcv-section" aria-labelledby="not-found-title">
+    <main class="gcv-section gcv-section--page" aria-labelledby="not-found-title">
       <p class="gcv-section__label">404</p>
       <h1 id="not-found-title" class="gcv-heading gcv-heading--section">Page not found</h1>
       <p class="gcv-lede">There is nothing at this address. It may have moved, or it may never have been published.</p>
@@ -24,7 +25,11 @@ import { pageTitle } from '../../shared/site-title-strategy';
 })
 export class NotFoundPage {
   // Also shown inside a project page whose slug the API does not know, so it sets the title itself.
+  // It also tells the shell, so the header marks no section as current while it shows.
   constructor() {
     inject(Title).setTitle(pageTitle('Page not found'));
+    const state = inject(PageState);
+    state.notFound.set(true);
+    inject(DestroyRef).onDestroy(() => state.notFound.set(false));
   }
 }

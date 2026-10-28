@@ -66,6 +66,8 @@
   --gcv-gutter: clamp(16px, 5vw, 64px);
   --gcv-content-width: 1180px;
   --gcv-control-height: 44px;
+  /* Space a routed page leaves above its first line so it clears the fixed header (about 108 px tall). */
+  --gcv-header-clearance: 128px;
 
   /* Shape and edges */
   --gcv-radius-0: 0;
