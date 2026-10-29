@@ -15,6 +15,14 @@ The Testing role runs the list below as the last check, three times per test, an
 
 The container run uses seeded test administrators and a unique suffix per run for created content; the clock is real, so tests compare relative values only. Record the environment (commit, Docker image, date) in each report. A test whose result differs between its three runs is `fail` with reason `nondeterministic`.
 
+## Other tests added for F3-US1 (order O1)
+
+| Layer | Test | Criterion |
+| --- | --- | --- |
+| xUnit | `SignInTimingEqualisationTests.UnknownEmailWrongPasswordAndLockedAccountEachRunTheSameNumberOfHashVerifications` (counts hash verifications through a decorated `IPasswordHasher`; `AuthApiFactory` takes an optional `configureServices`) | F3-US1 (dummy-hash claim, AC2 and AC5) |
+| Runtime | `80-reader.sh`: a registration body carrying `role` and `isAdmin` is answered 404 while registration is off, and that email cannot sign in | F3-US1-AC4 |
+| Karma | `sign-in-page.spec.ts`: same generic failure message for any failure, field labels, Sign out button when signed in and its effect, no Sign out button when signed out | F3-US1-AC5 |
+
 ## Dynamic list
 
 The runtime tests are the files in `verify/runtime/` plus the xUnit and Karma suites; each story's acceptance tests map to tests by name (see the evidence paragraph of the story in `Docs/product-backlog.md`). A new acceptance criterion adds a test; a fixed security finding adds a regression test; a removed test is recorded in the work item's `decisions.md`.
@@ -35,8 +43,9 @@ Playwright and axe-core run as stage `40-browser` of `./scripts/verify.ps1`, ins
 | Smoke: the layer works end to end | `smoke.spec.ts` | TE5-AC1 | home |
 | Profile: name, positioning line, bio and summary in visible text in About; portrait alt text and load; GitHub, LinkedIn and email links (`target`, `rel`); no age or street address | `profile.spec.ts` | F9-US7-AC6 (F1-US1 tests 1 and 2) | home |
 | Contact form (F2-US1 tests 1 to 4): fields, labels, exact reason choices; incomplete or malformed input is blocked and identified with no request to `/api/contact`; labels and layout at 375 px. A valid form is never submitted (the stack may have real mail configured): test 3 is covered by the xUnit and Karma tests named in the spec | `contact.spec.ts` | F9-US7-AC6 (F2-US1) | home |
+| Administrator authentication through the real sign-in page: after sign-in `document.cookie` holds only the marker and the browser holds the session cookie as HttpOnly; unknown email and wrong password show the same message, sign-in works, Sign out ends the session and the editor redirects to sign-in (uses the second seeded administrator under a lock, because signing out ends every session of an account); with the session cookie cleared and the marker kept, the editor redirects to `/sign-in?reason=session-expired` with the notice | `auth.spec.ts` | F3-US1-AC1, AC3, AC5 | no screen list (own flows) |
 
-Screens (`verify/browser/helpers/screens.ts`): home, sign-in, email confirmation and contact confirmation (no token), access denied, and with the seeded test administrator the editor workspace, story form and project form.
+Other tests of this layer (not on the screen list): F3-US1 in the table above. Screens (`verify/browser/helpers/screens.ts`): home, sign-in, email confirmation and contact confirmation (no token), access denied, and with the seeded test administrator the editor workspace, story form and project form.
 
 ### Run
 

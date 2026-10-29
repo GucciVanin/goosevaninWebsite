@@ -34,6 +34,7 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
     private readonly bool _readerRegistrationEnabled;
     private readonly ICurrentCaller? _callerOverride;
     private readonly bool _includeProbeControllers;
+    private readonly Action<IServiceCollection>? _configureServices;
 
     /// <summary>Every log message the host writes, for tests that assert what is (not) logged.</summary>
     public CapturingLoggerProvider Logs { get; } = new();
@@ -43,8 +44,10 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         TimeSpan? confirmationTokenLifetime = null,
         bool readerRegistrationEnabled = true,
         ICurrentCaller? callerOverride = null,
-        bool includeProbeControllers = false)
+        bool includeProbeControllers = false,
+        Action<IServiceCollection>? configureServices = null)
     {
+        _configureServices = configureServices;
         _cookieLifetime = cookieLifetime;
         _confirmationTokenLifetime = confirmationTokenLifetime;
         _readerRegistrationEnabled = readerRegistrationEnabled;
@@ -66,6 +69,7 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(_connection));
             services.AddSingleton<ILoggerProvider>(Logs);
+            _configureServices?.Invoke(services);
             if (_callerOverride is not null)
             {
                 services.RemoveAll<ICurrentCaller>();
