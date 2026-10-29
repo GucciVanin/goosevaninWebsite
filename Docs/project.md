@@ -174,7 +174,7 @@ Gustavo confirmed on 2026-10-02 a capacity of about 6 US (72 hours) per sprint a
 | 6 | The new design covers every screen and email | F9-US4 contact, blog, and account pages; F9-US5 editor; F9-US6 branded emails; TE8 one Mail module ([#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)), right after F9-US6 | 6 US |
 | 7 | **R1 ships** | F9-US7 accessibility and responsiveness verification; TE5 browser tests and accessibility scan; TE4 remove sample content (deployment gate); R1 release gate (all exit measures) | 4.5 US plus gate |
 | 8 | **R2 ships** | F5-US1 projects; F5-US2 stories | 4 US |
-| 9 | Readers can converse | F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments | 6 US |
+| 9 | Visitors can follow new posts (replaces "Readers can converse", Gustavo 2026-10-29) | F10-US1 subscribe; F10-US2 unsubscribe; F10-US3 notify subscribers. Parked: F3-US4 reader password reset; F6-US1 comment on content; F6-US2 replies; F6-US3 manage own comments | 6 US |
 | 10 | **R3 ships** | F8-US1 create profile with optional details; F8-US2 view another user's profile; F8-US3 edit or remove my details; enable reader registration in production | 5 US plus launch checks |
 
 ### Current sprint backlog (Sprint 1, not yet started)
