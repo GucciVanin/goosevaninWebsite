@@ -11,3 +11,5 @@
 }
 .line { background: linear-gradient(90deg, var(--gcv-line-strong), transparent); flex: 1; height: 1px; min-width: 40px; }
 .copy { color: var(--gcv-text-muted); font: var(--gcv-text-xs) / 1 var(--gcv-font-mono); letter-spacing: var(--gcv-track-label); margin: 0; text-transform: uppercase; }
+.subscribe { display: grid; flex-basis: 100%; gap: var(--gcv-space-3); padding-bottom: var(--gcv-space-4); }
+.subscribe app-subscribe-form { max-width: 28rem; }

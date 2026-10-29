@@ -3,6 +3,7 @@ import { editorGuard } from './features/editor/editor.guard';
 import { ContactVerifyPage } from './features/contact/contact-verify-page';
 import { SignInPage } from './features/auth/pages/sign-in-page';
 import { VerifyEmailPage } from './features/auth/pages/verify-email-page';
+import { SubscribeConfirmPage } from './features/subscriptions/subscribe-confirm-page';
 
 // Centralizes URL ownership so feature pages remain independently maintainable.
 // Every page is loaded on demand. The editor in particular stays out of the visitor's download.
@@ -10,6 +11,7 @@ export const routes: Routes = [
   { path: 'sign-in', component: SignInPage },
   { path: 'verify-email', component: VerifyEmailPage },
   { path: 'contact/verify', component: ContactVerifyPage },
+  { path: 'subscribe/confirm', title: 'Confirm subscription', component: SubscribeConfirmPage },
   {
     path: 'editor',
     canActivate: [editorGuard],

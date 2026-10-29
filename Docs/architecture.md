@@ -2,7 +2,7 @@
 
 **Audience:** AI agents and developers. Read this before implementing a feature or changing existing behavior.  
 **Also for:** Gustavo, to see the product as it is built today. Diagrams are Mermaid and render in VS Code, GitHub, and most Markdown viewers.  
-**Last verified against the code:** 2026-10-01
+**Last verified against the code:** 2026-10-29 (Subscriptions module, F10-US1)
 
 This document describes **what exists now**, not the target. For the target see [project.md](./project.md) and [product-backlog.md](./product-backlog.md). Where the code falls short of the target, section 11 lists the gap. Keep this file in the same change as any structural change.
 
@@ -74,6 +74,7 @@ GooseWebsite/
 │   │   │   ├── Blog/
 │   │   │   ├── Contact/
 │   │   │   ├── Media/
+│   │   │   ├── Subscriptions/
 │   │   │   └── Projects/
 │   │   ├── Shared/                   Cross-cutting infrastructure (section 3.2)
 │   │   │   ├── Email/  Hosting/  Modules/  Persistence/
@@ -134,7 +135,7 @@ flowchart TB
 ```
 
 - `Program.cs` may reference every module; modules never reference `Program`.
-- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Media** depends on `Shared` only. **Blog** and **Projects** depend on `Shared` and on `Accounts` (for the author entity and the authorization policy names); they do not depend on each other. Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
+- **Contact** depends on `Shared` only. **Accounts** depends on `Shared`. **Media** depends on `Shared` only. **Subscriptions** depends on `Shared` only. **Blog** and **Projects** depend on `Shared` and on `Accounts` (for the author entity and the authorization policy names); they do not depend on each other. Do not add the reverse direction. If two modules need the same thing, move it into `Shared`.
 - `Shared` never references a module, with one deliberate exception: `ApplicationDbContext` and `DatabaseService` know `ApplicationUser` from Accounts, because Identity shares the database. Every other module table is discovered through `IEntityTypeConfiguration<T>` without `Shared` naming it.
 - **All database reads and writes go through `DatabaseService`.** A module keeps its own query logic in a service or repository (what to ask for) but calls the gateway (how to ask). Never inject `ApplicationDbContext`, `UserManager`, or `RoleManager` into a module class other than Identity registration. The sanitization, access rules and one-click-one-unit-of-work guarantee (F7-US1) are applied beneath the gateway, so they hold for every module; declare an `EntityAccessRule<T>` next to every new entity (see section 4).
 
@@ -262,12 +263,27 @@ Owns image uploads (F4-US5). Source: `Modules/Media/`. Files live in `Media:Dire
 
 Stories and projects store only a reference of the form `/uploads/<32 hex>.<jpg|png|webp|gif>` (`Shared/Text/UploadedImageReference` checks it), so they do not depend on this module. Unreferenced images are kept until Gustavo deletes them. Deleting an image does not check whether a story or project still uses it (known gap, found in review; it matters once a screen for deleting images exists, and a cover is checked only for its form, not for the file existing). The client has `ImageApi` and the `ImageControls` component used by both forms.
 
+### 3.6c Subscriptions module
+
+Owns the subscriber list (F10): a visitor leaves a name and an email, confirms through an emailed link (double opt-in), and is later told about new work (F10-US3, not built yet). Source: `Modules/Subscriptions/`. It depends on `Shared` only (persistence, mail, the public link builder) and registers with `AddSubscriptionsModule(configuration)`.
+
+| Piece | File | Notes |
+| --- | --- | --- |
+| Entity | `Domain/Subscriber.cs`, `SubscriberConfiguration.cs` | Table `Subscribers` (migration `AddSubscribers`): `Id, Name (100), Email (254, NOCASE, unique), State (Pending or Confirmed), CreatedAtUtc, ConfirmedAtUtc, ConfirmationTokenHash, ConfirmationTokenExpiresAtUtc, UnsubscribeTokenHash`. No IP address and no user agent. Tokens are 32 random bytes (URL-safe) and only their SHA-256 hash (upper-case hex) is stored |
+| Access rule | `Domain/SubscriberAccessRule.cs` | `WriteAccess.Anyone` (an anonymous request writes), `Name` and `Email` are user text with limits 100 and 254. The rows have no read filter, because the anonymous service must look an address up; no endpoint returns them, and `SubscriptionsApiTests.NoEndpointListsSubscribers` guards that |
+| Endpoints | `Controllers/SubscriptionsController.cs` | `POST /api/subscriptions` (body `{name, email, website}`; anonymous, CSRF, rate limited per client address) and `POST /api/subscriptions/confirm` (body `{token}`; anonymous, CSRF, rate limited). Subscribe answers `200` with one fixed message for every outcome (new, pending, confirmed, invalid input, honeypot, mail failure); only the rate limit differs (`429`). Confirm answers `200` or `400` with one fixed message |
+| Rules | `Services/ISubscriptionService.cs`, `SubscriptionService.cs` | A filled honeypot (`website`) or invalid name or email stores nothing and sends nothing. New address: pending record plus one confirmation email. Pending address: a fresh token (the old link stops working) and a fresh email, but not within `ResendCooldownMinutes` (2) of the previous mail, so the form cannot flood an inbox; no second record. Confirmed address: no mail. A race on the unique index looks the same to the caller. Confirm: the hash must match a pending record whose expiry has not passed; the token is cleared at once, so a link works once. Logs carry the outcome category only |
+| Email | `Services/SubscriptionEmailSender.cs`, `SubscriptionEmailRenderer.cs` | Branded HTML plus plain text through `IMailService.SendAsync`, built like the account email (`Accounts/Services/AccountVerificationEmailRenderer`). The link is `{PublicBaseUrl}/subscribe/confirm#token=...` (the token is in the fragment, like the other emailed links). The name is HTML-encoded in the HTML view |
+| Cleanup | `Services/PendingSubscriberCleanupService.cs` | Hosted `BackgroundService`: 30 seconds after start and then every hour it deletes pending records whose confirmation link expired (`RemoveExpiredPendingAsync`, 7 days after the latest mail). Confirmed records are never removed by it |
+| Settings | `Models/SubscriptionOptions.cs` | Section `Subscriptions`: `ConfirmationLifetimeDays` (7), `ResendCooldownMinutes` (2), `RateLimit:PermitLimit` (5 subscribe requests per client address per window), `RateLimit:ConfirmPermitLimit` (20), `RateLimit:WindowMinutes` (10). The policies are `subscriptions-subscribe` and `subscriptions-confirm` |
+
 ### 3.7 Authorization matrix
 
 | Operation | Anonymous | Reader, unconfirmed | Reader, confirmed | Admin |
 | --- | --- | --- | --- | --- |
 | Read published blog posts | yes | yes | yes | yes |
 | Submit contact form | yes (rate limited) | yes | yes | yes |
+| Subscribe, confirm a subscription (F10) | yes (rate limited, CSRF) | yes | yes | yes |
 | Create, update, delete posts | no (401) | no (cannot sign in) | no (403) | yes |
 | Comment actions (R3, `VerifiedReader`) | no | no | yes | not by role alone |
 
@@ -420,6 +436,44 @@ sequenceDiagram
     A-->>B: verified, or generic invalid or expired
 ```
 
+### 5.4 Subscribe and confirm (F10-US1)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Angular client
+    participant S as SubscriptionsController
+    participant R as SubscriptionService
+    participant D as DatabaseService
+    participant M as IMailService
+
+    B->>S: POST /api/subscriptions {name, email, website} (CSRF, rate limited per IP)
+    S->>R: SubscribeAsync
+    alt honeypot filled, or name or email invalid
+        R-->>S: nothing stored, nothing sent
+    else new address
+        R->>D: add Pending subscriber (token hashes only)
+        R->>M: confirmation email with /subscribe/confirm#token=...
+    else pending address, last mail older than the cooldown
+        R->>D: new token hash and expiry
+        R->>M: fresh confirmation email
+    else pending inside the cooldown, or confirmed
+        R-->>S: nothing sent
+    end
+    S-->>B: 200 with the same message for every case
+    Note over B: Visitor opens /subscribe/confirm#token=... and presses Confirm
+    B->>S: POST /api/subscriptions/confirm {token}
+    S->>R: ConfirmAsync (hash lookup, pending, not expired)
+    alt valid
+        R->>D: State = Confirmed, token cleared
+        S-->>B: 200 confirmed
+    else unknown, expired, malformed or used
+        S-->>B: 400 no longer valid (nothing changes)
+    end
+```
+
+Pending records disappear on their own: the hosted cleanup deletes them once the confirmation link has expired.
+
 ## 6. Frontend
 
 Angular 20 with standalone components, signals, SCSS, and the built-in router. Source: `src/GooseWebsite.Client/src/app/`.
@@ -470,12 +524,13 @@ flowchart TD
 | `app/features/projects/` | F5-US1. `ProjectsIndexPage` (`/projects`: every published project from `GET /api/projects` as a compact, unframed entry with cover thumbnail, title, one-line overview and technologies; loading, empty and failure states in words) and `ProjectPage` (`/projects/:slug` from `GET /api/projects/{slug}`: title, overview as safe Markdown, Gustavo's contribution, technologies, cover image with its alt text, then demo and source links that open in a new tab with `rel="noopener noreferrer"` and say so; a 404 shows `NotFoundPage` in place). `PublicProjectApi` is the read-only client. Both pages are lazy routes with a readable 70-character column and no sideways scroll at 375 px |
 | `app/features/stories/` | F5-US2. `StoriesIndexPage` (`/stories`: every published story from `GET /api/blog` with an unbounded `pageSize` (no cap) as a compact, unframed entry with category, date, title, excerpt and tags; the search box and category buttons that used to live on the home section; `?tag=` filters by one tag, case-insensitive and exact, with a "Showing stories tagged #x" line, a "Show all stories" link to plain `/stories`, and "No stories tagged #x yet."; the address is the whole filter state) and `StoryPage` (`/stories/:slug` from `GET /api/blog/{slug}`: title first, the summary (excerpt) under it, optional cover image with alt text, the body as safe Markdown, then category, date and tags as secondary metadata in a 70-character column; a 404, which covers a draft, shows `NotFoundPage` in place). `PublicStoryApi` is the read-only client; `shared/story-date.ts` formats dates in UTC (`22 Sep 2026`) from the publication date, or the creation date when there is none. Public pages render Markdown with `renderMarkdown(source, { headingOffset: 1 })`, so a `#` in a body becomes an `h2` and the page keeps one `h1` (the editor preview keeps the author's levels). Routed pages use `gcv-section--page`, whose top padding is the token `--gcv-header-clearance`, so the first line clears the fixed header; the story body and the project overview use `gcv-reading` for heading, quote and code styling; GIFs work as cover and inline images like any other upload (`<img>`, so they animate) |
 | `app/features/not-found/` | `NotFoundPage`: the site's not-found state (a `main` landmark, one `h1`, a link home). It is the wildcard route (`**`, last in `app.routes.ts`) and is also shown by `ProjectPage` and `StoryPage` for an unknown slug. While it shows it sets `PageState.notFound` (`shared/page-state.ts`), so the header marks no section current |
+| `app/features/subscriptions/` | F10-US1. `SubscribeForm` (`app-subscribe-form`, inputs `idPrefix` and `label`): labelled name and email fields, a honeypot field named `website` inside an `aria-hidden` wrapper with `tabindex="-1"`, errors in words next to the field with `aria-invalid` and `aria-describedby`, focus moved to the first invalid field, states in words ("Subscribing...", the server's message, "Too many attempts...", "could not be completed"). It appears twice: in the home page's short `SubscribeSection` (`#subscribe`, between Stories and Contact) and in the footer of every public page (so on the home page the ids are prefixed `home-subscribe-` and `footer-subscribe-`). `SubscribeConfirmPage` (`/subscribe/confirm#token=...`, title "Confirm subscription", no header or footer like the other link pages) confirms only when the person presses the button, so a mail scanner that opens the link cannot confirm an address. `SubscriptionApi` posts to the two endpoints (the session interceptor adds the CSRF token) |
 | `app/features/blog/`, `app/features/contact/` | Self-contained feature components with their own template and styles (`blog` is the home Stories preview) |
 | `app/layout/` | `site-header`, `site-footer` |
 | `app/shared/` | `models/` (profile, navigation item), `styles/site.scss` shared layout rules |
 | `src/styles.scss` | Global design tokens and font families |
 
-The home page is one long page with anchors (`home`, `work`, `approach`, `blog`, `contact`). The shell (`app.ts`) has three modes by URL: the authentication and editor screens (no header or footer), the home page (`/`, which renders the sections inside the shell), and every other public URL (`/projects`, `/projects/:slug`, `/stories`, `/stories/:slug`, and any unknown URL), where the routed page renders between the same header and footer through the single `router-outlet`. From a routed public page the header and footer links go to `/` and then scroll to the section, except the Projects and Stories items of the header and menu, which have a `route` (`NavigationItem.route`) and are real links to `/projects` and `/stories` (a plain link to `/stories` clears a `?tag=` filter). The header marks Projects or Stories current on those pages, and nothing while the not-found page shows. The router starts every new page at the top (`withInMemoryScrolling`, scroll restoration and anchor scrolling enabled in `app.config.ts`). Every route has its own document title through `SiteTitleStrategy` (`shared/site-title-strategy.ts`): `<page> - Gustavo Couto Vanin`, the site name alone for routes without a title (home, sign-in); a project page refines it with the project's title once loaded, and `NotFoundPage` sets its own. `plainSummary` (Markdown to a short plain summary) lives in `shared/plain-summary.ts`. The Projects card on the home page links to `/projects`; the home Projects section previews three projects and links to `/projects`, the home Stories section previews the latest three stories (each links to `/stories/<slug>`; there is no in-page reading view) and links to `/stories`, and each `ProjectPanel` links to its `/projects/<slug>` page. The client keeps the CSRF token in memory and requests a fresh one before each mutation (`AuthApi.postWithCsrf`). The contact form and blog section call the API with plain `HttpClient`.
+The home page is one long page with anchors (`home`, `work`, `approach`, `blog`, `contact`). The shell (`app.ts`) has three modes by URL: the authentication, link-confirmation (`/verify-email`, `/contact/verify`, `/subscribe/confirm`) and editor screens (no header or footer), the home page (`/`, which renders the sections inside the shell), and every other public URL (`/projects`, `/projects/:slug`, `/stories`, `/stories/:slug`, and any unknown URL), where the routed page renders between the same header and footer through the single `router-outlet`. From a routed public page the header and footer links go to `/` and then scroll to the section, except the Projects and Stories items of the header and menu, which have a `route` (`NavigationItem.route`) and are real links to `/projects` and `/stories` (a plain link to `/stories` clears a `?tag=` filter). The header marks Projects or Stories current on those pages, and nothing while the not-found page shows. The router starts every new page at the top (`withInMemoryScrolling`, scroll restoration and anchor scrolling enabled in `app.config.ts`). Every route has its own document title through `SiteTitleStrategy` (`shared/site-title-strategy.ts`): `<page> - Gustavo Couto Vanin`, the site name alone for routes without a title (home, sign-in); a project page refines it with the project's title once loaded, and `NotFoundPage` sets its own. `plainSummary` (Markdown to a short plain summary) lives in `shared/plain-summary.ts`. The Projects card on the home page links to `/projects`; the home Projects section previews three projects and links to `/projects`, the home Stories section previews the latest three stories (each links to `/stories/<slug>`; there is no in-page reading view) and links to `/stories`, and each `ProjectPanel` links to its `/projects/<slug>` page. The client keeps the CSRF token in memory and requests a fresh one before each mutation (`AuthApi.postWithCsrf`). The contact form and blog section call the API with plain `HttpClient`.
 
 Build facts: output goes to `../GooseWebsite.Api/wwwroot`; production budgets warn at 500 kB and fail at 1 MB for the initial bundle; `ng serve` proxies `/api` to `https://localhost:8889` through `proxy.conf.json`.
 
@@ -506,6 +561,7 @@ Configuration binds in this order of precedence, last wins: `appsettings.json`, 
 | `Contact:LogoUrl` | Public address of the email logo | `{PublicBaseUrl}/email/gcv-logo.png` |
 | `Contact:RecipientEmail` | Inbox for verified contact messages | empty; delivery is skipped |
 | `Contact:RateLimit:MaxRequestsPerWindow`, `WindowMinutes`, `MaxTrackedClients`, `MaxRequestsPerRecipient` | Contact abuse guard | 5, 10, 10000, 2 |
+| `Subscriptions:ConfirmationLifetimeDays`, `ResendCooldownMinutes`, `RateLimit:PermitLimit`, `ConfirmPermitLimit`, `WindowMinutes` | Subscription link lifetime and pending lifetime, minimum gap between confirmation mails to one address, per-client-address limits | 7, 2, 5, 20, 10 |
 | `Auth:ReaderRegistration:Enabled` | Reader registration endpoints | `false`; `true` in Development |
 | `PublicBaseUrl` | Base for links in emails. Verification links for both Contact and Accounts are built by `Shared/Hosting/PublicLinkBuilder` (values go in the URL fragment); the Contact email also reads it for the plain site address and logo URL | `https://localhost` |
 | `HSTS_MAX_AGE` | Seconds of the `Strict-Transport-Security` header sent by Caddy. It is a deployment setting: set it in the deployment `.env` (read by `docker-compose.yml`, passed to Caddy). Short by default so a local browser is not pinned to HTTPS; use a long value such as `31536000` only once the real domain serves HTTPS with a public certificate. The verification stack keeps `300` | `300` |
@@ -558,7 +614,7 @@ flowchart LR
 - **Contracts:** never return an entity from an endpoint. Use a request and response type in `Contracts/` with validation attributes. Never bind privilege-bearing fields (role, `EmailConfirmed`, ids of other users) from a request.
 - **Authorization:** protect every write with a policy from `AuthorizationPolicies`, not bare `[Authorize]`, and add `[ValidateAntiForgeryToken]` to cookie-authenticated mutations.
 - **Configuration:** bind settings to an options class (see `SmtpOptions`, `ContactOptions`). Do not read `IConfiguration` ad hoc in new code, and never hard-code addresses or credentials.
-- **Mail:** modules send only through `IMailService` and read the `MailResult`; they never touch SMTP or MailerSend. Account emails are rendered in the module and sent with `SendAsync`. Contact emails are MailerSend templates sent with `SendTemplateAsync`: the module picks the template id and supplies every variable it reads (case-sensitive names, constants in `ContactEmailTemplateVariables`), and a test pins them. A variable the request omits renders as its own name in the inbox.
+- **Mail:** modules send only through `IMailService` and read the `MailResult`; they never touch SMTP or MailerSend. Account emails are rendered in the module and sent with `SendAsync`. Subscription emails (F10) are rendered the same way. Contact emails are MailerSend templates sent with `SendTemplateAsync`: the module picks the template id and supplies every variable it reads (case-sensitive names, constants in `ContactEmailTemplateVariables`), and a test pins them. A variable the request omits renders as its own name in the inbox.
 - **Style:** C# with nullable references enabled, file-scoped namespaces, primary constructors for dependency injection, `sealed` classes by default, a short comment saying why a type exists. TypeScript uses standalone components, signals, and typed models; one feature per folder under `app/features/`.
 - **Naming:** `I<Name>` for seams, `<Name>Module`, `<Name>Controller`, `<Name>Repository`, `<Name>Configuration` for EF mappings.
 
@@ -610,6 +666,8 @@ Delete the module folder, its registration line in `Program.cs`, its tests, and 
 | Unit and service | `AdminProvisioningTests.cs`, `EditorAccessTests.cs`, `AdminPasswordResetTests.cs`, `ContactFeatureTests.cs`, `ContactSubmissionModuleTests.cs`, `DatabaseInitializerTests.cs`, `SchemaCompatibilityTests.cs` | Provisioning rules; contact abuse guard (sequential, concurrent, bounded, expiry) and token store; the Contact submission module through its own interface (honeypot, per-device limit, discard on a rejected address, retry and restore after a failed delivery, log privacy); pinned table and index names so existing databases keep working |
 | Client | `*.spec.ts` beside components | Header sign-in and Editor links; verify-email page; sign-in page (expired-session notice, safe return address); `editorGuard`; `sessionInterceptor`; `safeReturnUrl` |
 
+Subscriptions (F10-US1): `SubscriptionsApiTests` (xUnit, the real host with the test mail service and an adjustable clock): stored pending record and one mail, identical answers for new, pending, confirmed, invalid and honeypot submissions, confirm once and never again, expiry, malformed tokens, GET never confirms, resend with a fresh link, cooldown, confirmed address gets no mail, case-insensitive uniqueness, abuse controls (honeypot, per-IP limit, CSRF), mail provider failure, the stored columns and hashed tokens, the access rule limits, the safeguards beneath the service, log privacy, no listing endpoint, the branded email, and the cleanup. Karma: `subscribe-form.spec.ts`, `subscribe-confirm-page.spec.ts`, and the shell cases in `app.spec.ts`. Runtime: `verify/runtime/65-subscriptions.sh` (refusals only, no email). Browser: `verify/browser/tests/subscribe.spec.ts` (every call to the subscription endpoints is stubbed by the test, so nothing is sent), plus the `subscribe-confirmation` screen in all the generic checks and the home page checks, which now include the form.
+
 Test doubles: `TestMailService` captures verification links; `StubContactEmailDeliveryService` replaces the contact mail transport; `AdjustableTimeProvider` and `CapturingLogger` support time and log assertions.
 
 Continuous integration (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`: the client build and tests, then the API build and tests against that built client, then a Docker image build. Make the three jobs required checks on `main` in the repository settings so a failing run blocks the merge.
@@ -636,7 +694,7 @@ The run never sends an email: the contact form is only given requests it refuses
 
 Tightened checks (TE5 O3): the focus indicator must differ from the element's unfocused outline and box-shadow (an always-present decoration fails); the reachable-element list covers links, buttons, fields, `summary`, `contenteditable`, `iframe`, media with `controls` and anything with `tabindex` of 0 or more (the ARIA widgets button, link, checkbox, tab and menuitem when they get one); the keyboard check also runs on the home page at 320 px with the mobile menu open; axe known issues name rule and element (`axe:<rule>:<selector>`); the 320 px test asserts `innerWidth` is 320 first; `verify/browser/tests/selftest.spec.ts` keeps the negative controls. The stage fails on a known-issues entry whose screen, kind or engine matches no test ("orphan known issue"), counts its own failures, and fails when the number of results differs from the number of tests Playwright lists. Content checks (F9-US7): `profile.spec.ts` (home: the name, positioning line, bio and summary are visible text in About, not only screen-reader text; the portrait has descriptive alt text and loads; GitHub, LinkedIn and email links; no age or street address) and `contact.spec.ts` (F2-US1 tests 1 to 4 on the home page form: each invalid field shows a text error next to it in the shared alert style with `aria-invalid` and `aria-describedby`, the error goes away when corrected, Enter on an empty form shows every error and moves focus to the first invalid field, the submit button is not disabled by validity, and no request reaches `/api/contact`). The contact test never submits a valid form, because the stack may have a real mail provider configured; it stops at validation, and test 3 (the verification-pending message) is covered by the xUnit `ContactVerificationApiTests` and the Karma `contact-verify-page.spec.ts`. `verify/browser/known-issues.json` is empty since F9-US7 fixed the signed-out `GET /api/auth/me` 401 and the WebKit date-field focus indicator. Real Edge and Safari: `Docs/tests/browser-manual-check.md`. Known limits: a request that starts after `networkidle` is not seen by the load check; the content of iframes and positive `tabindex` ordering are not walked by the keyboard check.
 
-Current result (2026-10-22, after F9-US7, `./scripts/verify.ps1 -SkipCi`): 567 checks pass, 0 fail, 0 known (.NET, Angular and runtime checks, plus the browser stage: 126 tests on 3 engines, all pass, and 2 stage self-checks). Not covered by anything yet: visual regression, Lighthouse, real Edge and Safari, previous browser versions.
+Latest result (2026-10-29, after F10-US1 order O1, `./scripts/verify.ps1 -SkipCi`): 922 checks pass, 0 fail, 0 known (the browser stage lists 303 tests on 3 engines). Earlier result (2026-10-22, after F9-US7): 567 checks pass, 0 fail, 0 known (.NET, Angular and runtime checks, plus the browser stage: 126 tests on 3 engines, all pass, and 2 stage self-checks). Not covered by anything yet: visual regression, Lighthouse, real Edge and Safari, previous browser versions.
 
 ## 11. Known gaps and technical debt
 

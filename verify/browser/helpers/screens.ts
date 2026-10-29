@@ -13,6 +13,7 @@ export const screens: Screen[] = [
   { id: 'sign-in', path: '/sign-in' },
   { id: 'email-confirmation', path: '/verify-email' },
   { id: 'contact-confirmation', path: '/contact/verify' },
+  { id: 'subscribe-confirmation', path: '/subscribe/confirm' },
   { id: 'access-denied', path: '/access-denied' },
   { id: 'editor-workspace', path: '/editor', admin: true },
   { id: 'story-form', path: '/editor/stories/new', admin: true },

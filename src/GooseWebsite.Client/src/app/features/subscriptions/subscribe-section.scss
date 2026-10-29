@@ -1,0 +1,5 @@
+:host { display: block; }
+.layout { align-items: start; display: grid; gap: var(--gcv-space-7); grid-template-columns: 1fr 1.1fr; }
+.aside { display: grid; gap: var(--gcv-space-5); }
+.form-wrap { padding: var(--gcv-space-6); }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .form-wrap { padding: var(--gcv-space-5); } }

@@ -1,11 +1,12 @@
 import { Component, output } from '@angular/core';
 import { BrandLogo } from '../../shared/brand/brand-logo';
 import { profile } from '../../shared/models/profile';
+import { SubscribeForm } from '../../features/subscriptions/subscribe-form';
 
 // Keeps shared footer content consistent without duplicating it across pages.
 @Component({
   selector: 'app-site-footer',
-  imports: [BrandLogo],
+  imports: [BrandLogo, SubscribeForm],
   templateUrl: './site-footer.html',
   styleUrl: './site-footer.scss',
 })

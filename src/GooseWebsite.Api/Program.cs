@@ -3,6 +3,7 @@ using GooseWebsite.Api.Modules.Blog;
 using GooseWebsite.Api.Modules.Projects;
 using GooseWebsite.Api.Modules.Contact;
 using GooseWebsite.Api.Modules.Media;
+using GooseWebsite.Api.Modules.Subscriptions;
 using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Hosting;
 using GooseWebsite.Api.Shared.Modules;
@@ -24,6 +25,7 @@ builder.Services.AddBlogModule();
 builder.Services.AddProjectsModule();
 builder.Services.AddMediaModule(builder.Configuration, builder.Environment);
 builder.Services.AddContactModule(builder.Configuration);
+builder.Services.AddSubscriptionsModule(builder.Configuration);
 
 var app = builder.Build();
 

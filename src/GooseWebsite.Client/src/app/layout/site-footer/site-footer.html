@@ -1,5 +1,9 @@
 <!-- Closing strip from the mockup: the logo on the left and the "Let's connect" action on the right. -->
 <footer class="gcv-footer">
+  <div class="subscribe">
+    <p class="gcv-label">New stories and projects by email</p>
+    <app-subscribe-form idPrefix="footer-subscribe" label="Subscribe by email" />
+  </div>
   <a class="logo" href="#home" (click)="onNavigate('home', $event)" [attr.aria-label]="profile.name + ' home'">
     <app-brand-logo [size]="64" />
   </a>

@@ -928,7 +928,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F10-US1: Subscribe with a Name and an Email
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-29, order O1; awaiting review, not yet Done)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a visitor, I can enter my name and email, confirm through a link in a message, and become a subscriber.
 
@@ -944,10 +944,12 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] New `Subscriptions` module: entity, `EntityAccessRule`, service, controller (`POST /api/subscriptions`, `POST /api/subscriptions/confirm`) with CSRF and rate limit.
-- [ ] Confirmation email template in the brand style; subscribe form (footer and a section on the home page); confirmation page.
-- [ ] Cleanup of expired pending records as an `IModuleInitializer`/hosted job.
-- [ ] Tests: generic responses, token expiry and reuse, abuse controls, stored columns, log privacy; runtime check in `verify/runtime`; browser test with axe.
+- [x] New `Subscriptions` module: entity, `EntityAccessRule`, service, controller (`POST /api/subscriptions`, `POST /api/subscriptions/confirm`) with CSRF and rate limit.
+- [x] Confirmation email template in the brand style; subscribe form (footer and a section on the home page); confirmation page.
+- [x] Cleanup of expired pending records as an `IModuleInitializer`/hosted job (hosted job `PendingSubscriberCleanupService`).
+- [x] Tests: generic responses, token expiry and reuse, abuse controls, stored columns, log privacy; runtime check in `verify/runtime`; browser test with axe. (The runtime check and the browser tests send no valid subscription, so no email can leave the stack; see the evidence.)
+
+**Implementation evidence (2026-10-29, branch `f10-subscriptions`, order O1):** table `Subscribers` (migration `AddSubscribers`) and module `Modules/Subscriptions/` (architecture section 3.6c, flow 5.4). Test 1: `SubscriptionsApiTests.Subscribe_StoresAPendingSubscriberAndSendsOneConfirmationEmail` (one rendered mail to the address, one pending record). Test 2: `EveryKindOfSubmissionIsAnsweredIdentically` (new, pending, confirmed, invalid email, empty and over-long name, honeypot: same status and body, address not echoed), and `WhenTheMailProviderFails_TheAnswerIsTheSameAndTheRecordStaysPending`. Test 3: `Confirm_MakesTheSubscriberConfirmed_AndTheLinkWorksOnlyOnce`, `Confirm_RefusesAnExpiredLinkAndChangesNothing`, `Confirm_RefusesMalformedOrUnknownTokens...` (same answer for each), `OpeningTheConfirmationEndpointWithGet_NeverConfirms`, `ResubmittingAPendingAddress_SendsAFreshLink...`; client: `subscribe-confirm-page.spec.ts` (the link opens a page that confirms only when the button is pressed, and says in words when the link is no longer valid). Test 4: `CleanupDeletesPendingRecordsWhoseLinkExpiredAndKeepsEverythingElse` and `TheCleanupJobIsRegisteredAsAHostedService` (a pending record is deleted once its link has expired, 7 days after the latest confirmation mail; the timer itself was not run for 7 days). Test 5: `AFilledHoneypotStoresNothingAndSendsNothing`, `ExceedingThePerIpLimitStoresNothingMoreAndSendsNothingMore` (429), `ASubmissionWithoutTheCsrfTokenIsRefused`. Test 6: `TheStoredRecordHoldsOnlyTheDocumentedColumns_AndTokensAreOnlyHashed` (reads `pragma_table_info`: Id, Name, Email, State, CreatedAtUtc, ConfirmedAtUtc, ConfirmationTokenHash, ConfirmationTokenExpiresAtUtc, UnsubscribeTokenHash; no IP address, no user agent; the raw token is in no column). Test 7: `TheAccessRuleLimitsTheNameTo100AndTheEmailTo254...`, `TheSafeguardsRefuseAnOverLongNameBeneathTheService`, `NeitherTheNameNorTheEmailNorTheTokenIsEverLogged` (the captured log of a full flow, a failed send and a failed confirm holds none of them). Runtime (`verify/runtime/65-subscriptions.sh`, refusals only: missing CSRF, honeypot and invalid email answered alike, unknown and empty tokens, GET never confirms, no listing) and browser (`subscribe.spec.ts` with every call to the endpoints stubbed by the test; the `subscribe-confirmation` screen in the load, axe, 320 px and keyboard checks; the home checks cover the section and footer form), on Chromium, Firefox and WebKit. Result of `./scripts/verify.ps1 -SkipCi` after the order: 922 passed, 0 failed, 0 skipped, 0 known (`known-issues.json` empty). Karma 225, xUnit 222. Not exercised: a real delivery of the confirmation email through the real provider (the stack must not send real mail; the account and contact mail have the same open gap in architecture section 11) and its look in real mail clients.
 
 ### User Story F10-US2: Unsubscribe with One Click
 
