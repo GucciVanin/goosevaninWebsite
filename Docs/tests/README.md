@@ -40,6 +40,7 @@ Playwright and axe-core run as stage `40-browser` of `./scripts/verify.ps1`, ins
 | Keyboard at 320 px with the mobile menu open (menu button and drawer links) | `keyboard-mobile.spec.ts` | TE5-AC5 | home |
 | Self-tests of the checks (negative controls: static outline, selector coverage, axe element identity, known-issue masking, viewport width) | `selftest.spec.ts` | TE5-AC3 to AC5 | no application needed |
 | Reduced motion: nothing animates, content present | `motion.spec.ts` | TE5-AC6 | home |
+| Page transition (F9-US2): a route change plays the view-transition cross-fade (150 to 400 ms, header unmoved), a direct load and home section scrolling play none, reduced motion plays none; engines without the API navigate instantly | `page-transition.spec.ts` | F9-US2 test 2 (PT-AC1 to AC3) | home, projects |
 | Smoke: the layer works end to end | `smoke.spec.ts` | TE5-AC1 | home |
 | Profile: name, positioning line, bio and summary in visible text in About; portrait alt text and load; GitHub, LinkedIn and email links (`target`, `rel`); no age or street address | `profile.spec.ts` | F9-US7-AC6 (F1-US1 tests 1 and 2) | home |
 | Contact form (F2-US1 tests 1 to 4): fields, labels, exact reason choices; incomplete or malformed input is blocked and identified with no request to `/api/contact`; labels and layout at 375 px. A valid form is never submitted (the stack may have real mail configured): test 3 is covered by the xUnit and Karma tests named in the spec | `contact.spec.ts` | F9-US7-AC6 (F2-US1) | home |
