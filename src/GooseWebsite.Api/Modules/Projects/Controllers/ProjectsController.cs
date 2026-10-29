@@ -10,13 +10,13 @@ namespace GooseWebsite.Api.Modules.Projects.Controllers;
 public sealed class ProjectsController(IProjectRepository projects) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<ProjectResponse>>> List() =>
-        Ok((await projects.GetPublishedAsync()).Select(ProjectMapping.ToResponse).ToList());
+    public async Task<ActionResult<IReadOnlyList<PublicProjectResponse>>> List() =>
+        Ok((await projects.GetPublishedAsync()).Select(ProjectMapping.ToPublic).ToList());
 
     [HttpGet("{slug}")]
-    public async Task<ActionResult<ProjectResponse>> Get(string slug)
+    public async Task<ActionResult<PublicProjectResponse>> Get(string slug)
     {
         var project = await projects.GetPublishedBySlugAsync(slug);
-        return project is null ? NotFound() : Ok(ProjectMapping.ToResponse(project));
+        return project is null ? NotFound() : Ok(ProjectMapping.ToPublic(project));
     }
 }

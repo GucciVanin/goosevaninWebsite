@@ -27,6 +27,18 @@ public static class BlogPostMapping
         post.AuthorId,
         post.Author.DisplayName);
 
+    public static PublicStoryResponse ToPublic(BlogPost post) => new(
+        post.Title,
+        post.Slug,
+        post.Excerpt,
+        post.Content,
+        post.Category,
+        post.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries),
+        post.CoverImage,
+        post.CoverImageAlt,
+        Utc(post.CreatedAtUtc),
+        Utc(post.PublishedAtUtc));
+
     public static StorySummaryResponse ToSummary(BlogPost post) => new(
         post.Id,
         post.Title,

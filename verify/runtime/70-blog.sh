@@ -39,6 +39,15 @@ published_at=$(jq -r .publishedAtUtc "$BODY_FILE")
 check "publishing sets the story to published" true "$(jq -r .isPublished "$BODY_FILE")"
 check "the published story is readable by the public" 200 "$(code_of "$BASE/api/blog/$story_slug")"
 check_contains "the published story is in the public list" "$story_slug" "$(curl_https "$BASE/api/blog" | jq -r '.[].slug')"
+# R1-G2: the public responses carry no account id, no database id and no editor state.
+author_id=$(curl_https -b "$ADMIN_JAR" "$BASE$EDITOR_API/$story_id" | jq -r .authorId)
+public_story=$(curl_https "$BASE/api/blog/$story_slug")
+public_list=$(curl_https "$BASE/api/blog")
+check "the public story has no authorId property" false "$(jq 'has("authorId")' <<<"$public_story")"
+check "the public story has no database id or editor state" false "$(jq 'has("id") or has("isPublished") or has("updatedAtUtc")' <<<"$public_story")"
+check_not_contains "the public story does not contain the author's account id" "$author_id" "$public_story"
+check_not_contains "the public story list does not contain the author's account id" "$author_id" "$public_list"
+check_not_contains "the public story list has no authorId property" "authorId" "$public_list"
 send_json "$ADMIN_JAR" POST $EDITOR_API/$story_id/publish >/dev/null
 check "publishing again keeps the same publication date" "$published_at" "$(jq -r .publishedAtUtc "$BODY_FILE")"
 

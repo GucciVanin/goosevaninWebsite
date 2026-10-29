@@ -65,7 +65,7 @@ Build the client at least once before running the .NET tests; some tests expect 
 
 ## Known gaps to keep in mind
 
-The contact verification flow emails the link to the sender (story F2-US2) but has not yet been exercised against the production SMTP provider. The full list is in `Docs/architecture.md` section 11.
+The site is not deployed: it exists only in the local container stack (local certificate, HSTS 300 s). Four gaps are open and none has been closed by an automated run: (1) real Edge and Safari have not been checked by a person (`Docs/tests/browser-manual-check.md`); (2) the emails have not been viewed in real mail clients (`Docs/email-templates/client-check.md`); (3) the contact flow and the account emails have never been exercised end to end against the real SMTP or MailerSend provider (story F2-US2; only the API key authorization is checked); (4) the deployment itself, including the production `HSTS_MAX_AGE`, is not done. The full list is in `Docs/architecture.md` section 11.
 
 ## Agent skills
 

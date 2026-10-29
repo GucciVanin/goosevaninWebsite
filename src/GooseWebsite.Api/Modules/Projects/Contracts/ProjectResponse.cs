@@ -25,3 +25,16 @@ public sealed record ProjectSummaryResponse(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     DateTime? PublishedAtUtc);
+
+// What the public project pages need and nothing else: no database id and no editor state.
+public sealed record PublicProjectResponse(
+    string Title,
+    string Slug,
+    string Overview,
+    string Contribution,
+    IReadOnlyList<string> Technologies,
+    string? DemoUrl,
+    string? SourceUrl,
+    string CoverImage,
+    string CoverImageAlt,
+    DateTime? PublishedAtUtc);

@@ -29,6 +29,9 @@ check "a project without an overview cannot be published" 400 "$(send_json "$ADM
 check "an administrator can publish a complete project" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$project_id/publish)"
 published_at=$(jq -r .publishedAtUtc "$BODY_FILE")
 check "the published project is readable by the public" 200 "$(code_of "$BASE/api/projects/$project_slug")"
+public_project=$(curl_https "$BASE/api/projects/$project_slug")
+check "the public project has no database id or editor state" false "$(jq 'has("id") or has("isPublished") or has("createdAtUtc") or has("updatedAtUtc")' <<<"$public_project")"
+check_not_contains "the public project list has no database id" '"id"' "$(curl_https "$BASE/api/projects")"
 send_json "$ADMIN_JAR" POST $EDITOR_API/$project_id/publish >/dev/null
 check "publishing again keeps the same publication date" "$published_at" "$(jq -r .publishedAtUtc "$BODY_FILE")"
 check "an administrator can return a project to draft" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$project_id/unpublish)"

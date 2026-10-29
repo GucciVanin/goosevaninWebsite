@@ -10,7 +10,7 @@ namespace GooseWebsite.Api.Modules.Blog.Controllers;
 public sealed class BlogController(IBlogPostRepository posts) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<BlogPostResponse>>> List(
+    public async Task<ActionResult<IReadOnlyList<PublicStoryResponse>>> List(
         [FromQuery] string? search,
         [FromQuery] string? category,
         [FromQuery] int page = 1,
@@ -21,17 +21,17 @@ public sealed class BlogController(IBlogPostRepository posts) : ControllerBase
         pageSize = Math.Max(1, pageSize);
         if ((long)(page - 1) * pageSize > int.MaxValue)
         {
-            return Ok(Array.Empty<BlogPostResponse>());
+            return Ok(Array.Empty<PublicStoryResponse>());
         }
 
         var results = await posts.GetPublishedAsync(search, category, page, pageSize);
-        return Ok(results.Select(BlogPostMapping.ToResponse).ToList());
+        return Ok(results.Select(BlogPostMapping.ToPublic).ToList());
     }
 
     [HttpGet("{slug}")]
-    public async Task<ActionResult<BlogPostResponse>> Get(string slug)
+    public async Task<ActionResult<PublicStoryResponse>> Get(string slug)
     {
         var post = await posts.GetPublishedBySlugAsync(slug);
-        return post is null ? NotFound() : Ok(BlogPostMapping.ToResponse(post));
+        return post is null ? NotFound() : Ok(BlogPostMapping.ToPublic(post));
     }
 }

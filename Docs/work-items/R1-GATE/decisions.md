@@ -18,3 +18,4 @@ Draft gate checklist (each row: pass with evidence, or fail with a work item):
 - **R1-G9** Gustavo's sign-off recorded in `Docs/product-backlog.md` and `Docs/project.md`.
 
 | 2026-10-26 | Gustavo approved the draft checklist R1-G1 to R1-G9 as drafted. | Runs last. |
+| 2026-10-28 | Gate run (Docs/tests/reports/R1-GATE.md): G3, G4, G7 pass; G5 pass with an open action; G1 pending acceptance plus housekeeping; G2, G6, G8 FAIL. Work items W1-W6 created from the failures. G9 waits for Gustavo. | Orders O1-O3 (W6 done by the Captain: build cache untracked). |
