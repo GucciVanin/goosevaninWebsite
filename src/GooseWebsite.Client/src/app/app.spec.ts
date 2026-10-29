@@ -109,7 +109,7 @@ describe('App shell', () => {
   });
 
   it('keeps the contact verification, e-mail verification and access-denied screens without the site header and footer', async () => {
-    for (const url of ['/contact/verify', '/verify-email', '/access-denied', '/subscribe/confirm']) {
+    for (const url of ['/contact/verify', '/verify-email', '/access-denied', '/subscribe/confirm', '/unsubscribe']) {
       TestBed.resetTestingModule();
       const { element } = await open(url);
 

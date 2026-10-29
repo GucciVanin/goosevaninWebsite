@@ -21,6 +21,7 @@ public static class SubscriptionsModule
         services.Configure<SubscriptionOptions>(configuration.GetSection(SubscriptionOptions.SectionName));
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddSingleton<ISubscriptionLinks, SubscriptionLinks>();
         services.AddTransient<ISubscriptionEmailSender, SubscriptionEmailSender>();
         services.AddHostedService<PendingSubscriberCleanupService>();
         AddRateLimiting(services);

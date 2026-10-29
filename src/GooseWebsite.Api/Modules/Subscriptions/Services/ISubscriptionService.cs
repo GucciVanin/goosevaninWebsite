@@ -12,6 +12,12 @@ public interface ISubscriptionService
     /// <summary>True when the token was valid, unused and unexpired, and the subscriber is now confirmed.</summary>
     Task<bool> ConfirmAsync(string? token);
 
+    /// <summary>
+    /// Deletes the subscriber an unsubscribe token belongs to (pending or confirmed). False, with nothing changed, when the
+    /// token is malformed, forged, or belongs to a subscriber that is already gone: all of those look the same to the caller.
+    /// </summary>
+    Task<bool> UnsubscribeAsync(string? token);
+
     /// <summary>Deletes pending subscribers whose confirmation link has expired. Returns how many.</summary>
     Task<int> RemoveExpiredPendingAsync();
 }

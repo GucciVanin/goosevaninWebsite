@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -14,12 +16,14 @@ namespace GooseWebsite.Api.Modules.Subscriptions.Services;
 public sealed partial class SubscriptionService(
     DatabaseService database,
     ISubscriptionEmailSender emailSender,
-    PublicLinkBuilder links,
+    PublicLinkBuilder publicLinks,
+    ISubscriptionLinks links,
     TimeProvider clock,
     IOptions<SubscriptionOptions> options,
     ILogger<SubscriptionService> logger) : ISubscriptionService
 {
     private const int MaxTokenLength = 200;
+    private const int MaxUnsubscribeTokenLength = 1000;
 
     private SubscriptionOptions Settings => options.Value;
 
@@ -59,8 +63,7 @@ public sealed partial class SubscriptionService(
                 State = SubscriberState.Pending,
                 CreatedAtUtc = now,
                 ConfirmationTokenHash = SubscriptionTokens.Hash(token),
-                ConfirmationTokenExpiresAtUtc = now + lifetime,
-                UnsubscribeTokenHash = SubscriptionTokens.Hash(SubscriptionTokens.New())
+                ConfirmationTokenExpiresAtUtc = now + lifetime
             };
             database.Add(existing);
             if (!await TrySaveAsync())
@@ -87,7 +90,6 @@ public sealed partial class SubscriptionService(
         existing.Name = name;
         existing.ConfirmationTokenHash = SubscriptionTokens.Hash(token);
         existing.ConfirmationTokenExpiresAtUtc = now + lifetime;
-        existing.UnsubscribeTokenHash = SubscriptionTokens.Hash(SubscriptionTokens.New());
         await database.SaveChangesAsync();
         await SendConfirmationAsync(existing, token);
         return SubscribeOutcome.ResentConfirmation;
@@ -115,6 +117,27 @@ public sealed partial class SubscriptionService(
         subscriber.ConfirmationTokenHash = null;
         subscriber.ConfirmationTokenExpiresAtUtc = null;
         await database.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UnsubscribeAsync(string? token)
+    {
+        token = token?.Trim();
+        if (string.IsNullOrEmpty(token) || token.Length > MaxUnsubscribeTokenLength || !links.TryReadSubscriberId(token, out var id))
+        {
+            return false;
+        }
+
+        // Ids are never reused, so a link for a deleted subscriber finds nothing and cannot touch a later subscription.
+        var subscriber = await database.ReadForUpdate<Subscriber>().FirstOrDefaultAsync(candidate => candidate.Id == id);
+        if (subscriber is null)
+        {
+            return false;
+        }
+
+        database.Remove(subscriber);
+        await database.SaveChangesAsync();
+        logger.LogInformation("Subscriber removed by an unsubscribe request");
         return true;
     }
 
@@ -155,8 +178,8 @@ public sealed partial class SubscriptionService(
 
     private async Task SendConfirmationAsync(Subscriber subscriber, string token)
     {
-        var link = links.FragmentLink("/subscribe/confirm", ("token", token));
-        if (!await emailSender.SendConfirmationAsync(subscriber.Email, subscriber.Name, link))
+        var link = publicLinks.FragmentLink("/subscribe/confirm", ("token", token));
+        if (!await emailSender.SendConfirmationAsync(subscriber.Id, subscriber.Email, subscriber.Name, link))
         {
             // The record stays pending; the visitor can submit again. The answer is the same either way.
             logger.LogWarning("Subscription confirmation email was not sent");
@@ -164,8 +187,14 @@ public sealed partial class SubscriptionService(
     }
 
     // One line, no control characters (they would otherwise reach a mail header through the display name).
+    // Format characters (Cf: bidirectional overrides, zero-width marks, tag characters) and the line and paragraph
+    // separators (Zl, Zp) are removed too: they can hide or reorder text in a mail client or in the editor.
     private static string CleanName(string? name) =>
-        new string((name ?? string.Empty).Where(character => !char.IsControl(character)).ToArray()).Trim();
+        string.Concat((name ?? string.Empty).EnumerateRunes().Where(rune => !IsUnwanted(rune)).Select(rune => rune.ToString())).Trim();
+
+    private static bool IsUnwanted(Rune rune) =>
+        Rune.IsControl(rune)
+        || Rune.GetUnicodeCategory(rune) is UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator or UnicodeCategory.Format;
 
     private static bool IsValidName(string name) => name.Length is > 0 and <= SubscriberAccessRule.NameMaxLength;
 

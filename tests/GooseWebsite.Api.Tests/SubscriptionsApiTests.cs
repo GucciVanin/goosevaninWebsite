@@ -15,14 +15,14 @@ namespace GooseWebsite.Api.Tests;
 
 // F10-US1: a visitor subscribes with a name and an email, confirms through the emailed link, and no response
 // ever reveals whether an address is already subscribed. Mail goes to the test mail double, never to a provider.
-public sealed class SubscriptionsApiTests
+public sealed partial class SubscriptionsApiTests
 {
     private const string Email = "ada.subscriber@example.test";
     private const string SubscriberName = "Ada Subscriber";
 
     private sealed class Harness : IDisposable
     {
-        public Harness(int? permitLimit = null)
+        public Harness(int? permitLimit = null, int? confirmPermitLimit = null)
         {
             Clock = new AdjustableTimeProvider(DateTimeOffset.Parse("2026-11-01T10:00:00Z"));
             Factory = new AuthApiFactory(configureServices: services =>
@@ -32,7 +32,7 @@ public sealed class SubscriptionsApiTests
                 services.Configure<SubscriptionOptions>(options =>
                 {
                     options.RateLimit.PermitLimit = permitLimit ?? 1000;
-                    options.RateLimit.ConfirmPermitLimit = 1000;
+                    options.RateLimit.ConfirmPermitLimit = confirmPermitLimit ?? 1000;
                 });
             });
             Client = Factory.CreateHttpsClient();
@@ -258,7 +258,7 @@ public sealed class SubscriptionsApiTests
         Assert.Single(await h.StoredAsync());
         using var scope = h.Factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<DatabaseService>();
-        database.Add(new Subscriber { Name = "Dup", Email = "MIXED.CASE@EXAMPLE.TEST", State = SubscriberState.Pending, CreatedAtUtc = DateTime.UtcNow, UnsubscribeTokenHash = "x" });
+        database.Add(new Subscriber { Name = "Dup", Email = "MIXED.CASE@EXAMPLE.TEST", State = SubscriberState.Pending, CreatedAtUtc = DateTime.UtcNow });
         await Assert.ThrowsAsync<DbUpdateException>(() => database.SaveChangesAsync());
     }
 
@@ -382,13 +382,12 @@ public sealed class SubscriptionsApiTests
             new[]
             {
                 "ConfirmationTokenExpiresAtUtc", "ConfirmationTokenHash", "ConfirmedAtUtc", "CreatedAtUtc",
-                "Email", "Id", "Name", "State", "UnsubscribeTokenHash"
+                "Email", "Id", "Name", "State"
             },
             columns.OrderBy(name => name, StringComparer.Ordinal).ToArray());
         Assert.DoesNotContain(values, value => value.Contains(token, StringComparison.Ordinal));
         var stored = Assert.Single(await h.StoredAsync());
         Assert.Matches("^[0-9A-F]{64}$", stored.ConfirmationTokenHash);
-        Assert.Matches("^[0-9A-F]{64}$", stored.UnsubscribeTokenHash);
     }
 
     [Fact]
@@ -407,7 +406,7 @@ public sealed class SubscriptionsApiTests
         using var h = new Harness();
         using var scope = h.Factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<DatabaseService>();
-        database.Add(new Subscriber { Name = new string('n', 101), Email = Email, State = SubscriberState.Pending, CreatedAtUtc = DateTime.UtcNow, UnsubscribeTokenHash = "x" });
+        database.Add(new Subscriber { Name = new string('n', 101), Email = Email, State = SubscriberState.Pending, CreatedAtUtc = DateTime.UtcNow });
 
         await Assert.ThrowsAsync<DataRejectedException>(() => database.SaveChangesAsync());
     }

@@ -3,8 +3,16 @@ namespace GooseWebsite.Api.Shared.Email;
 /// <summary>A recipient (or reply-to) of an email.</summary>
 public sealed record MailAddressee(string Email, string Name);
 
-/// <summary>An email whose content the caller has already rendered: HTML plus a plain-text alternative.</summary>
-public sealed record RenderedMail(MailAddressee To, string Subject, string Html, string PlainText);
+/// <summary>
+/// An email whose content the caller has already rendered: HTML plus a plain-text alternative. <paramref name="Headers"/>
+/// are extra message headers (for example <c>List-Unsubscribe</c>); null means none.
+/// </summary>
+public sealed record RenderedMail(
+    MailAddressee To,
+    string Subject,
+    string Html,
+    string PlainText,
+    IReadOnlyDictionary<string, string>? Headers = null);
 
 /// <summary>
 /// An email rendered by a template stored at the provider. <paramref name="Variables"/> must contain every

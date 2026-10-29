@@ -60,7 +60,7 @@ export class App {
 
   private isAuthenticationRoute(url: string): boolean {
     const path = url.split(/[?#]/, 1)[0];
-    return ['/sign-in', '/verify-email', '/contact/verify', '/subscribe/confirm', '/access-denied'].includes(path) || path === '/editor' || path.startsWith('/editor/');
+    return ['/sign-in', '/verify-email', '/contact/verify', '/subscribe/confirm', '/unsubscribe', '/access-denied'].includes(path) || path === '/editor' || path.startsWith('/editor/');
   }
 
   @HostListener('window:scroll', [])

@@ -936,7 +936,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 1. Given a visitor submits a valid name and email, when the request is processed, then one confirmation email is sent to that address and the subscriber is stored as pending.
 2. Given any submission (new, already pending, already confirmed, invalid email), when the response is inspected, then the status and message are identical, so addresses cannot be probed.
-3. Given a valid unused confirmation link, when it is opened, then the subscriber becomes confirmed and a confirmation page says so; expired, malformed or reused links change nothing.
+3. Given a valid unused confirmation link, when the visitor opens the link and confirms on the page, then the subscriber becomes confirmed and a confirmation page says so; expired, malformed or reused links change nothing.
 4. Given a pending subscriber that is never confirmed, when 7 days pass, then the record is deleted.
 5. Given the honeypot field is filled or the per-IP limit is exceeded, when the request is processed, then nothing is stored and no email is sent.
 6. Given the stored record, when its columns are inspected, then it holds only name, email, state, timestamps and token hashes (no IP address, no user agent).
@@ -953,7 +953,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F10-US2: Unsubscribe with One Click
 
-**Status:** Proposed  
+**Status:** In Progress (implemented 2026-10-29, order O2; awaiting review, not yet Done)  
 **Estimate:** 1 US (12 hours)  
 **Goal:** As a subscriber, I can leave from any email without signing in, and my data is deleted.
 
@@ -966,8 +966,10 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Tasks:**
 
-- [ ] `POST /api/subscriptions/unsubscribe` (token in body; a GET link opens a client page that posts, so mail scanners cannot unsubscribe people).
-- [ ] Client page, header support in `IMailService` for `List-Unsubscribe`, tests.
+- [x] `POST /api/subscriptions/unsubscribe` (token in body; a GET link opens a client page that posts, so mail scanners cannot unsubscribe people).
+- [x] Client page, header support in `IMailService` for `List-Unsubscribe`, tests.
+
+**Implementation evidence (2026-10-29, branch `f10-subscriptions`, order O2):** Design (decisions log 2026-10-29): the unsubscribe token is not stored. It is the subscriber id sealed with the ASP.NET Data Protection key ring (`SubscriptionLinks`, purpose `GooseWebsite.Subscriptions.Unsubscribe.v1`; authenticated encryption, so a tampered or foreign token fails the integrity check), valid until the subscriber is deleted, and the O1 column `UnsubscribeTokenHash` is dropped (migration `DropSubscriberUnsubscribeTokenHash`). Ids are never reused. The key ring is persisted on the data volume (`DataProtection__KeysPath=/data/keys` in `docker-compose.yml`, already used for the cookies and antiforgery), so links survive container restarts. Test 1: `UnsubscribeApiTests.Unsubscribe_DeletesTheConfirmedSubscriberAndOnlyThatOne`, `Unsubscribe_AlsoRemovesAPendingSubscriber`, `TheUnsubscribeLinkStaysValidUntilTheSubscriberIsDeleted`; Karma `unsubscribe-page.spec.ts` (the button posts the token from the fragment, the token leaves the address bar, the page says the data is deleted); browser `subscribe.spec.ts` (`unsubscribe:` tests, stubbed endpoint). Test 2: `Unsubscribe_RefusesUsedTamperedAndUnknownLinksWithOneNeutralAnswerAndChangesNothing` (used, tampered, unknown, empty, missing and over-long tokens: one status and one body, nothing changes), `AnOldUnsubscribeLinkNeverRemovesALaterSubscriptionOfTheSameAddress`, `TheSharedLinkServiceReadsItsOwnTokens_AndAnotherKeyRingCannotForgeOrReadThem`, `TheUnsubscribeLinkIsNotStored_AndEveryLinkEverMailedStaysValid`; mail scanners: `UnsubscribingNeedsAPostWithTheCsrfToken_AndFetchingTheLinksChangesNothing` (GET of the page, the API and the one-click address change nothing; POST without the CSRF token is refused), and Karma/browser (opening `/unsubscribe#token=` sends no request until the button is pressed). Test 3: `EverySubscriptionMailCarriesTheUnsubscribeLinkAndTheListUnsubscribeHeaders` (link in the text and HTML body; `List-Unsubscribe: <https://.../api/subscriptions/unsubscribe/one-click?token=...>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`), `TheSmtpTransportWritesTheCustomHeadersIntoTheMessage` (the MIME message has both headers), `TheOneClickEndpointForMailClientsNeedsThePostBodyAndNeedsNoCsrfToken`, `TheSharedLinkServiceGivesLaterMailsTheSameLinkAndHeaders` (`ISubscriptionLinks`, for F10-US3). Abuse and privacy: `TheUnsubscribeEndpointIsRateLimitedPerClient`, `UnsubscribeTokensAndAddressesAreNeverLogged`. Test 4 is the effect of test 1 (the record is gone, so there is nothing to send to); it is exercised end to end in F10-US3 (order O3). Security O1 follow-ups: S4 `TheNameLosesLineSeparatorsParagraphSeparatorsAndFormatCharacters` (categories Zl, Zp, Cf), `PublicBaseUrl` documented in `.env.example` and `docker-compose.yml`, S2 evidence in `Docs/work-items/F10/worker-O2.md`. Runtime: `verify/runtime/65-subscriptions.sh` (refusals, GET changes nothing, one-click refusals, the 429). Real mail clients honouring `List-Unsubscribe` have not been checked (open gap).
 
 ### User Story F10-US3: Notify Subscribers of New Posts
 

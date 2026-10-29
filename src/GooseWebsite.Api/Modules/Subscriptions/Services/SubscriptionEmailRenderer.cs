@@ -17,13 +17,16 @@ internal static class SubscriptionEmailRenderer
     private const string Mono = "Consolas,'SFMono-Regular','Courier New',monospace";
     private const string Sans = "'Segoe UI','Helvetica Neue',Arial,sans-serif";
 
-    public static string RenderConfirmationPlainText(string displayName, string verificationUrl) =>
-        $"Hi {displayName},\n\nConfirm your email address to receive an email when Gustavo publishes a new story or project:\n\n{verificationUrl}\n\n{ExpirySentence} {IgnoreSentence}\n\nGustavo Couto Vanin";
+    private const string UnsubscribeSentence = "Changed your mind? You can unsubscribe at any time:";
 
-    public static string RenderConfirmationHtml(string displayName, string verificationUrl, string logoUrl, string siteUrl)
+    public static string RenderConfirmationPlainText(string displayName, string verificationUrl, string unsubscribeUrl) =>
+        $"Hi {displayName},\n\nConfirm your email address to receive an email when Gustavo publishes a new story or project:\n\n{verificationUrl}\n\n{ExpirySentence} {IgnoreSentence}\n\n{UnsubscribeSentence}\n{unsubscribeUrl}\n\nGustavo Couto Vanin";
+
+    public static string RenderConfirmationHtml(string displayName, string verificationUrl, string unsubscribeUrl, string logoUrl, string siteUrl)
     {
         var name = WebUtility.HtmlEncode(displayName);
         var link = WebUtility.HtmlEncode(verificationUrl);
+        var unsubscribe = WebUtility.HtmlEncode(unsubscribeUrl);
         var logo = WebUtility.HtmlEncode(logoUrl);
         var site = WebUtility.HtmlEncode(siteUrl);
 
@@ -69,6 +72,7 @@ internal static class SubscriptionEmailRenderer
     <tr><td align="center" bgcolor="#000000" style="background-color:#000000; padding:22px 32px 26px 32px; border:1px solid #23264a;">
       <div style="font-family:{{Mono}}; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; line-height:20px;">Curious mind. Practical solutions. Real impact.</div>
       <div style="padding-top:10px; font-family:{{Sans}}; font-size:12px; line-height:18px; color:#6c7199;">Gustavo Couto Vanin &middot; <a href="{{site}}" style="color:#19e6ff; text-decoration:none;">{{site}}</a></div>
+      <div style="padding-top:10px; font-family:{{Sans}}; font-size:12px; line-height:18px; color:#6c7199;">{{UnsubscribeSentence}} <a href="{{unsubscribe}}" style="color:#19e6ff; text-decoration:underline;">Unsubscribe</a></div>
     </td></tr>
     <tr><td style="font-size:0; line-height:0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>

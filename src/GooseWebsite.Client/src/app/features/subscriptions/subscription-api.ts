@@ -15,4 +15,8 @@ export class SubscriptionApi {
   confirm(token: string): Observable<{ confirmed: boolean; message: string }> {
     return this.http.post<{ confirmed: boolean; message: string }>('/api/subscriptions/confirm', { token });
   }
+
+  unsubscribe(token: string): Observable<{ unsubscribed: boolean; message: string }> {
+    return this.http.post<{ unsubscribed: boolean; message: string }>('/api/subscriptions/unsubscribe', { token });
+  }
 }

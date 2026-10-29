@@ -4,5 +4,5 @@ namespace GooseWebsite.Api.Modules.Subscriptions.Services;
 public interface ISubscriptionEmailSender
 {
     /// <summary>Emails the confirmation link. True when the provider accepted the message.</summary>
-    Task<bool> SendConfirmationAsync(string email, string name, string confirmationUrl);
+    Task<bool> SendConfirmationAsync(int subscriberId, string email, string name, string confirmationUrl);
 }

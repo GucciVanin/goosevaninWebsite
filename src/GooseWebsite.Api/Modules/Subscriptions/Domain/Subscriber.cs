@@ -10,8 +10,9 @@ public enum SubscriberState
 }
 
 // A person who asked to be emailed when Gustavo publishes something. The only personal data kept is the name
-// and the email address; everything else is the technical state needed to run the feature. Tokens are stored
-// only as SHA-256 hashes (upper-case hex), so a copy of the database cannot be used to confirm or unsubscribe anyone.
+// and the email address; everything else is the technical state needed to run the feature. The confirmation token is stored
+// only as a SHA-256 hash (upper-case hex). The unsubscribe token is not stored at all: it is derived from the id with
+// the server key ring (see ISubscriptionLinks), so a copy of the database cannot be used to confirm or unsubscribe anyone.
 public sealed class Subscriber
 {
     public int Id { get; set; }
@@ -31,7 +32,4 @@ public sealed class Subscriber
 
     /// <summary>When the confirmation link stops working; a pending record is deleted after this moment.</summary>
     public DateTime? ConfirmationTokenExpiresAtUtc { get; set; }
-
-    /// <summary>Hash of the token that identifies this subscriber in an unsubscribe link (used from F10-US2).</summary>
-    public string UnsubscribeTokenHash { get; set; } = string.Empty;
 }

@@ -149,3 +149,35 @@ test('subscribe-home: no critical or serious axe violation with the form open to
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   settle(info, 'subscribe-home', 'subscribe', axeDefects(info, results.violations));
 });
+
+// F10-US2 (O2): the unsubscribe page. Same limit as above: the endpoint is stubbed, nothing reaches the server.
+test('unsubscribe: opening the link changes nothing; the button unsubscribes and the page says the data is deleted', { tag: ['@screen:unsubscribe', '@kind:subscribe'] }, async ({ page }, info) => {
+  const defects: Defect[] = watchProblems(page).defects;
+  const bodies = await answer(page, '/api/subscriptions/unsubscribe', 200, { unsubscribed: true, message: 'You are unsubscribed and your name and email address are deleted.' });
+  await page.goto('/unsubscribe#token=stub-token', { waitUntil: 'networkidle' });
+
+  await expect(page).toHaveTitle('Unsubscribe - Gustavo Couto Vanin');
+  await expect(page.getByRole('heading', { level: 1, name: 'Unsubscribe' })).toBeVisible();
+  await expect(page.getByRole('banner')).toHaveCount(0);
+  if (bodies.length !== 0) defects.push({ id: 'unsubscribed-on-open', detail: 'a request was sent before any action' });
+
+  await page.getByRole('button', { name: 'Unsubscribe' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'You are unsubscribed' })).toBeVisible();
+  if (bodies.length !== 1 || JSON.parse(bodies[0]).token !== 'stub-token') defects.push({ id: 'unsubscribe-body', detail: bodies.join('|') });
+  if (page.url().includes('stub-token')) defects.push({ id: 'token-left-in-address', detail: 'the token is still in the address bar' });
+  settle(info, 'unsubscribe', 'subscribe', defects);
+});
+
+test('unsubscribe: an invalid or used link gets one neutral message, and a link with no token offers no button', { tag: ['@screen:unsubscribe', '@kind:subscribe'] }, async ({ page }, info) => {
+  const defects: Defect[] = watchProblems(page).defects.filter((defect) => defect.id !== 'request-400:POST /api/subscriptions/unsubscribe');
+  await answer(page, '/api/subscriptions/unsubscribe', 400, { error: 'This unsubscribe link is no longer valid.' });
+  await page.goto('/unsubscribe#token=stale', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Unsubscribe' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'This unsubscribe link is no longer valid.' })).toBeVisible();
+  await expect(page.getByRole('button')).toHaveCount(0);
+
+  await page.goto('/unsubscribe', { waitUntil: 'networkidle' });
+  await expect(page.getByRole('status').filter({ hasText: 'no longer valid' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unsubscribe' })).toHaveCount(0);
+  settle(info, 'unsubscribe', 'subscribe', defects);
+});

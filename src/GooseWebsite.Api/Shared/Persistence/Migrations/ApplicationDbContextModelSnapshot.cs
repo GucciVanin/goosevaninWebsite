@@ -278,20 +278,12 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("UnsubscribeTokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ConfirmationTokenHash")
                         .IsUnique();
 
                     b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("UnsubscribeTokenHash")
                         .IsUnique();
 
                     b.ToTable("Subscribers", (string)null);

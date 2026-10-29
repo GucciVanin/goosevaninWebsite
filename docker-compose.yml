@@ -16,6 +16,7 @@ services:
       DataProtection__KeysPath: /data/keys
       Media__Directory: /data/uploads
       ForwardedHeaders__KnownProxies__0: 172.30.100.2
+      # Base of every link in an email (confirmation, unsubscribe, account links); follows SITE_DOMAIN, see .env.example.
       PublicBaseUrl: https://${SITE_DOMAIN:-localhost}
       # SMTP and contact settings come from .env (see .env.example); never commit real values.
       Email__Smtp__Host: ${SMTP_HOST:-}

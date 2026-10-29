@@ -15,10 +15,8 @@ public sealed class SubscriberConfiguration : IEntityTypeConfiguration<Subscribe
         builder.Property(subscriber => subscriber.Email).HasMaxLength(254).UseCollation("NOCASE").IsRequired();
         builder.Property(subscriber => subscriber.State).HasConversion<string>().HasMaxLength(16);
         builder.Property(subscriber => subscriber.ConfirmationTokenHash).HasMaxLength(64);
-        builder.Property(subscriber => subscriber.UnsubscribeTokenHash).HasMaxLength(64).IsRequired();
 
         builder.HasIndex(subscriber => subscriber.Email).IsUnique();
         builder.HasIndex(subscriber => subscriber.ConfirmationTokenHash).IsUnique();
-        builder.HasIndex(subscriber => subscriber.UnsubscribeTokenHash).IsUnique();
     }
 }
