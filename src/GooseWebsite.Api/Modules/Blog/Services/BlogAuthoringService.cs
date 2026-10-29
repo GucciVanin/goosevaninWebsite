@@ -1,11 +1,12 @@
 using GooseWebsite.Api.Shared.Text;
 using GooseWebsite.Api.Modules.Blog.Contracts;
 using GooseWebsite.Api.Modules.Blog.Domain;
+using GooseWebsite.Api.Shared.Announcements;
 
 namespace GooseWebsite.Api.Modules.Blog.Services;
 
 // Owns the rules of authoring a story so the controller only maps outcomes to responses.
-public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider clock) : IBlogAuthoringService
+public sealed class BlogAuthoringService(IBlogPostRepository posts, IContentAnnouncer announcer, TimeProvider clock) : IBlogAuthoringService
 {
     public async Task<AuthoringResult> CreateAsync(BlogPostRequest request, string authorId)
     {
@@ -89,7 +90,24 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, TimeProvider
         post.IsPublished = true;
         post.PublishedAtUtc ??= now;
         post.UpdatedAtUtc = now;
+
+        // The first publish only: the marker is set once and never cleared, so unpublishing, editing and publishing
+        // again tell nobody twice. These are two saves (the post, then the announcer's queue rows), but both run inside
+        // the request's unit of work (UnitOfWorkFilter): nothing is committed until the action ends, and if the announcer
+        // throws, the post stays a draft with no marker and no queue rows, and the request fails so the publish can be
+        // repeated. The announcer sends no mail here, so a mail provider can never fail this request.
+        var firstPublish = post.AnnouncedAtUtc is null;
+        if (firstPublish)
+        {
+            post.AnnouncedAtUtc = now;
+        }
+
         await posts.SaveChangesAsync();
+        if (firstPublish)
+        {
+            await announcer.AnnounceAsync(new ContentAnnouncement(AnnouncedContentKind.Story, post.Id, post.Title, post.Excerpt, $"/stories/{post.Slug}"));
+        }
+
         return AuthoringResult.Succeeded(post);
     }
 

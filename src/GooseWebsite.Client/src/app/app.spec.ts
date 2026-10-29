@@ -109,7 +109,7 @@ describe('App shell', () => {
   });
 
   it('keeps the contact verification, e-mail verification and access-denied screens without the site header and footer', async () => {
-    for (const url of ['/contact/verify', '/verify-email', '/access-denied']) {
+    for (const url of ['/contact/verify', '/verify-email', '/access-denied', '/subscribe/confirm', '/unsubscribe']) {
       TestBed.resetTestingModule();
       const { element } = await open(url);
 
@@ -117,6 +117,18 @@ describe('App shell', () => {
       expect(element.querySelector('app-site-footer')).withContext(url).toBeNull();
       expect(element.querySelector('app-home-page')).withContext(url).toBeNull();
     }
+  });
+
+  it('offers the subscribe form in the footer of every public page and as a short section on the home page', async () => {
+    const home = await open('/');
+    expect(home.element.querySelector('app-subscribe-section form')).not.toBeNull();
+    expect(home.element.querySelector('app-site-footer app-subscribe-form form')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    const projects = await open('/projects');
+    expect(projects.element.querySelector('app-site-footer app-subscribe-form form')).not.toBeNull();
+    expect(projects.element.querySelector('app-subscribe-section')).toBeNull();
+    projects.http.match(() => true);
   });
 
   it('keeps the editor without the site header and footer', async () => {

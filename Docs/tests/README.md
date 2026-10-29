@@ -23,6 +23,23 @@ The container run uses seeded test administrators and a unique suffix per run fo
 | Runtime | `80-reader.sh`: a registration body carrying `role` and `isAdmin` is answered 404 while registration is off, and that email cannot sign in | F3-US1-AC4 |
 | Karma | `sign-in-page.spec.ts`: same generic failure message for any failure, field labels, Sign out button when signed in and its effect, no Sign out button when signed out | F3-US1-AC5 |
 
+## Other tests added for F10-US3 (order O3) and the Security O2 follow-ups
+
+| Layer | Test | Criterion |
+| --- | --- | --- |
+| xUnit | `AnnouncementsApiTests.TheFirstPublishOfAStoryMailsEachConfirmedSubscriberOnce_AndNoPendingOne`, `...OfAProjectMailsEachConfirmedSubscriberOnceWithTheOverviewAsSummary`, `EveryMailIsPersonal_ItsOwnGreetingUnsubscribeLinkAndHeaders` | F10-US3-AC1 |
+| xUnit | `EditingRepublishingAndPublishingAgainNeverMailAgain_AndTheMarkerIsSetOnce`, `AProjectIsAnnouncedOnlyOnItsFirstPublishToo`, `APublishThatIsRefusedAnnouncesNothing...`, `ContentPublishedBeforeSubscriptionsExistedIsMarkedAsAnnounced...` (runs the real migration on an old-shaped database) | F10-US3-AC2 |
+| xUnit | `SavingDraftsAndEditingThemSendsNothingAndQueuesNothing` | F10-US3-AC3 |
+| xUnit | `PublishingReturnsBeforeAnyMailIsSent_AndAProviderThatFailsEverythingNeverFailsThePublish`, `APartialFailureIsRetriedLaterWithoutMailingTheRecipientsAlreadyReached`, `ARecipientThatKeepsFailingIsGivenUpAfterTheConfiguredAttempts...`, `TheHostedLoopDeliversInTheBackgroundWithoutTheEditorRequestWaiting` | F10-US3-AC4 |
+| xUnit | `NeitherThePublishResponseNorTheLogsNorTheQueueTablesHoldSubscriberNamesOrAddresses`, `TheQueueKeepsOnlyIdsAndCounters` | F10-US3-AC5 |
+| xUnit | `APublishWithNoSubscribersSendsNothingAndFailsNothing`, `OnlyPendingSubscribersMeansNothingIsSent` | F10-US3-AC6 |
+| xUnit | `ASubscriberWhoUnsubscribedBeforeTheMailWasSentGetsNothing`, `ASubscriberWhoConfirmsAfterThePublishIsNotToldAboutEarlierWork` | F10-US2-AC4 |
+| xUnit | `TheSummaryIsPlainEscapedAndShort_AndTheSubjectIsOneCleanLine`, `BlogAndProjectsDoNotReferenceTheSubscriptionsModule...`, `WithoutTheSubscriptionsModuleThePublishStillWorks...` | F10-US3 (public-text safety, dependency rule) |
+| xUnit | `ATokenProtectedUnderAnotherPurposeIsRejected` (reviewer O2, advisory 2); `TheUnsubscribeLinkHasNoExpiryOfItsOwn...` (renamed, advisory 1) | F10-US2 |
+| xUnit | `TheOneClickActionHasATinyRequestAndFormLimit`, `AnOversizedOneClickFormIsRefusedAndChangesNothing` (S2); `TheOneClickAddressHasItsOwnHigherRateLimitThanConfirm`, `TheOneClickLimitDefaultsToMoreThanTheConfirmLimit` (S3); `TheOneClickQueryStringIsNeverLogged_AndNothingInTheDeploymentWritesAnAccessLog` (S4); `StartingWithAnEmptyKeyRingWhileSubscribersExistLogsAWarningWithoutPersonalData`, `AnEmptyKeyRingWithNoSubscribersIsNotWorthAWarning...` (S1) | Security O2 follow-ups |
+| Karma | `unsubscribe-page.spec.ts`: 429, 500 and a network error keep the token and the button and a retry posts the same token; only a 400 is final (S6) | Security O2 follow-up |
+| Runtime | `70-blog.sh`, `75-projects.sh`: a publish on a stack with no subscribers succeeds, answers with no subscriber or announcement data, and republishing after unpublishing succeeds. No subscriber is ever created on the stack, so no email can be sent | F10-US3-AC5, AC6 |
+
 ## Dynamic list
 
 The runtime tests are the files in `verify/runtime/` plus the xUnit and Karma suites; each story's acceptance tests map to tests by name (see the evidence paragraph of the story in `Docs/product-backlog.md`). A new acceptance criterion adds a test; a fixed security finding adds a regression test; a removed test is recorded in the work item's `decisions.md`.
@@ -44,9 +61,10 @@ Playwright and axe-core run as stage `40-browser` of `./scripts/verify.ps1`, ins
 | Smoke: the layer works end to end | `smoke.spec.ts` | TE5-AC1 | home |
 | Profile: name, positioning line, bio and summary in visible text in About; portrait alt text and load; GitHub, LinkedIn and email links (`target`, `rel`); no age or street address | `profile.spec.ts` | F9-US7-AC6 (F1-US1 tests 1 and 2) | home |
 | Contact form (F2-US1 tests 1 to 4): fields, labels, exact reason choices; incomplete or malformed input is blocked and identified with no request to `/api/contact`; labels and layout at 375 px. A valid form is never submitted (the stack may have real mail configured): test 3 is covered by the xUnit and Karma tests named in the spec | `contact.spec.ts` | F9-US7-AC6 (F2-US1) | home |
+| Subscribe form and confirmation page (F10-US1): the home section and the footer form have labelled fields, a honeypot nobody can see or reach, errors in words without a request, the success and too-many-attempts states, and the confirmation page confirms only on a button press and explains an invalid link. Every call to `/api/subscriptions` is stubbed by the test (`page.route`), so no request reaches the server and no email can be sent | `subscribe.spec.ts` | F10-US1 (O1), F10-US2 (O2) | home form (section and footer), confirmation page, unsubscribe page |
 | Administrator authentication through the real sign-in page: after sign-in `document.cookie` holds only the marker and the browser holds the session cookie as HttpOnly; unknown email and wrong password show the same message, sign-in works, Sign out ends the session and the editor redirects to sign-in (uses the second seeded administrator under a lock, because signing out ends every session of an account); with the session cookie cleared and the marker kept, the editor redirects to `/sign-in?reason=session-expired` with the notice | `auth.spec.ts` | F3-US1-AC1, AC3, AC5 | no screen list (own flows) |
 
-Other tests of this layer (not on the screen list): F3-US1 in the table above. Screens (`verify/browser/helpers/screens.ts`): home, sign-in, email confirmation and contact confirmation (no token), access denied, and with the seeded test administrator the editor workspace, story form and project form.
+Other tests of this layer (not on the screen list): F3-US1 in the table above. Screens (`verify/browser/helpers/screens.ts`): home, sign-in, email confirmation, contact confirmation and subscription confirmation and unsubscribe (both without a token), access denied, and with the seeded test administrator the editor workspace, story form and project form.
 
 ### Run
 

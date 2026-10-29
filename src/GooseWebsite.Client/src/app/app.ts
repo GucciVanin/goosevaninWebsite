@@ -8,11 +8,12 @@ import { SiteFooter } from './layout/site-footer/site-footer';
 import { SiteHeader } from './layout/site-header/site-header';
 import { NavigationItem } from './shared/models/navigation-item';
 import { PageState } from './shared/page-state';
+import { SubscribeSection } from './features/subscriptions/subscribe-section';
 
 // Composes the site shell once so shared navigation surrounds every route.
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SiteHeader, SiteFooter, HomePage, BlogPage, ContactPage],
+  imports: [RouterOutlet, SiteHeader, SiteFooter, HomePage, BlogPage, SubscribeSection, ContactPage],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -59,7 +60,7 @@ export class App {
 
   private isAuthenticationRoute(url: string): boolean {
     const path = url.split(/[?#]/, 1)[0];
-    return ['/sign-in', '/verify-email', '/contact/verify', '/access-denied'].includes(path) || path === '/editor' || path.startsWith('/editor/');
+    return ['/sign-in', '/verify-email', '/contact/verify', '/subscribe/confirm', '/unsubscribe', '/access-denied'].includes(path) || path === '/editor' || path.startsWith('/editor/');
   }
 
   @HostListener('window:scroll', [])

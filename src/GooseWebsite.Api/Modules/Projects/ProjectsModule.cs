@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using GooseWebsite.Api.Modules.Projects.Services;
+using GooseWebsite.Api.Shared.Announcements;
 
 namespace GooseWebsite.Api.Modules.Projects;
 
@@ -12,6 +13,7 @@ public static class ProjectsModule
     public static IServiceCollection AddProjectsModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddContentAnnouncerFallback();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectAuthoringService, ProjectAuthoringService>();
         return services;

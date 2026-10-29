@@ -21,6 +21,15 @@ internal sealed class TestMailService : IMailService
     /// <summary>When true every send reports that the provider is not configured.</summary>
     public bool Unconfigured { get; set; }
 
+    /// <summary>Rendered sends to these addresses fail (and are not recorded); every other recipient succeeds.</summary>
+    public HashSet<string> FailRecipients { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Runs inside every rendered send, with the caller's cancellation token (to prove a token reaches the mail service).</summary>
+    public Func<CancellationToken, Task>? OnRenderedSend { get; set; }
+
+    /// <summary>The cancellation token of the most recent rendered send.</summary>
+    public CancellationToken LastRenderedToken { get; private set; }
+
     /// <summary>Template sends with this id fail (and are still recorded).</summary>
     public string? FailTemplateId { get; set; }
 
@@ -35,20 +44,26 @@ internal sealed class TestMailService : IMailService
         _templated.Clear();
     }
 
-    public Task<MailResult> SendAsync(RenderedMail mail, CancellationToken cancellationToken = default)
+    public async Task<MailResult> SendAsync(RenderedMail mail, CancellationToken cancellationToken = default)
     {
-        if (Unconfigured)
+        LastRenderedToken = cancellationToken;
+        if (OnRenderedSend is not null)
         {
-            return Task.FromResult(MailResult.NotConfigured);
+            await OnRenderedSend(cancellationToken);
         }
 
-        if (ShouldFail)
+        if (Unconfigured)
         {
-            return Task.FromResult(MailResult.Failed(MailFailure.Rejected));
+            return MailResult.NotConfigured;
+        }
+
+        if (ShouldFail || FailRecipients.Contains(mail.To.Email))
+        {
+            return MailResult.Failed(MailFailure.Rejected);
         }
 
         _rendered.Enqueue(mail);
-        return Task.FromResult(MailResult.Success);
+        return MailResult.Success;
     }
 
     public Task<MailResult> SendTemplateAsync(TemplateMail mail, CancellationToken cancellationToken = default)

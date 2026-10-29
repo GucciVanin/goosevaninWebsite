@@ -11,7 +11,7 @@ check_true "the shell references the main script bundle" "no main-*.js reference
 check "the main script bundle is served" 200 "$(code_of "$BASE/$bundle")"
 check "the favicon is served" 200 "$(code_of "$BASE/favicon.ico")"
 
-for route in /sign-in /verify-email /contact/verify /editor /access-denied /projects /projects/a-project-that-does-not-exist /stories /stories?tag=competition /stories/a-story-that-does-not-exist /a-route-that-does-not-exist; do
+for route in /sign-in /verify-email /contact/verify /subscribe/confirm /unsubscribe /editor /access-denied /projects /projects/a-project-that-does-not-exist /stories /stories?tag=competition /stories/a-story-that-does-not-exist /a-route-that-does-not-exist; do
   check "route $route serves the app" 200 "$(code_of "$BASE$route")"
 done
 

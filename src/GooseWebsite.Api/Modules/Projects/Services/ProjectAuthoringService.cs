@@ -1,11 +1,12 @@
 using GooseWebsite.Api.Modules.Projects.Contracts;
 using GooseWebsite.Api.Modules.Projects.Domain;
+using GooseWebsite.Api.Shared.Announcements;
 using GooseWebsite.Api.Shared.Text;
 
 namespace GooseWebsite.Api.Modules.Projects.Services;
 
 // Owns the rules of authoring a project so the controller only maps outcomes to responses.
-public sealed class ProjectAuthoringService(IProjectRepository projects, TimeProvider clock) : IProjectAuthoringService
+public sealed class ProjectAuthoringService(IProjectRepository projects, IContentAnnouncer announcer, TimeProvider clock) : IProjectAuthoringService
 {
     public async Task<ProjectResult> CreateAsync(ProjectRequest request, string authorId)
     {
@@ -77,7 +78,21 @@ public sealed class ProjectAuthoringService(IProjectRepository projects, TimePro
         project.IsPublished = true;
         project.PublishedAtUtc ??= now;
         project.UpdatedAtUtc = now;
+
+        // The first publish only (see BlogAuthoringService): the marker is set once and never cleared. The marker and
+        // the announcer's queue rows are committed together by the request's unit of work, or not at all.
+        var firstPublish = project.AnnouncedAtUtc is null;
+        if (firstPublish)
+        {
+            project.AnnouncedAtUtc = now;
+        }
+
         await projects.SaveChangesAsync();
+        if (firstPublish)
+        {
+            await announcer.AnnounceAsync(new ContentAnnouncement(AnnouncedContentKind.Project, project.Id, project.Title, project.Overview, $"/projects/{project.Slug}"));
+        }
+
         return ProjectResult.Succeeded(project);
     }
 

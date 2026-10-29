@@ -28,6 +28,9 @@ bare_id=$(post_json "$ADMIN_JAR" $EDITOR_API '{"title":"Verify bare '"$suffix"'"
 check "a project without an overview cannot be published" 400 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$bare_id/publish)"
 check "an administrator can publish a complete project" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$project_id/publish)"
 published_at=$(jq -r .publishedAtUtc "$BODY_FILE")
+# F10-US3: no subscribers exist on this stack, so the first publish sends nothing; the response has no subscriber data.
+check_not_contains "the publish response holds no subscriber or announcement data" "ubscriber" "$(cat "$BODY_FILE")"
+check_not_contains "the publish response does not expose the announced marker" "nnounce" "$(cat "$BODY_FILE")"
 check "the published project is readable by the public" 200 "$(code_of "$BASE/api/projects/$project_slug")"
 public_project=$(curl_https "$BASE/api/projects/$project_slug")
 check "the public project has no database id or editor state" false "$(jq 'has("id") or has("isPublished") or has("createdAtUtc") or has("updatedAtUtc")' <<<"$public_project")"

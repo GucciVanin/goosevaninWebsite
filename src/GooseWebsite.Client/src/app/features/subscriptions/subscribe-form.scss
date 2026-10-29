@@ -1,0 +1,6 @@
+:host { display: block; }
+form { display: grid; gap: var(--gcv-space-4); }
+.submit { justify-self: start; }
+.done { display: grid; gap: var(--gcv-space-3); }
+.done p { color: var(--gcv-text-muted); line-height: var(--gcv-leading-body); margin: 0; }
+.trap { height: 1px; left: -9999px; opacity: 0; overflow: hidden; pointer-events: none; position: absolute; width: 1px; }

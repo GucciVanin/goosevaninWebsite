@@ -1,0 +1,23 @@
+<!-- Subscribe: name and email, confirmed through an emailed link. The answer is the same for every address. -->
+@if (done()) {
+  <div class="done" role="status">
+    <span class="gcv-eyebrow">Almost done</span>
+    <p>{{ done() }}</p>
+  </div>
+} @else {
+  <form #subscribeForm="ngForm" (ngSubmit)="submit(subscribeForm)" novalidate [attr.aria-label]="label()">
+    <div class="gcv-field">
+      <label [attr.for]="idPrefix() + '-name'">Your name</label>
+      <input [id]="idPrefix() + '-name'" name="name" #name="ngModel" ngModel required maxlength="100" autocomplete="name" placeholder="What should I call you?" [attr.aria-invalid]="shows(name) ? 'true' : null" [attr.aria-describedby]="shows(name) ? idPrefix() + '-name-error' : null" />
+      @if (shows(name)) { <p [id]="idPrefix() + '-name-error'" class="gcv-status gcv-status--alert">Enter your name</p> }
+    </div>
+    <div class="gcv-field">
+      <label [attr.for]="idPrefix() + '-email'">Email address</label>
+      <input [id]="idPrefix() + '-email'" name="email" #email="ngModel" ngModel required email pattern="[^\s@]+@[^\s@]+\.[^\s@]+" type="email" autocomplete="email" placeholder="you@company.com" [attr.aria-invalid]="shows(email) ? 'true' : null" [attr.aria-describedby]="shows(email) ? idPrefix() + '-email-error' : null" />
+      @if (shows(email)) { <p [id]="idPrefix() + '-email-error'" class="gcv-status gcv-status--alert">Enter a valid email address</p> }
+    </div>
+    <div class="trap" aria-hidden="true"><input type="text" name="website" ngModel autocomplete="off" tabindex="-1" /></div>
+    <button class="gcv-btn gcv-btn--solid submit" type="submit" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Subscribing...' : 'Subscribe' }} <span aria-hidden="true">↗</span></button>
+    @if (error()) { <p class="gcv-status gcv-status--alert" role="alert">{{ error() }}</p> }
+  </form>
+}

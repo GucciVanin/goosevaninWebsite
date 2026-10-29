@@ -32,6 +32,9 @@ public sealed class Project
     /// <summary>When the project was first published; kept when it returns to draft.</summary>
     public DateTime? PublishedAtUtc { get; set; }
 
+    /// <summary>When subscribers were first told about this project; set once, on the first publish, and never cleared.</summary>
+    public DateTime? AnnouncedAtUtc { get; set; }
+
     public string AuthorId { get; set; } = string.Empty;
     public ApplicationUser Author { get; set; } = null!;
 }

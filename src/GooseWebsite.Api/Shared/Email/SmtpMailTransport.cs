@@ -33,14 +33,7 @@ public sealed class SmtpMailTransport(IOptions<SmtpOptions> options) : IRendered
 
         try
         {
-            using var message = new MailMessage
-            {
-                From = new MailAddress(_options.FromEmail, _options.FromName),
-                Subject = mail.Subject
-            };
-            message.To.Add(new MailAddress(mail.To.Email, mail.To.Name));
-            message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(mail.PlainText, null, MediaTypeNames.Text.Plain));
-            message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(mail.Html, null, MediaTypeNames.Text.Html));
+            using var message = CreateMessage(mail, _options.FromEmail, _options.FromName);
 
             await smtp.SendMailAsync(message, cancellationToken);
             return MailTransportOutcome.Accepted;
@@ -52,5 +45,27 @@ public sealed class SmtpMailTransport(IOptions<SmtpOptions> options) : IRendered
             var diagnostics = $"exceptionType={exception.GetType().Name}; smtpStatusCode={(exception as SmtpException)?.StatusCode}; innerExceptionType={exception.InnerException?.GetType().Name}";
             return new MailTransportOutcome(MailFailure.TransportError, diagnostics);
         }
+    }
+
+    /// <summary>
+    /// Builds the MIME message: plain text and HTML alternatives plus the caller's extra headers. Header names and
+    /// values come from code, never from visitors (the framework also refuses line breaks in them).
+    /// </summary>
+    public static MailMessage CreateMessage(RenderedMail mail, string fromEmail, string fromName)
+    {
+        var message = new MailMessage
+        {
+            From = new MailAddress(fromEmail, fromName),
+            Subject = mail.Subject
+        };
+        message.To.Add(new MailAddress(mail.To.Email, mail.To.Name));
+        message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(mail.PlainText, null, MediaTypeNames.Text.Plain));
+        message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(mail.Html, null, MediaTypeNames.Text.Html));
+        foreach (var (name, value) in mail.Headers ?? new Dictionary<string, string>())
+        {
+            message.Headers.Add(name, value);
+        }
+
+        return message;
     }
 }

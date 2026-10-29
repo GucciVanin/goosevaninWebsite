@@ -916,6 +916,90 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Feature estimate:** 14 US (168 hours)
 
+## Feature F10: Update Subscriptions
+
+**Release:** R2  
+**Status:** Proposed (spec drafted 2026-10-29, awaiting Gustavo's approval)  
+**Goal:** Let visitors ask to be emailed whenever Gustavo publishes a new story or project, without creating an account. Gustavo is the only person who can sign in.
+
+**Decided 2026-10-29 (Gustavo):** only Gustavo signs in; visitors interact through subscriptions. The only data kept about a subscriber is a name and an email address (plus the technical state needed to run the feature: confirmed or pending, the time of each, and hashed confirmation and unsubscribe tokens). Subscribing is double opt-in. A notification goes out for stories and projects, once, when the item is first published. The parked reader features (F3-US4, F6, F8) stay Proposed but their public entry points stay switched off.
+
+**Feature is complete when:** a visitor can subscribe with a name and an email, confirm by link, receive one email per newly published story or project, and leave with one click from any email; unconfirmed addresses never receive updates; no response reveals whether an address is subscribed; public registration of accounts is off; the subscriber list is never exposed by any public endpoint; and all F10 acceptance tests pass.
+
+### User Story F10-US1: Subscribe with a Name and an Email
+
+**Status:** In Progress (implemented 2026-10-29, order O1; awaiting review, not yet Done)  
+**Estimate:** 2 US (24 hours)  
+**Goal:** As a visitor, I can enter my name and email, confirm through a link in a message, and become a subscriber.
+
+**Acceptance tests:**
+
+1. Given a visitor submits a valid name and email, when the request is processed, then one confirmation email is sent to that address and the subscriber is stored as pending.
+2. Given any submission (new, already pending, already confirmed, invalid email), when the response is inspected, then the status and message are identical, so addresses cannot be probed.
+3. Given a valid unused confirmation link, when the visitor opens the link and confirms on the page, then the subscriber becomes confirmed and a confirmation page says so; expired, malformed or reused links change nothing.
+4. Given a pending subscriber that is never confirmed, when 7 days pass, then the record is deleted.
+5. Given the honeypot field is filled or the per-IP limit is exceeded, when the request is processed, then nothing is stored and no email is sent.
+6. Given the stored record, when its columns are inspected, then it holds only name, email, state, timestamps and token hashes (no IP address, no user agent).
+7. Given name and email inputs, when they are stored, then they pass through the persistence safeguards (name up to 100 characters, email valid and up to 254) and are never written to logs.
+
+**Tasks:**
+
+- [x] New `Subscriptions` module: entity, `EntityAccessRule`, service, controller (`POST /api/subscriptions`, `POST /api/subscriptions/confirm`) with CSRF and rate limit.
+- [x] Confirmation email template in the brand style; subscribe form (footer and a section on the home page); confirmation page.
+- [x] Cleanup of expired pending records as an `IModuleInitializer`/hosted job (hosted job `PendingSubscriberCleanupService`).
+- [x] Tests: generic responses, token expiry and reuse, abuse controls, stored columns, log privacy; runtime check in `verify/runtime`; browser test with axe. (The runtime check and the browser tests send no valid subscription, so no email can leave the stack; see the evidence.)
+
+**Implementation evidence (2026-10-29, branch `f10-subscriptions`, order O1):** table `Subscribers` (migration `AddSubscribers`) and module `Modules/Subscriptions/` (architecture section 3.6c, flow 5.4). Test 1: `SubscriptionsApiTests.Subscribe_StoresAPendingSubscriberAndSendsOneConfirmationEmail` (one rendered mail to the address, one pending record). Test 2: `EveryKindOfSubmissionIsAnsweredIdentically` (new, pending, confirmed, invalid email, empty and over-long name, honeypot: same status and body, address not echoed), and `WhenTheMailProviderFails_TheAnswerIsTheSameAndTheRecordStaysPending`. Test 3: `Confirm_MakesTheSubscriberConfirmed_AndTheLinkWorksOnlyOnce`, `Confirm_RefusesAnExpiredLinkAndChangesNothing`, `Confirm_RefusesMalformedOrUnknownTokens...` (same answer for each), `OpeningTheConfirmationEndpointWithGet_NeverConfirms`, `ResubmittingAPendingAddress_SendsAFreshLink...`; client: `subscribe-confirm-page.spec.ts` (the link opens a page that confirms only when the button is pressed, and says in words when the link is no longer valid). Test 4: `CleanupDeletesPendingRecordsWhoseLinkExpiredAndKeepsEverythingElse` and `TheCleanupJobIsRegisteredAsAHostedService` (a pending record is deleted once its link has expired, 7 days after the latest confirmation mail; the timer itself was not run for 7 days). Test 5: `AFilledHoneypotStoresNothingAndSendsNothing`, `ExceedingThePerIpLimitStoresNothingMoreAndSendsNothingMore` (429), `ASubmissionWithoutTheCsrfTokenIsRefused`. Test 6: `TheStoredRecordHoldsOnlyTheDocumentedColumns_AndTokensAreOnlyHashed` (reads `pragma_table_info`: Id, Name, Email, State, CreatedAtUtc, ConfirmedAtUtc, ConfirmationTokenHash, ConfirmationTokenExpiresAtUtc, UnsubscribeTokenHash; no IP address, no user agent; the raw token is in no column). Test 7: `TheAccessRuleLimitsTheNameTo100AndTheEmailTo254...`, `TheSafeguardsRefuseAnOverLongNameBeneathTheService`, `NeitherTheNameNorTheEmailNorTheTokenIsEverLogged` (the captured log of a full flow, a failed send and a failed confirm holds none of them). Runtime (`verify/runtime/65-subscriptions.sh`, refusals only: missing CSRF, honeypot and invalid email answered alike, unknown and empty tokens, GET never confirms, no listing) and browser (`subscribe.spec.ts` with every call to the endpoints stubbed by the test; the `subscribe-confirmation` screen in the load, axe, 320 px and keyboard checks; the home checks cover the section and footer form), on Chromium, Firefox and WebKit. Result of `./scripts/verify.ps1 -SkipCi` after the order: 922 passed, 0 failed, 0 skipped, 0 known (`known-issues.json` empty). Karma 225, xUnit 222. Not exercised: a real delivery of the confirmation email through the real provider (the stack must not send real mail; the account and contact mail have the same open gap in architecture section 11) and its look in real mail clients.
+
+### User Story F10-US2: Unsubscribe with One Click
+
+**Status:** In Progress (implemented 2026-10-29, order O2; awaiting review, not yet Done)  
+**Estimate:** 1 US (12 hours)  
+**Goal:** As a subscriber, I can leave from any email without signing in, and my data is deleted.
+
+**Acceptance tests:**
+
+1. Given a valid unsubscribe link from any email, when it is opened and confirmed, then the subscriber record (name and email) is deleted and a page confirms it.
+2. Given an invalid or already-used unsubscribe link, when it is opened, then nothing changes and the page says the link is no longer valid, without revealing whether the address exists.
+3. Given any email the feature sends, when its headers and body are inspected, then they carry the unsubscribe link and a `List-Unsubscribe` header.
+4. Given a deleted subscriber, when the next notification goes out, then nothing is sent to that address.
+
+**Tasks:**
+
+- [x] `POST /api/subscriptions/unsubscribe` (token in body; a GET link opens a client page that posts, so mail scanners cannot unsubscribe people).
+- [x] Client page, header support in `IMailService` for `List-Unsubscribe`, tests.
+
+**Implementation evidence (2026-10-29, branch `f10-subscriptions`, order O2):** Design (decisions log 2026-10-29): the unsubscribe token is not stored. It is the subscriber id sealed with the ASP.NET Data Protection key ring (`SubscriptionLinks`, purpose `GooseWebsite.Subscriptions.Unsubscribe.v1`; authenticated encryption, so a tampered or foreign token fails the integrity check), valid until the subscriber is deleted, and the O1 column `UnsubscribeTokenHash` is dropped (migration `DropSubscriberUnsubscribeTokenHash`). Ids are never reused. The key ring is persisted on the data volume (`DataProtection__KeysPath=/data/keys` in `docker-compose.yml`, already used for the cookies and antiforgery), so links survive container restarts. Test 1: `UnsubscribeApiTests.Unsubscribe_DeletesTheConfirmedSubscriberAndOnlyThatOne`, `Unsubscribe_AlsoRemovesAPendingSubscriber`, `TheUnsubscribeLinkHasNoExpiryOfItsOwn_ItOnlyStopsWorkingWhenTheSubscriberIsDeleted` (renamed in O3, see the follow-ups there); Karma `unsubscribe-page.spec.ts` (the button posts the token from the fragment, the token leaves the address bar, the page says the data is deleted); browser `subscribe.spec.ts` (`unsubscribe:` tests, stubbed endpoint). Test 2: `Unsubscribe_RefusesUsedTamperedAndUnknownLinksWithOneNeutralAnswerAndChangesNothing` (used, tampered, unknown, empty, missing and over-long tokens: one status and one body, nothing changes), `AnOldUnsubscribeLinkNeverRemovesALaterSubscriptionOfTheSameAddress`, `TheSharedLinkServiceReadsItsOwnTokens_AndAnotherKeyRingCannotForgeOrReadThem`, `TheUnsubscribeLinkIsNotStored_AndEveryLinkEverMailedStaysValid`; mail scanners: `UnsubscribingNeedsAPostWithTheCsrfToken_AndFetchingTheLinksChangesNothing` (GET of the page, the API and the one-click address change nothing; POST without the CSRF token is refused), and Karma/browser (opening `/unsubscribe#token=` sends no request until the button is pressed). Test 3: `EverySubscriptionMailCarriesTheUnsubscribeLinkAndTheListUnsubscribeHeaders` (link in the text and HTML body; `List-Unsubscribe: <https://.../api/subscriptions/unsubscribe/one-click?token=...>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`), `TheSmtpTransportWritesTheCustomHeadersIntoTheMessage` (the MIME message has both headers), `TheOneClickEndpointForMailClientsNeedsThePostBodyAndNeedsNoCsrfToken`, `TheSharedLinkServiceGivesLaterMailsTheSameLinkAndHeaders` (`ISubscriptionLinks`, for F10-US3). Abuse and privacy: `TheUnsubscribeEndpointIsRateLimitedPerClient`, `UnsubscribeTokensAndAddressesAreNeverLogged`. Test 4 is the effect of test 1 (the record is gone, so there is nothing to send to); it is exercised end to end in F10-US3 (order O3). Security O1 follow-ups: S4 `TheNameLosesLineSeparatorsParagraphSeparatorsAndFormatCharacters` (categories Zl, Zp, Cf), `PublicBaseUrl` documented in `.env.example` and `docker-compose.yml`, S2 evidence in `Docs/work-items/F10/worker-O2.md`. Runtime: `verify/runtime/65-subscriptions.sh` (refusals, GET changes nothing, one-click refusals, the 429). Real mail clients honouring `List-Unsubscribe` have not been checked (open gap).
+
+### User Story F10-US3: Notify Subscribers of New Posts
+
+**Status:** In Progress  
+**Estimate:** 2 US (24 hours)  
+**Goal:** As Gustavo, when I publish a story or project for the first time, every confirmed subscriber receives one email with its title, summary and link.
+
+**Acceptance tests:**
+
+1. Given a draft story or project is published for the first time, when publishing succeeds, then each confirmed subscriber (and no pending one) receives exactly one email with the title, summary and public link.
+2. Given an item is unpublished and published again, or edited, when it is saved, then no second notification is sent (the item records that it was announced).
+3. Given a draft is saved, then no email is sent.
+4. Given the mail provider fails for one or all recipients, when publishing, then the publish still succeeds, the failure is logged by category only, and recipients not yet reached are retried later without duplicating those already reached.
+5. Given Gustavo's publish response and the logs, when inspected, then neither contains subscriber names or emails.
+6. Given a publish with no subscribers, then nothing is sent and nothing fails.
+
+**Tasks:**
+
+- [x] Add an "announced" marker to stories and projects (migration) and a notification service in the Subscriptions module, called after publish; sending runs in the background so the editor request is not slowed.
+- [x] Notification email template (brand style), per-recipient personalised unsubscribe link.
+- [x] Tests: first publish, republish, draft, partial failure and retry, privacy; runtime check with the test mail service; update `Docs/architecture.md` (module, flows, mail).
+
+**Implementation evidence (2026-10-29, branch `f10-subscriptions`, order O3):** Design: `Shared/Announcements/IContentAnnouncer` is the seam (Blog and Projects call it after the first publish; Subscriptions implements it; neither of them references Subscriptions, see architecture 3.1 and 5.5). Stories and projects carry `AnnouncedAtUtc` (migration `AddAnnouncements`, which also marks work already published as announced); the publish sets it on the first transition only and queues the announcement in the same unit of work (`Announcements`, `AnnouncementDeliveries`: ids and counters, no address or name). A hosted job (`AnnouncementDeliveryService` over `AnnouncementDispatcher`) sends one personal mail per owed recipient, records each result before the next, retries a failure after a delay and gives up after a limit. Test 1: `AnnouncementsApiTests.TheFirstPublishOfAStoryMailsEachConfirmedSubscriberOnce_AndNoPendingOne`, `TheFirstPublishOfAProjectMailsEachConfirmedSubscriberOnceWithTheOverviewAsSummary`, `EveryMailIsPersonal_ItsOwnGreetingUnsubscribeLinkAndHeaders`. Test 2: `EditingRepublishingAndPublishingAgainNeverMailAgain_AndTheMarkerIsSetOnce`, `AProjectIsAnnouncedOnlyOnItsFirstPublishToo`, `ContentPublishedBeforeSubscriptionsExistedIsMarkedAsAnnounced_SoRepublishingItStaysSilent`. Test 3: `SavingDraftsAndEditingThemSendsNothingAndQueuesNothing`. Test 4: `PublishingReturnsBeforeAnyMailIsSent_AndAProviderThatFailsEverythingNeverFailsThePublish`, `APartialFailureIsRetriedLaterWithoutMailingTheRecipientsAlreadyReached`, `ARecipientThatKeepsFailingIsGivenUpAfterTheConfiguredAttempts_AndTheAnnouncementCloses`, `TheHostedLoopDeliversInTheBackgroundWithoutTheEditorRequestWaiting`. Test 5: `NeitherThePublishResponseNorTheLogsNorTheQueueTablesHoldSubscriberNamesOrAddresses`, `TheQueueKeepsOnlyIdsAndCounters`. Test 6: `APublishWithNoSubscribersSendsNothingAndFailsNothing`, `OnlyPendingSubscribersMeansNothingIsSent`. Also F10-US2 acceptance test 4: `ASubscriberWhoUnsubscribedBeforeTheMailWasSentGetsNothing`. The summary is plain, encoded and cut (`TheSummaryIsPlainEscapedAndShort_AndTheSubjectIsOneCleanLine`). Security O2 follow-ups (S1 to S4, S6 and the reviewer advisories) are in `UnsubscribeApiTests` and `unsubscribe-page.spec.ts` (list in `Docs/tests/README.md`). Runtime: `70-blog.sh` and `75-projects.sh` (publish with no subscribers; the stack never holds a subscriber, so no email is sent). No valid delivery was run against a real provider: real delivery and the announcement email in real mail clients are unchecked (open gaps 2 and 3). Delivery is at least once (a crash between the provider accepting a mail and the row being saved mails that recipient again). The story stays In Progress until Gustavo accepts the pull request.
+
+**Implementation evidence, order O4 (2026-10-29): atomic announcement and hardening.** Atomicity (AC1, AC4): the publish marker and the queue rows are two saves inside the request unit of work, so they commit together; proven by `AStoryWhoseAnnouncementFailsStaysADraftUnmarkedAndUnqueued_AndPublishingAgainWorks` and the project variant (announcer throws before queuing or after its rows were saved: 500, item still a draft, `AnnouncedAtUtc` null, no `Announcements` or `AnnouncementDeliveries` rows, and publishing again announces and mails once), and `AMailProviderThatFailsAfterThePublishNeverUndoesItNorTheMarker`. Two simultaneous first publishes (real file database, two connections): `TwoSimultaneousFirstPublishesOfAStory...` and the project variant (no 500, one announcement, one mail). Cancellation: `TheCancellationTokenOfARoundReachesTheMailService`, `ARoundCancelledDuringASendEndsPromptly_...`. `PublicText`: 4000-character input cap and 200 ms regex timeouts, `AVeryLongRunOfBracketsInASummaryIsHandledQuickly`. Comments and architecture 3.6c, 5.5 corrected. Totals: dotnet 279, Karma 234, `verify.ps1 -SkipCi` 1022 passed, 0 failed, 0 known.
+
+**Feature estimate:** 5 US (60 hours): F10-US1 (2), F10-US2 (1), F10-US3 (2)
+
+**Open question for the architecture:** sending to many recipients through SMTP is slow and rate-limited by providers; the first version sends one message per subscriber in a background queue, which is enough for a personal site. Revisit if the list passes a few hundred.
+
 ## Decisions to Record Before Implementation
 
 These are technical/product-detail choices not settled in the interview. Record the selected option here before the related story is marked `Ready`:
@@ -950,6 +1034,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 
 | Date | Decision | Reason / impact |
 | --- | --- | --- |
+| 2026-10-29 | New direction (Gustavo): only he signs in; readers interact through email subscriptions instead. Feature F10 added (subscribe with name and email, double opt-in, one-click unsubscribe, one email per newly published story or project). F3-US4, F6 and F8 stay Proposed and parked; reader registration stays switched off (`Auth:ReaderRegistration:Enabled`). | Smaller attack surface and less personal data: no passwords, no profiles, no comment moderation. |
 | 2026-10-28 | R1 gate follow-up (W5): F9-US2 acceptance test 2 reworded from "transition between sections or routes matching the approved motion design" to the motion the shell really has (header slide, link colour fades, immediate under reduced motion), because no route or page transition was ever designed or built; it is now proven by `verify/browser/tests/shell-motion.spec.ts`. Feature status lines of F4, F7 and F9 aligned to their stories (Done); task boxes of F9-US2 to US6 ticked or explained; evidence paragraphs added for F4-US1 and F9-US2/3/4; F4-US1 dismissal of the delete confirmation got its own Karma test. F3-US1 and F3 stay In Progress until Gustavo accepts. | Keeps the backlog consistent with the code and the tests (R1-G1); no story's status was changed. |
 | 2026-10-28 | F9-US2 page transition (PR #24 review): Gustavo ruled "A page transition is necessary". Acceptance test 2 is restored to the route transition criterion and the motion design is recorded (cross-fade with a 12 px upward settle, 240 ms, header and footer still, instant under reduced motion, via the browser View Transitions API with no animation where unsupported). **Supersedes the rewording row of the same day (R1 gate follow-up W5) for criterion 2 only.** | Restores the original criterion and supplies the missing motion design. |
 | 2026-10-27 | TE4 amendment (Gustavo, at review): no statement about him that he has not written. Removed the Skills section (component, navigation item, home composition), the About lede, heading statement and three principles (About keeps the portrait, name, positioning line, short bio and professional summary), and the Stories intro (now "Stories" and "Stories Gustavo has published."). The four category cards (Applications, Cloud & DevOps, Security, Systems & Tools) are replaced by three (Projects, Life stories, Competitions); Competitions opens Stories pre-filtered by the tag `competition` (the F5 browsing pages come later; until then the cards point at existing sections). This supersedes the F9 mockup decisions on four cards and on the Skills navigation item below. | Gustavo does not want unverified statements; the site's main aspect is showcasing projects. |
@@ -995,6 +1080,7 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
+| F10 Update Subscriptions | R2 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Done | 7 of 7 |
 | **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **20 of 30** |
 
