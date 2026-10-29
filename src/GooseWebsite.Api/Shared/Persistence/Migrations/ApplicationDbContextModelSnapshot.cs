@@ -91,6 +91,9 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("AnnouncedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("AuthorId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -183,6 +186,9 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("AnnouncedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("AuthorId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -241,6 +247,84 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Projects", (string)null);
+                });
+
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Subscriptions.Domain.Announcement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ContentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PublicPath")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompletedAtUtc");
+
+                    b.HasIndex("Kind", "ContentId")
+                        .IsUnique();
+
+                    b.ToTable("Announcements", (string)null);
+                });
+
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Subscriptions.Domain.AnnouncementDelivery", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AnnouncementId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SubscriberId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SentAtUtc");
+
+                    b.HasIndex("SubscriberId");
+
+                    b.HasIndex("AnnouncementId", "SubscriberId")
+                        .IsUnique();
+
+                    b.ToTable("AnnouncementDeliveries", (string)null);
                 });
 
             modelBuilder.Entity("GooseWebsite.Api.Modules.Subscriptions.Domain.Subscriber", b =>
@@ -439,6 +523,23 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                     b.Navigation("Author");
                 });
 
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Subscriptions.Domain.AnnouncementDelivery", b =>
+                {
+                    b.HasOne("GooseWebsite.Api.Modules.Subscriptions.Domain.Announcement", "Announcement")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("AnnouncementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GooseWebsite.Api.Modules.Subscriptions.Domain.Subscriber", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Announcement");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -488,6 +589,11 @@ namespace GooseWebsite.Api.Shared.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GooseWebsite.Api.Modules.Subscriptions.Domain.Announcement", b =>
+                {
+                    b.Navigation("Deliveries");
                 });
 #pragma warning restore 612, 618
         }

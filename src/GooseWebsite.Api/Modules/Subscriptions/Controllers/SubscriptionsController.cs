@@ -56,9 +56,14 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
     // RFC 8058 one-click unsubscribe, the target of the List-Unsubscribe header. Mail clients POST here without a
     // session, so there is no CSRF token; the signed token in the address is the credential and the body must be the
     // fixed "List-Unsubscribe=One-Click" the standard defines. GET is not mapped, so it answers 405 and changes nothing.
+    // It buffers almost nothing (a body of a kilobyte and two small form fields) and has its own, higher rate limit:
+    // mail providers post for many subscribers from a few addresses. Its query string holds the token, so the
+    // address must never be logged (Docs/architecture.md).
     [HttpPost("unsubscribe/one-click")]
     [IgnoreAntiforgeryToken]
-    [EnableRateLimiting(SubscriptionsModule.ConfirmRateLimitPolicy)]
+    [RequestSizeLimit(1024)]
+    [RequestFormLimits(ValueCountLimit = 2, KeyLengthLimit = 64, ValueLengthLimit = 64, MultipartBodyLengthLimit = 1024)]
+    [EnableRateLimiting(SubscriptionsModule.OneClickRateLimitPolicy)]
     public async Task<IActionResult> UnsubscribeOneClick([FromQuery] string? token, [FromForm(Name = "List-Unsubscribe")] string? marker)
     {
         if (!string.Equals(marker, OneClickValue, StringComparison.Ordinal))

@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using GooseWebsite.Api.Modules.Subscriptions.Models;
 using GooseWebsite.Api.Modules.Subscriptions.Services;
+using GooseWebsite.Api.Shared.Announcements;
+using GooseWebsite.Api.Shared.Modules;
 
 namespace GooseWebsite.Api.Modules.Subscriptions;
 
@@ -15,6 +17,7 @@ public static class SubscriptionsModule
 {
     public const string SubscribeRateLimitPolicy = "subscriptions-subscribe";
     public const string ConfirmRateLimitPolicy = "subscriptions-confirm";
+    public const string OneClickRateLimitPolicy = "subscriptions-one-click";
 
     public static IServiceCollection AddSubscriptionsModule(this IServiceCollection services, IConfiguration configuration)
     {
@@ -24,6 +27,13 @@ public static class SubscriptionsModule
         services.AddSingleton<ISubscriptionLinks, SubscriptionLinks>();
         services.AddTransient<ISubscriptionEmailSender, SubscriptionEmailSender>();
         services.AddHostedService<PendingSubscriberCleanupService>();
+
+        // F10-US3: the announcer replaces the quiet fallback Blog and Projects register, whatever the module order.
+        // Delivery is a hosted job over a database-backed queue, so the editor request never waits for a mail provider.
+        services.Replace(ServiceDescriptor.Scoped<IContentAnnouncer, ContentAnnouncer>());
+        services.AddSingleton<IAnnouncementDispatcher, AnnouncementDispatcher>();
+        services.AddHostedService<AnnouncementDeliveryService>();
+        services.AddScoped<IModuleInitializer, DataProtectionKeyRingGuard>();
         AddRateLimiting(services);
         return services;
     }
@@ -37,6 +47,7 @@ public static class SubscriptionsModule
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             limiter.AddPolicy(SubscribeRateLimitPolicy, context => PartitionByClient(context, SubscribeRateLimitPolicy, limits => limits.PermitLimit));
             limiter.AddPolicy(ConfirmRateLimitPolicy, context => PartitionByClient(context, ConfirmRateLimitPolicy, limits => limits.ConfirmPermitLimit));
+            limiter.AddPolicy(OneClickRateLimitPolicy, context => PartitionByClient(context, OneClickRateLimitPolicy, limits => limits.OneClickPermitLimit));
         });
     }
 

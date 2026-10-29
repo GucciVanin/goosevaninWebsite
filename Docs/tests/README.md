@@ -23,6 +23,23 @@ The container run uses seeded test administrators and a unique suffix per run fo
 | Runtime | `80-reader.sh`: a registration body carrying `role` and `isAdmin` is answered 404 while registration is off, and that email cannot sign in | F3-US1-AC4 |
 | Karma | `sign-in-page.spec.ts`: same generic failure message for any failure, field labels, Sign out button when signed in and its effect, no Sign out button when signed out | F3-US1-AC5 |
 
+## Other tests added for F10-US3 (order O3) and the Security O2 follow-ups
+
+| Layer | Test | Criterion |
+| --- | --- | --- |
+| xUnit | `AnnouncementsApiTests.TheFirstPublishOfAStoryMailsEachConfirmedSubscriberOnce_AndNoPendingOne`, `...OfAProjectMailsEachConfirmedSubscriberOnceWithTheOverviewAsSummary`, `EveryMailIsPersonal_ItsOwnGreetingUnsubscribeLinkAndHeaders` | F10-US3-AC1 |
+| xUnit | `EditingRepublishingAndPublishingAgainNeverMailAgain_AndTheMarkerIsSetOnce`, `AProjectIsAnnouncedOnlyOnItsFirstPublishToo`, `APublishThatIsRefusedAnnouncesNothing...`, `ContentPublishedBeforeSubscriptionsExistedIsMarkedAsAnnounced...` (runs the real migration on an old-shaped database) | F10-US3-AC2 |
+| xUnit | `SavingDraftsAndEditingThemSendsNothingAndQueuesNothing` | F10-US3-AC3 |
+| xUnit | `PublishingReturnsBeforeAnyMailIsSent_AndAProviderThatFailsEverythingNeverFailsThePublish`, `APartialFailureIsRetriedLaterWithoutMailingTheRecipientsAlreadyReached`, `ARecipientThatKeepsFailingIsGivenUpAfterTheConfiguredAttempts...`, `TheHostedLoopDeliversInTheBackgroundWithoutTheEditorRequestWaiting` | F10-US3-AC4 |
+| xUnit | `NeitherThePublishResponseNorTheLogsNorTheQueueTablesHoldSubscriberNamesOrAddresses`, `TheQueueKeepsOnlyIdsAndCounters` | F10-US3-AC5 |
+| xUnit | `APublishWithNoSubscribersSendsNothingAndFailsNothing`, `OnlyPendingSubscribersMeansNothingIsSent` | F10-US3-AC6 |
+| xUnit | `ASubscriberWhoUnsubscribedBeforeTheMailWasSentGetsNothing`, `ASubscriberWhoConfirmsAfterThePublishIsNotToldAboutEarlierWork` | F10-US2-AC4 |
+| xUnit | `TheSummaryIsPlainEscapedAndShort_AndTheSubjectIsOneCleanLine`, `BlogAndProjectsDoNotReferenceTheSubscriptionsModule...`, `WithoutTheSubscriptionsModuleThePublishStillWorks...` | F10-US3 (public-text safety, dependency rule) |
+| xUnit | `ATokenProtectedUnderAnotherPurposeIsRejected` (reviewer O2, advisory 2); `TheUnsubscribeLinkHasNoExpiryOfItsOwn...` (renamed, advisory 1) | F10-US2 |
+| xUnit | `TheOneClickActionHasATinyRequestAndFormLimit`, `AnOversizedOneClickFormIsRefusedAndChangesNothing` (S2); `TheOneClickAddressHasItsOwnHigherRateLimitThanConfirm`, `TheOneClickLimitDefaultsToMoreThanTheConfirmLimit` (S3); `TheOneClickQueryStringIsNeverLogged_AndNothingInTheDeploymentWritesAnAccessLog` (S4); `StartingWithAnEmptyKeyRingWhileSubscribersExistLogsAWarningWithoutPersonalData`, `AnEmptyKeyRingWithNoSubscribersIsNotWorthAWarning...` (S1) | Security O2 follow-ups |
+| Karma | `unsubscribe-page.spec.ts`: 429, 500 and a network error keep the token and the button and a retry posts the same token; only a 400 is final (S6) | Security O2 follow-up |
+| Runtime | `70-blog.sh`, `75-projects.sh`: a publish on a stack with no subscribers succeeds, answers with no subscriber or announcement data, and republishing after unpublishing succeeds. No subscriber is ever created on the stack, so no email can be sent | F10-US3-AC5, AC6 |
+
 ## Dynamic list
 
 The runtime tests are the files in `verify/runtime/` plus the xUnit and Karma suites; each story's acceptance tests map to tests by name (see the evidence paragraph of the story in `Docs/product-backlog.md`). A new acceptance criterion adds a test; a fixed security finding adds a regression test; a removed test is recorded in the work item's `decisions.md`.

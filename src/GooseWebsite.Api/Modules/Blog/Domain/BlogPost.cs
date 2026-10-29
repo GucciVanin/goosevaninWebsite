@@ -26,6 +26,9 @@ public sealed class BlogPost
     /// <summary>When the story was first published; Gustavo may change it (for example to backdate an older story). Kept when the story returns to draft.</summary>
     public DateTime? PublishedAtUtc { get; set; }
 
+    /// <summary>When subscribers were first told about this story; set once, on the first publish, and never cleared (unpublishing and publishing again does not announce it twice).</summary>
+    public DateTime? AnnouncedAtUtc { get; set; }
+
     public string AuthorId { get; set; } = string.Empty;
     public ApplicationUser Author { get; set; } = null!;
 }

@@ -21,6 +21,9 @@ internal sealed class TestMailService : IMailService
     /// <summary>When true every send reports that the provider is not configured.</summary>
     public bool Unconfigured { get; set; }
 
+    /// <summary>Rendered sends to these addresses fail (and are not recorded); every other recipient succeeds.</summary>
+    public HashSet<string> FailRecipients { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Template sends with this id fail (and are still recorded).</summary>
     public string? FailTemplateId { get; set; }
 
@@ -42,7 +45,7 @@ internal sealed class TestMailService : IMailService
             return Task.FromResult(MailResult.NotConfigured);
         }
 
-        if (ShouldFail)
+        if (ShouldFail || FailRecipients.Contains(mail.To.Email))
         {
             return Task.FromResult(MailResult.Failed(MailFailure.Rejected));
         }

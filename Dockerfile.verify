@@ -48,6 +48,9 @@ COPY tests tests
 # The API tests expect the built client in the API's wwwroot.
 RUN cd src/GooseWebsite.Client && npm run build
 
+# A few unit tests read deployment files and the architecture document (nothing may log the one-click query string).
+COPY Caddyfile ./Caddyfile
+COPY Docs/architecture.md Docs/architecture.md
 COPY verify /verify
 # Scripts checked out with Windows line endings must still run under bash.
 RUN find /verify -name '*.sh' -exec sed -i 's/\r$//' {} +

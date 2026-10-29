@@ -1,3 +1,4 @@
+using GooseWebsite.Api.Modules.Subscriptions.Domain;
 using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Hosting;
 
@@ -20,6 +21,20 @@ public sealed class SubscriptionEmailSender(IMailService mail, PublicLinkBuilder
                 links.SiteLink(SubscriptionEmailRenderer.LogoPath),
                 links.SiteLink(string.Empty)),
             SubscriptionEmailRenderer.RenderConfirmationPlainText(name, confirmationUrl, unsubscribeUrl),
+            subscriptionLinks.UnsubscribeHeaders(subscriberId)));
+
+        return result.Succeeded;
+    }
+
+    public async Task<bool> SendAnnouncementAsync(int subscriberId, string email, string name, Announcement announcement)
+    {
+        var content = new AnnouncementContent(announcement.Kind, announcement.Title, announcement.Summary, links.SiteLink(announcement.PublicPath));
+        var unsubscribeUrl = subscriptionLinks.UnsubscribePageUrl(subscriberId);
+        var result = await mail.SendAsync(new RenderedMail(
+            new MailAddressee(email, name),
+            AnnouncementEmailRenderer.Subject(content),
+            AnnouncementEmailRenderer.RenderHtml(name, content, unsubscribeUrl, links.SiteLink(SubscriptionEmailRenderer.LogoPath), links.SiteLink(string.Empty)),
+            AnnouncementEmailRenderer.RenderPlainText(name, content, unsubscribeUrl),
             subscriptionLinks.UnsubscribeHeaders(subscriberId)));
 
         return result.Succeeded;

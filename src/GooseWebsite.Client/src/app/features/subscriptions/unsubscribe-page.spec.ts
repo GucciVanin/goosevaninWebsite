@@ -70,6 +70,61 @@ describe('UnsubscribePage', () => {
     expect(harness.routeNativeElement?.querySelector('button')).toBeNull();
   });
 
+  // Security O2 S6: only an invalid link (400) is final; a busy server, a failure or a lost connection must let the
+  // person try again from the same page, because the token left the address bar and cannot be recovered from it.
+  for (const failure of [
+    { name: 'a rate limit (429)', status: 429, statusText: 'Too Many Requests' },
+    { name: 'a server error (500)', status: 500, statusText: 'Server Error' },
+    { name: 'a network error', status: 0, statusText: 'Unknown Error' },
+  ]) {
+    it(`keeps the token and the button for a retry after ${failure.name}`, async () => {
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/unsubscribe#token=keepme', UnsubscribePage);
+      harness.detectChanges();
+
+      harness.routeNativeElement?.querySelector('button')?.click();
+      const first = http.expectOne('/api/subscriptions/unsubscribe');
+      if (failure.status === 0) {
+        first.error(new ProgressEvent('error'));
+      } else {
+        first.flush({ error: 'ignored' }, { status: failure.status, statusText: failure.statusText });
+      }
+      harness.detectChanges();
+
+      const text = harness.routeNativeElement?.textContent ?? '';
+      expect(text).toContain('Something went wrong');
+      expect(text).not.toContain('no longer valid');
+      const retry = harness.routeNativeElement?.querySelector('button') as HTMLButtonElement | null;
+      expect(retry).not.toBeNull();
+      expect(retry?.disabled).toBeFalse();
+      await harness.fixture.whenStable();
+      expect(TestBed.inject(Router).url).not.toContain('keepme');
+
+      retry?.click();
+      const second = http.expectOne('/api/subscriptions/unsubscribe');
+      expect(second.request.body).toEqual({ token: 'keepme' });
+      second.flush({ unsubscribed: true, message: 'You are unsubscribed and your name and email address are deleted.' });
+      harness.detectChanges();
+
+      expect(harness.routeNativeElement?.textContent).toContain('You are unsubscribed');
+      expect(harness.routeNativeElement?.querySelector('button')).toBeNull();
+    });
+  }
+
+  it('treats only an invalid token (400) as final and drops the token', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/unsubscribe#token=bad', UnsubscribePage);
+    harness.detectChanges();
+
+    harness.routeNativeElement?.querySelector('button')?.click();
+    http.expectOne('/api/subscriptions/unsubscribe').flush({ error: 'This unsubscribe link is no longer valid.' }, { status: 400, statusText: 'Bad Request' });
+    harness.detectChanges();
+
+    expect(harness.routeNativeElement?.textContent).toContain('no longer valid');
+    expect(harness.routeNativeElement?.textContent).not.toContain('Something went wrong');
+    expect(harness.routeNativeElement?.querySelector('button')).toBeNull();
+  });
+
   it('reports a link without a token and offers no button', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/unsubscribe', UnsubscribePage);

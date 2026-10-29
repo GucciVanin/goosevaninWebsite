@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -189,12 +187,7 @@ public sealed partial class SubscriptionService(
     // One line, no control characters (they would otherwise reach a mail header through the display name).
     // Format characters (Cf: bidirectional overrides, zero-width marks, tag characters) and the line and paragraph
     // separators (Zl, Zp) are removed too: they can hide or reorder text in a mail client or in the editor.
-    private static string CleanName(string? name) =>
-        string.Concat((name ?? string.Empty).EnumerateRunes().Where(rune => !IsUnwanted(rune)).Select(rune => rune.ToString())).Trim();
-
-    private static bool IsUnwanted(Rune rune) =>
-        Rune.IsControl(rune)
-        || Rune.GetUnicodeCategory(rune) is UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator or UnicodeCategory.Format;
+    private static string CleanName(string? name) => PublicText.StripHidden(name).Trim();
 
     private static bool IsValidName(string name) => name.Length is > 0 and <= SubscriberAccessRule.NameMaxLength;
 

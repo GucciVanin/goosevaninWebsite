@@ -5,6 +5,10 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using GooseWebsite.Api.Modules.Subscriptions.Services;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Logging;
+using GooseWebsite.Api.Modules.Subscriptions.Models;
 using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Persistence;
 using Xunit;
@@ -152,7 +156,7 @@ public sealed partial class SubscriptionsApiTests
     }
 
     [Fact]
-    public async Task TheUnsubscribeLinkStaysValidUntilTheSubscriberIsDeleted()
+    public async Task TheUnsubscribeLinkHasNoExpiryOfItsOwn_ItOnlyStopsWorkingWhenTheSubscriberIsDeleted()
     {
         using var h = new Harness();
         await h.SubscribeAsync(SubscriberName, Email);
@@ -349,5 +353,177 @@ public sealed partial class SubscriptionsApiTests
         var stored = Assert.Single(await h.StoredAsync());
         Assert.Equal("AdaSubscriberX", stored.Name);
         Assert.Equal("AdaSubscriberX", h.Factory.Mail.Rendered.Single().To.Name);
+    }
+
+    // ---- Security O2 follow-ups (orders.md, "O3 addendum") ----
+
+    // (f) Reviewer O2: a token sealed under another purpose is not an unsubscribe token, even for a real id.
+    [Fact]
+    public async Task ATokenProtectedUnderAnotherPurposeIsRejected()
+    {
+        using var h = new Harness();
+        await h.SubscribeAsync(SubscriberName, Email);
+        var stored = Assert.Single(await h.StoredAsync());
+        using var scope = h.Factory.Services.CreateScope();
+        var protection = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
+        var links = scope.ServiceProvider.GetRequiredService<ISubscriptionLinks>();
+        var foreign = protection.CreateProtector("Some.Other.Purpose.v1").Protect(stored.Id.ToString());
+        var otherFeature = protection.CreateProtector("Microsoft.AspNetCore.Antiforgery.AntiforgeryToken.v1").Protect(stored.Id.ToString());
+
+        Assert.False(links.TryReadSubscriberId(foreign, out _));
+        Assert.False(links.TryReadSubscriberId(otherFeature, out _));
+        Assert.Equal(HttpStatusCode.BadRequest, (await UnsubscribeAsync(h, foreign)).Status);
+        Assert.Single(await h.StoredAsync());
+    }
+
+    // (b) S2: the one-click action buffers almost nothing: a tiny body and form limits.
+    [Fact]
+    public void TheOneClickActionHasATinyRequestAndFormLimit()
+    {
+        var action = typeof(GooseWebsite.Api.Modules.Subscriptions.Controllers.SubscriptionsController).GetMethod("UnsubscribeOneClick")!;
+
+        var size = (Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute?)Attribute.GetCustomAttribute(action, typeof(Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute));
+        var form = (Microsoft.AspNetCore.Mvc.RequestFormLimitsAttribute?)Attribute.GetCustomAttribute(action, typeof(Microsoft.AspNetCore.Mvc.RequestFormLimitsAttribute));
+
+        Assert.NotNull(size);
+        Assert.NotNull(form);
+        Assert.Equal(2, form!.ValueCountLimit);
+        Assert.True(form.KeyLengthLimit <= 64);
+        Assert.True(form.ValueLengthLimit <= 64);
+    }
+
+    [Fact]
+    public async Task AnOversizedOneClickFormIsRefusedAndChangesNothing()
+    {
+        using var h = new Harness();
+        await h.SubscribeAsync(SubscriberName, Email);
+        var token = UnsubscribeTokenFromLastMail(h);
+
+        var tooLongValue = await OneClickAsync(h, token, "List-Unsubscribe=" + new string('x', 5000));
+        var tooManyFields = await OneClickAsync(h, token, "List-Unsubscribe=One-Click&a=1&b=2&c=3");
+
+        Assert.All(new[] { tooLongValue, tooManyFields }, response => Assert.True((int)response.StatusCode is >= 400 and < 500));
+        Assert.Single(await h.StoredAsync());
+        Assert.Equal(HttpStatusCode.OK, (await OneClickAsync(h, token)).StatusCode);
+    }
+
+    // (c) S3: mail providers post from a few addresses, so the one-click address has its own, higher limit.
+    [Fact]
+    public async Task TheOneClickAddressHasItsOwnHigherRateLimitThanConfirm()
+    {
+        using var h = new Harness(confirmPermitLimit: 2, oneClickPermitLimit: 5);
+
+        var confirm = new List<HttpStatusCode>();
+        for (var i = 0; i < 3; i++)
+        {
+            confirm.Add((await h.ConfirmAsync("x" + i)).Status);
+        }
+
+        var oneClick = new List<HttpStatusCode>();
+        for (var i = 0; i < 6; i++)
+        {
+            oneClick.Add((await OneClickAsync(h, "unknown" + i)).StatusCode);
+        }
+
+        Assert.Equal(HttpStatusCode.BadRequest, confirm[1]);
+        Assert.Equal(HttpStatusCode.TooManyRequests, confirm[2]);
+        Assert.All(oneClick.Take(5), status => Assert.Equal(HttpStatusCode.BadRequest, status));
+        Assert.Equal(HttpStatusCode.TooManyRequests, oneClick[5]);
+    }
+
+    [Fact]
+    public void TheOneClickLimitDefaultsToMoreThanTheConfirmLimit()
+    {
+        var limits = new SubscriptionRateLimitOptions();
+
+        Assert.True(limits.OneClickPermitLimit > limits.ConfirmPermitLimit);
+    }
+
+    // (d) S4: the one-click address carries the token in its query string, so nothing may log request URLs.
+    [Fact]
+    public async Task TheOneClickQueryStringIsNeverLogged_AndNothingInTheDeploymentWritesAnAccessLog()
+    {
+        using var h = new Harness();
+        await h.SubscribeAsync(SubscriberName, Email);
+        var token = UnsubscribeTokenFromLastMail(h);
+        await OneClickAsync(h, token, "something=else");
+        await OneClickAsync(h, token);
+
+        var log = string.Join('\n', h.Factory.Logs.Messages);
+
+        Assert.DoesNotContain(token, log, StringComparison.Ordinal);
+        Assert.DoesNotContain("one-click?token", log, StringComparison.OrdinalIgnoreCase);
+        var root = FindRepositoryRoot();
+        var caddy = File.ReadAllLines(Path.Combine(root, "Caddyfile")).Where(line => !line.TrimStart().StartsWith('#'));
+        Assert.DoesNotContain(caddy, line => line.TrimStart().StartsWith("log", StringComparison.OrdinalIgnoreCase));
+        var program = File.ReadAllText(Path.Combine(root, "src", "GooseWebsite.Api", "Program.cs"));
+        Assert.DoesNotContain("UseHttpLogging", program);
+        var architecture = File.ReadAllText(Path.Combine(root, "Docs", "architecture.md"));
+        Assert.Contains("must never be logged", architecture);
+    }
+
+    // (a) S1: the key ring is as important as the database; starting with an empty ring while subscribers exist is logged.
+    [Fact]
+    public async Task StartingWithAnEmptyKeyRingWhileSubscribersExistLogsAWarningWithoutPersonalData()
+    {
+        using var h = new Harness();
+        await h.SubscribeAsync(SubscriberName, Email);
+        var logger = new CapturingLoggerProvider();
+        using var loggers = LoggerFactory.Create(builder => builder.AddProvider(logger));
+        using var scope = h.Factory.Services.CreateScope();
+        var guard = new DataProtectionKeyRingGuard(
+            new EmptyKeyManager(),
+            scope.ServiceProvider.GetRequiredService<DatabaseService>(),
+            loggers.CreateLogger<DataProtectionKeyRingGuard>());
+
+        await guard.CheckAsync();
+
+        var warning = Assert.Single(logger.Messages);
+        Assert.Contains("key ring", warning, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(Email, warning, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(SubscriberName, warning, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AnEmptyKeyRingWithNoSubscribersIsNotWorthAWarning_AndAnIntactRingNeverWarns()
+    {
+        using var h = new Harness();
+        var logger = new CapturingLoggerProvider();
+        using var loggers = LoggerFactory.Create(builder => builder.AddProvider(logger));
+        using var scope = h.Factory.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<DatabaseService>();
+
+        await new DataProtectionKeyRingGuard(new EmptyKeyManager(), database, loggers.CreateLogger<DataProtectionKeyRingGuard>()).CheckAsync();
+        Assert.Empty(logger.Messages);
+
+        await h.SubscribeAsync(SubscriberName, Email);
+        // Protecting something creates the key, exactly as the first unsubscribe link does.
+        scope.ServiceProvider.GetRequiredService<ISubscriptionLinks>().UnsubscribePageUrl(1);
+        await new DataProtectionKeyRingGuard(scope.ServiceProvider.GetRequiredService<IKeyManager>(), database, loggers.CreateLogger<DataProtectionKeyRingGuard>()).CheckAsync();
+        Assert.Empty(logger.Messages);
+    }
+
+    private sealed class EmptyKeyManager : IKeyManager
+    {
+        public IKey CreateNewKey(DateTimeOffset activationDate, DateTimeOffset expirationDate) => throw new NotSupportedException();
+
+        public IReadOnlyCollection<IKey> GetAllKeys() => [];
+
+        public CancellationToken GetCacheExpirationToken() => default;
+
+        public void RevokeKey(Guid keyId, string? reason = null) => throw new NotSupportedException();
+
+        public void RevokeAllKeys(DateTimeOffset revocationDate, string? reason = null) => throw new NotSupportedException();
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "GooseWebsite.slnx")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName ?? throw new InvalidOperationException("GooseWebsite.slnx was not found above the test output.");
     }
 }

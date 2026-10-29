@@ -12,6 +12,8 @@ public sealed class SubscriptionOptions
     public int ResendCooldownMinutes { get; set; } = 2;
 
     public SubscriptionRateLimitOptions RateLimit { get; set; } = new();
+
+    public AnnouncementOptions Announcements { get; set; } = new();
 }
 
 public sealed class SubscriptionRateLimitOptions
@@ -22,5 +24,24 @@ public sealed class SubscriptionRateLimitOptions
     /// <summary>Confirmation requests allowed per client address in each window.</summary>
     public int ConfirmPermitLimit { get; set; } = 20;
 
+    /// <summary>One-click unsubscribe posts allowed per client address in each window. Higher than the others: mail providers post for many subscribers from a few addresses.</summary>
+    public int OneClickPermitLimit { get; set; } = 120;
+
     public int WindowMinutes { get; set; } = 10;
+}
+
+/// <summary>How new work is announced to subscribers (F10-US3).</summary>
+public sealed class AnnouncementOptions
+{
+    /// <summary>How often the background job looks for mail that is owed.</summary>
+    public int PollSeconds { get; set; } = 20;
+
+    /// <summary>A recipient is tried at most this many times; after that the announcement gives up on them.</summary>
+    public int MaxAttempts { get; set; } = 5;
+
+    /// <summary>After a failed attempt the recipient waits this many minutes times the attempts so far before the next try.</summary>
+    public int RetryDelayMinutes { get; set; } = 10;
+
+    /// <summary>The summary in the email is cut to this many characters.</summary>
+    public int SummaryMaxLength { get; set; } = 300;
 }

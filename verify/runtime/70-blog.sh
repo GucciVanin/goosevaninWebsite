@@ -37,6 +37,10 @@ check "a draft without an excerpt and text cannot be published" 400 "$(send_json
 check "an administrator can publish a complete draft" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$story_id/publish)"
 published_at=$(jq -r .publishedAtUtc "$BODY_FILE")
 check "publishing sets the story to published" true "$(jq -r .isPublished "$BODY_FILE")"
+# F10-US3: the first publish queues an announcement for confirmed subscribers (none exist on this stack: a valid
+# subscription would email a real address), so nothing is sent and nothing fails; the response says nothing about it.
+check_not_contains "the publish response holds no subscriber or announcement data" "ubscriber" "$(cat "$BODY_FILE")"
+check_not_contains "the publish response does not expose the announced marker" "nnounce" "$(cat "$BODY_FILE")"
 check "the published story is readable by the public" 200 "$(code_of "$BASE/api/blog/$story_slug")"
 check_contains "the published story is in the public list" "$story_slug" "$(curl_https "$BASE/api/blog" | jq -r '.[].slug')"
 # R1-G2: the public responses carry no account id, no database id and no editor state.
@@ -54,6 +58,8 @@ check "publishing again keeps the same publication date" "$published_at" "$(jq -
 # Back to draft hides it again.
 check "an administrator can return a story to draft" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$story_id/unpublish)"
 check "a story returned to draft is not public" 404 "$(code_of "$BASE/api/blog/$story_slug")"
+check "publishing the story again succeeds (it is announced only on the first publish)" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$story_id/publish)"
+check "the republished story can be returned to draft again" 200 "$(send_json "$ADMIN_JAR" POST $EDITOR_API/$story_id/unpublish)"
 
 # Clean up what this run created, and prove deletion works.
 check "an administrator can delete a story" 204 "$(send_json "$ADMIN_JAR" DELETE $EDITOR_API/$story_id)"

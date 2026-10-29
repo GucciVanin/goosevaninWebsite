@@ -22,7 +22,7 @@ public sealed partial class SubscriptionsApiTests
 
     private sealed class Harness : IDisposable
     {
-        public Harness(int? permitLimit = null, int? confirmPermitLimit = null)
+        public Harness(int? permitLimit = null, int? confirmPermitLimit = null, int? oneClickPermitLimit = null)
         {
             Clock = new AdjustableTimeProvider(DateTimeOffset.Parse("2026-11-01T10:00:00Z"));
             Factory = new AuthApiFactory(configureServices: services =>
@@ -33,6 +33,7 @@ public sealed partial class SubscriptionsApiTests
                 {
                     options.RateLimit.PermitLimit = permitLimit ?? 1000;
                     options.RateLimit.ConfirmPermitLimit = confirmPermitLimit ?? 1000;
+                    options.RateLimit.OneClickPermitLimit = oneClickPermitLimit ?? 1000;
                 });
             });
             Client = Factory.CreateHttpsClient();
