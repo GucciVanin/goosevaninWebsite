@@ -211,6 +211,6 @@ No `authorId`, `authorName`, numeric `id`, `isPublished`, `createdAt`/`updatedAt
 | G6 Quality gates | **Pass for the local part**: 3 identical runs 806/806, dotnet 191, Karma 201, audits 0 and 0. | CI on the release pull request is not yet run (no release PR; `-SkipCi` used), so the CI half of G6 remains open. |
 | G7 Secrets and privacy | **Pass** | Log-content xUnit tests pass 3 of 3; the secrets/history scan of the first gate was not repeated. W6 (tracked Angular cache) shows as staged deletion in git status; not committed. |
 | G8 Known gaps honest | **Not re-assessed** | Documentation rows (`Docs/architecture.md` section 11, `CLAUDE.md`) are modified in the working tree; this is a review item, not a runtime test, and was outside this post-fix run. Verdict stays as at the first gate until the Reviewer confirms. |
-| G9 | Not Testing's | |
+| G9 | Gustavo accepted by merging pull request 24 on 2026-10-29 | Recorded in `Docs/project.md`. |
 
 The stack (`goosewebsite-caddy`, `goosewebsite-web`) is stopped at the end of this run; its data is as the last verification run seeded it.

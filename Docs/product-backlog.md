@@ -224,7 +224,7 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 
 ### User Story F3-US1: Authenticate Site Administrators
 
-**Status:** In Progress  
+**Status:** Done (accepted 2026-10-29, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a provisioned administrator, I can securely sign in to an administrator account used for private site management.
 
@@ -465,7 +465,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F5-US1: Explore Published Projects
 
-**Status:** In Progress (implemented 2026-10-28; awaiting review, not yet Done)  
+**Status:** Done (implemented 2026-10-28; accepted 2026-10-29, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a visitor, I can browse Gustavo's projects and inspect his contribution and supporting links.
 
@@ -486,7 +486,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F5-US2: Read Published Personal Stories
 
-**Status:** In Progress (implemented 2026-10-28; awaiting review, not yet Done)  
+**Status:** Done (implemented 2026-10-28; accepted 2026-10-29, pull request merged)  
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a visitor, I can read Gustavo's selected personal stories and understand when they were published.
 
