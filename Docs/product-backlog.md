@@ -916,6 +916,82 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 **Feature estimate:** 14 US (168 hours)
 
+## Feature F10: Update Subscriptions
+
+**Release:** R2  
+**Status:** Proposed (spec drafted 2026-10-29, awaiting Gustavo's approval)  
+**Goal:** Let visitors ask to be emailed whenever Gustavo publishes a new story or project, without creating an account. Gustavo is the only person who can sign in.
+
+**Decided 2026-10-29 (Gustavo):** only Gustavo signs in; visitors interact through subscriptions. The only data kept about a subscriber is a name and an email address (plus the technical state needed to run the feature: confirmed or pending, the time of each, and hashed confirmation and unsubscribe tokens). Subscribing is double opt-in. A notification goes out for stories and projects, once, when the item is first published. The parked reader features (F3-US4, F6, F8) stay Proposed but their public entry points stay switched off.
+
+**Feature is complete when:** a visitor can subscribe with a name and an email, confirm by link, receive one email per newly published story or project, and leave with one click from any email; unconfirmed addresses never receive updates; no response reveals whether an address is subscribed; public registration of accounts is off; the subscriber list is never exposed by any public endpoint; and all F10 acceptance tests pass.
+
+### User Story F10-US1: Subscribe with a Name and an Email
+
+**Status:** Proposed  
+**Estimate:** 2 US (24 hours)  
+**Goal:** As a visitor, I can enter my name and email, confirm through a link in a message, and become a subscriber.
+
+**Acceptance tests:**
+
+1. Given a visitor submits a valid name and email, when the request is processed, then one confirmation email is sent to that address and the subscriber is stored as pending.
+2. Given any submission (new, already pending, already confirmed, invalid email), when the response is inspected, then the status and message are identical, so addresses cannot be probed.
+3. Given a valid unused confirmation link, when it is opened, then the subscriber becomes confirmed and a confirmation page says so; expired, malformed or reused links change nothing.
+4. Given a pending subscriber that is never confirmed, when 7 days pass, then the record is deleted.
+5. Given the honeypot field is filled or the per-IP limit is exceeded, when the request is processed, then nothing is stored and no email is sent.
+6. Given the stored record, when its columns are inspected, then it holds only name, email, state, timestamps and token hashes (no IP address, no user agent).
+7. Given name and email inputs, when they are stored, then they pass through the persistence safeguards (name up to 100 characters, email valid and up to 254) and are never written to logs.
+
+**Tasks:**
+
+- [ ] New `Subscriptions` module: entity, `EntityAccessRule`, service, controller (`POST /api/subscriptions`, `POST /api/subscriptions/confirm`) with CSRF and rate limit.
+- [ ] Confirmation email template in the brand style; subscribe form (footer and a section on the home page); confirmation page.
+- [ ] Cleanup of expired pending records as an `IModuleInitializer`/hosted job.
+- [ ] Tests: generic responses, token expiry and reuse, abuse controls, stored columns, log privacy; runtime check in `verify/runtime`; browser test with axe.
+
+### User Story F10-US2: Unsubscribe with One Click
+
+**Status:** Proposed  
+**Estimate:** 1 US (12 hours)  
+**Goal:** As a subscriber, I can leave from any email without signing in, and my data is deleted.
+
+**Acceptance tests:**
+
+1. Given a valid unsubscribe link from any email, when it is opened and confirmed, then the subscriber record (name and email) is deleted and a page confirms it.
+2. Given an invalid or already-used unsubscribe link, when it is opened, then nothing changes and the page says the link is no longer valid, without revealing whether the address exists.
+3. Given any email the feature sends, when its headers and body are inspected, then they carry the unsubscribe link and a `List-Unsubscribe` header.
+4. Given a deleted subscriber, when the next notification goes out, then nothing is sent to that address.
+
+**Tasks:**
+
+- [ ] `POST /api/subscriptions/unsubscribe` (token in body; a GET link opens a client page that posts, so mail scanners cannot unsubscribe people).
+- [ ] Client page, header support in `IMailService` for `List-Unsubscribe`, tests.
+
+### User Story F10-US3: Notify Subscribers of New Posts
+
+**Status:** Proposed  
+**Estimate:** 2 US (24 hours)  
+**Goal:** As Gustavo, when I publish a story or project for the first time, every confirmed subscriber receives one email with its title, summary and link.
+
+**Acceptance tests:**
+
+1. Given a draft story or project is published for the first time, when publishing succeeds, then each confirmed subscriber (and no pending one) receives exactly one email with the title, summary and public link.
+2. Given an item is unpublished and published again, or edited, when it is saved, then no second notification is sent (the item records that it was announced).
+3. Given a draft is saved, then no email is sent.
+4. Given the mail provider fails for one or all recipients, when publishing, then the publish still succeeds, the failure is logged by category only, and recipients not yet reached are retried later without duplicating those already reached.
+5. Given Gustavo's publish response and the logs, when inspected, then neither contains subscriber names or emails.
+6. Given a publish with no subscribers, then nothing is sent and nothing fails.
+
+**Tasks:**
+
+- [ ] Add an "announced" marker to stories and projects (migration) and a notification service in the Subscriptions module, called after publish; sending runs in the background so the editor request is not slowed.
+- [ ] Notification email template (brand style), per-recipient personalised unsubscribe link.
+- [ ] Tests: first publish, republish, draft, partial failure and retry, privacy; runtime check with the test mail service; update `Docs/architecture.md` (module, flows, mail).
+
+**Feature estimate:** 5 US (60 hours): F10-US1 (2), F10-US2 (1), F10-US3 (2)
+
+**Open question for the architecture:** sending to many recipients through SMTP is slow and rate-limited by providers; the first version sends one message per subscriber in a background queue, which is enough for a personal site. Revisit if the list passes a few hundred.
+
 ## Decisions to Record Before Implementation
 
 These are technical/product-detail choices not settled in the interview. Record the selected option here before the related story is marked `Ready`:
