@@ -5,9 +5,9 @@ using static GooseWebsite.Api.Modules.Contact.Models.ContactEmailTemplateVariabl
 
 namespace GooseWebsite.Api.Modules.Contact.Services;
 
-// Sends the contact emails as MailerSend templates, supplying every variable each template reads.
+// Sends the contact emails as provider templates through the shared mail service, supplying every variable each template reads.
 public sealed class ContactEmailDeliveryService(
-    IMailerSendClient mailerSend,
+    IMailService mail,
     IOptions<ContactOptions> options,
     IConfiguration configuration,
     ILogger<ContactEmailDeliveryService> logger) : IContactEmailDeliveryService
@@ -24,11 +24,11 @@ public sealed class ContactEmailDeliveryService(
         var variables = CommonVariables(name);
         variables[VerificationUrl] = verificationUrl;
 
-        var delivered = await mailerSend.SendTemplateAsync(new MailerSendTemplateEmail(
+        var delivered = (await mail.SendTemplateAsync(new TemplateMail(
             templates.SenderConfirmation,
             "Confirm your email to send your message to Gustavo",
-            new MailerSendRecipient(email, name),
-            variables));
+            new MailAddressee(email, name),
+            variables))).Succeeded;
 
         logger.LogInformation("Contact verification email finished; delivered={Delivered}.", delivered);
         return delivered;
@@ -50,17 +50,17 @@ public sealed class ContactEmailDeliveryService(
         variables[Reason] = message.Reason;
         variables[Message] = message.Message;
 
-        var sender = new MailerSendRecipient(message.Email, message.Name);
-        var owner = new MailerSendRecipient(settings.RecipientEmail, settings.RecipientName);
+        var sender = new MailAddressee(message.Email, message.Name);
+        var owner = new MailAddressee(settings.RecipientEmail, settings.RecipientName);
 
         // Gustavo's notice replies to the sender; the sender's receipt replies to Gustavo. A retry after
         // a failed receipt skips the notice he already received.
-        var notified = message.OwnerNotified || await mailerSend.SendTemplateAsync(new MailerSendTemplateEmail(
+        var notified = message.OwnerNotified || (await mail.SendTemplateAsync(new TemplateMail(
             settings.Templates.OwnerNotification,
             $"New contact message from {message.Name}",
             owner,
             variables,
-            ReplyTo: sender));
+            ReplyTo: sender))).Succeeded;
 
         if (!notified)
         {
@@ -68,12 +68,12 @@ public sealed class ContactEmailDeliveryService(
             return ContactDeliveryOutcome.Failed;
         }
 
-        var acknowledged = await mailerSend.SendTemplateAsync(new MailerSendTemplateEmail(
+        var acknowledged = (await mail.SendTemplateAsync(new TemplateMail(
             settings.Templates.SenderReceipt,
             "Your message has been received",
             sender,
             variables,
-            ReplyTo: owner));
+            ReplyTo: owner))).Succeeded;
 
         var outcome = acknowledged ? ContactDeliveryOutcome.Delivered : ContactDeliveryOutcome.OwnerNotifiedReceiptFailed;
 

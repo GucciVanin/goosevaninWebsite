@@ -1,0 +1,1 @@
+Replace the two mail seams (Accounts SMTP, Contact MailerSend) with one Shared/Email mail interface and two transports, one failure model and logging rule, one test double and one settings section, with no change in behaviour.

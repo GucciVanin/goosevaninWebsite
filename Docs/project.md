@@ -30,7 +30,7 @@ The full statement and principles are in [goal.md](./goal.md). Anything in this 
 | Frontend | Angular 20 (standalone components, signals), SCSS, built into the API's `wwwroot` |
 | Data | SQLite through EF Core; ASP.NET Core Identity for users and roles |
 | Sessions | Identity cookie (HttpOnly, SameSite=Lax, Secure in production) with antiforgery tokens on every state-changing request |
-| Email | SMTP through a single shared sender (MailerSend today) |
+| Email | One shared `IMailService` over two transports: SMTP and MailerSend templates |
 | Delivery | Docker image, with Caddy as the TLS reverse proxy in `docker-compose.yml` |
 | Tests | xUnit integration and unit tests for the API; Jasmine/Karma for the client |
 
@@ -41,7 +41,7 @@ The full statement and principles are in [goal.md](./goal.md). Anything in this 
 | Accounts | Sign-in and sign-out, roles (`Admin`, `Reader`), authorization policies, operator-only administrator provisioning, reader registration and email verification | R1, R3 |
 | Contact | Public contact form, abuse controls (honeypot and rate limit), verification-first delivery | R1 |
 | Blog | Posts with draft/publish state; the seed that will grow into Stories and Projects | R1, R2 |
-| Shared | `DatabaseService` (the single gateway for all database reads and writes), SMTP transport, trusted-proxy headers, module startup hooks | all |
+| Shared | `DatabaseService` (the single gateway for all database reads and writes), mail service (`IMailService`) and transports, trusted-proxy headers, module startup hooks | all |
 | Client | Public profile and home sections, contact form, blog section, sign-in and verification screens; redesigned in F9 | all |
 
 New product areas (for example Comments and Member Profiles in R3) are added as new modules; see the recipe in [architecture.md](./architecture.md#9-how-to-add-change-or-remove-a-feature).
@@ -227,7 +227,7 @@ Enablers are work that is not a product feature but that the features depend on.
 | TE5 | Browser tests and an automated accessibility scan | Several acceptance tests (320 px, keyboard, contrast) are manual today | 2 US |
 | TE6 | Deepen the Contact submission flow: one module owns checks, Verification link, delivery and retry; the controller only maps outcomes ([#2](https://github.com/GucciVanin/goosevaninWebsite/issues/2)) | The retry and restore rules can only be tested through HTTP today | 1 US |
 | TE7 | Deepen Reader account registration and share one public-link builder ([#4](https://github.com/GucciVanin/goosevaninWebsite/issues/4)) | Registration rules sit in the controller; F3-US4 would copy them | 1 US |
-| TE8 | One Mail module replacing the SMTP and MailerSend seams ([#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)) | The same failure and privacy rules are written twice; do after F9-US6 | 1 US |
+| TE8 | One Mail module replacing the SMTP and MailerSend seams ([#5](https://github.com/GucciVanin/goosevaninWebsite/issues/5)) | The same failure and privacy rules are written twice; do after F9-US6. **Status 2026-10-28: implemented (Gustavo chose approach B), awaiting verification evidence and Captain close; not Done.** | 1 US |
 | TE9 | Blog authoring module for Stories and Projects ([#6](https://github.com/GucciVanin/goosevaninWebsite/issues/6)); speculative, may merge into F4-US3 | Slug, tag and timestamp rules are in the controller | 0.5 US |
 | TE10 | One-command container verification: unit tests of every stack, runtime tests of every feature, health checks, one log line per test ([#12](https://github.com/GucciVanin/goosevaninWebsite/issues/12)). Highest priority | The container is the only environment, and nothing verified a change there | 1.8 US |
 

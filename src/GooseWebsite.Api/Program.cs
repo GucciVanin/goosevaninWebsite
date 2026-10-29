@@ -17,8 +17,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddTrustedProxyHeaders(builder.Configuration);
 builder.Services.AddSingleton<PublicLinkBuilder>();
 builder.Services.AddSharedPersistence(builder.Configuration, builder.Environment);
-builder.Services.AddSmtpEmail(builder.Configuration);
-builder.Services.AddMailerSendEmail(builder.Configuration);
+builder.Services.AddEmail(builder.Configuration);
 
 builder.Services.AddAccountsModule(builder.Configuration, builder.Environment);
 builder.Services.AddBlogModule();

@@ -25,6 +25,18 @@ public static class ProjectMapping
         Utc(project.UpdatedAtUtc),
         Utc(project.PublishedAtUtc));
 
+    public static PublicProjectResponse ToPublic(Project project) => new(
+        project.Title,
+        project.Slug,
+        project.Overview,
+        project.Contribution,
+        project.Technologies.Split(',', StringSplitOptions.RemoveEmptyEntries),
+        project.DemoUrl,
+        project.SourceUrl,
+        project.CoverImage,
+        project.CoverImageAlt,
+        Utc(project.PublishedAtUtc));
+
     public static ProjectSummaryResponse ToSummary(Project project) => new(
         project.Id,
         project.Title,

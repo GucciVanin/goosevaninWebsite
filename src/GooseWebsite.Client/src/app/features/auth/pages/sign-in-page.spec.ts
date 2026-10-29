@@ -14,11 +14,13 @@ describe('SignInPage', () => {
   let router: Router;
   let fixture: ComponentFixture<SignInPage>;
 
-  async function open(query: Record<string, string>): Promise<void> {
-    auth = jasmine.createSpyObj<AuthApi>('AuthApi', ['getReaderRegistrationAvailability', 'getCurrentUser', 'login']);
+  async function open(query: Record<string, string>, arrange?: (api: jasmine.SpyObj<AuthApi>) => void): Promise<void> {
+    auth = jasmine.createSpyObj<AuthApi>('AuthApi', ['getReaderRegistrationAvailability', 'getCurrentUser', 'login', 'logout']);
     auth.getReaderRegistrationAvailability.and.returnValue(of({ enabled: false }));
     auth.getCurrentUser.and.returnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
     auth.login.and.returnValue(of({ displayName: 'Site administrator', isAdmin: true }));
+    auth.logout.and.returnValue(of(undefined));
+    arrange?.(auth);
 
     await TestBed.configureTestingModule({
       imports: [SignInPage],
@@ -72,6 +74,67 @@ describe('SignInPage', () => {
 
     expect(router.navigateByUrl).not.toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Signed in as Site administrator');
+  });
+
+  // F3-US1-AC5: failure feedback is one generic message, whatever the reason, and says nothing about which email exists.
+  it('shows the same generic message for an unknown email and for a wrong password, and keeps no password', async () => {
+    const shown: string[] = [];
+    for (const detail of ['No account with that email', 'The password is wrong']) {
+      TestBed.resetTestingModule();
+      await open({}, (api) => api.login.and.returnValue(throwError(() => new HttpErrorResponse({ status: 401, error: { error: detail } }))));
+      const page = fixture.componentInstance as unknown as SignInInternals;
+      page.email = shown.length === 0 ? 'nobody@example.test' : 'admin@example.test';
+      page.password = 'wrong-password';
+      page.signIn();
+      fixture.detectChanges();
+      shown.push(fixture.nativeElement.querySelector('[role="alert"]')?.textContent.trim() ?? '');
+      expect(page.password).toBe('');
+    }
+
+    expect(shown[0]).toBe('Unable to sign in with those credentials.');
+    expect(shown[1]).toBe(shown[0]);
+  });
+
+  it('shows the same generic message when the server answers with any other failure', async () => {
+    await open({}, (api) => api.login.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 }))));
+
+    signIn();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent.trim()).toBe('Unable to sign in with those credentials.');
+  });
+
+  it('labels the Email and Password fields and ties each label to its input', async () => {
+    await open({});
+
+    for (const [id, text] of [['email', 'Email'], ['password', 'Password']] as const) {
+      const label = fixture.nativeElement.querySelector(`label[for="${id}"]`) as HTMLLabelElement | null;
+      expect(label?.textContent?.trim()).toBe(text);
+      expect(fixture.nativeElement.querySelector(`input#${id}`)).not.toBeNull();
+    }
+  });
+
+  it('shows a Sign out button when signed in, signs out through the API and says so', async () => {
+    await open({}, (api) => api.getCurrentUser.and.returnValue(of({ displayName: 'Site administrator', isAdmin: true })));
+    const button = (): HTMLButtonElement | undefined =>
+      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Sign out');
+
+    expect(button()).toBeDefined();
+    expect(fixture.nativeElement.querySelector('form')).toBeNull();
+
+    button()!.click();
+    fixture.detectChanges();
+
+    expect(auth.logout).toHaveBeenCalledTimes(1);
+    expect(button()).toBeUndefined();
+    expect(fixture.nativeElement.textContent).toContain('You have signed out.');
+  });
+
+  it('offers no Sign out button to a visitor who is not signed in', async () => {
+    await open({});
+
+    const labels = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).map((b) => b.textContent?.trim());
+    expect(labels).not.toContain('Sign out');
   });
 });
 

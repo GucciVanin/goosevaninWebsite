@@ -3,3 +3,40 @@
 .site-shell {
   overflow: hidden;
 }
+
+/* Page transition (F9-US2). The router starts a browser view transition on a route change. The header and footer
+   have their own names so they stay still; the rest of the page (the routed content) cross-fades and the new page
+   settles up about 12 px. Durations and easing come from the motion tokens (0.01 ms under reduced motion; the
+   router also skips the transition then). Browsers without the API ignore all of this. */
+.gcv-bar {
+  view-transition-name: gcv-header;
+}
+.gcv-footer {
+  view-transition-name: gcv-footer;
+}
+::view-transition-group(gcv-header),
+::view-transition-group(gcv-footer) {
+  animation-duration: 0s;
+}
+/* The footer is a still element too: no cross-fade of its old and new images, so it never pops on short pages. */
+::view-transition-old(gcv-footer),
+::view-transition-new(gcv-footer) {
+  animation: none;
+}
+::view-transition-old(root) {
+  animation: gcv-page-out var(--gcv-motion-base) var(--gcv-ease) both;
+}
+::view-transition-new(root) {
+  animation: gcv-page-in var(--gcv-motion-base) var(--gcv-ease) both;
+}
+@keyframes gcv-page-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes gcv-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

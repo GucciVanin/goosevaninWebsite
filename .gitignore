@@ -30,3 +30,4 @@ src/GooseWebsite.Api/uploaded-images/
 src/GooseWebsite.Client/public/art/
 
 verify/browser/node_modules/
+ClientApp/.angular/

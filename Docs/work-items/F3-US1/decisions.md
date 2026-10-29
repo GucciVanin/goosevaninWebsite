@@ -15,3 +15,4 @@ Evidence plan (what the Testing role maps and runs; each AC must name its automa
 Gaps found by the mapping (for example a browser check for the HttpOnly claim or the same-response check) become orders, test first.
 
 | 2026-10-26 | Gustavo approved the evidence plan as drafted; also approved TE8 approach B (see TE8). | Runs after TE4 and TE8. |
+| 2026-10-28 | Testing evidence (Docs/tests/reports/F3-US1-evidence.md): AC1-AC3 proven, AC4 proven in xUnit and partly at runtime, AC5 partly; four test-only gaps. Captain: close all four (GAP-1..4) and settle the dummy-hash claim before sign-off; no application code change expected; if a new test fails, the failure becomes a defect order. | Orders O1. |

@@ -248,6 +248,8 @@ Overall success is observable when a new visitor can identify Gustavo and his pr
 
 **Defect found and fixed (2026-10-14, container verification run):** acceptance test 3 was only met for the browser that signed out: a session cookie captured before sign-out still worked, because sign-out cleared the cookie but left the account's security stamp unchanged. Sign-out now rotates the stamp (`SignOutSessionTests`), which ends every session issued to that account before it; the cookie is checked against the stamp on every request.
 
+**Acceptance evidence (2026-10-28, status stays In Progress until sign-off):** the testing report `Docs/tests/reports/F3-US1-evidence.md` maps each acceptance test to automated tests and found four test-only gaps; order O1 closed them. AC1 adds the Playwright check `auth.spec.ts` (after a real sign-in `document.cookie` holds only `goosewebsite.signedin`, while the browser holds `goosewebsite.auth` as HttpOnly and Secure). AC3 adds the Playwright check that clearing the session cookie while the marker stays sends the editor to `/sign-in?reason=session-expired` with the notice. AC4 adds runtime checks in `80-reader.sh` (a registration body carrying `role` and `isAdmin` is answered 404 while registration is off and creates no account that can sign in; the registration-on case stays in xUnit because it would send a verification email). AC5 adds Karma cases in `sign-in-page.spec.ts` (one generic failure message whatever the failure, the Email and Password labels tied to their inputs, the Sign out button shown when signed in and its effect) and a Playwright flow (unknown email and wrong password show the same message, sign-in works, Sign out ends the session and `/editor` sends the visitor to sign in). The timing claim is now tested: `SignInTimingEqualisationTests` counts password-hash verifications and requires the same non-zero number for an unknown email, a wrong password and a locked account. Details in `Docs/work-items/F3-US1/worker-O1.md`.
+
 ### User Story F3-US2: Register and Verify Reader Accounts
 
 **Status:** Done  
@@ -319,7 +321,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 ## Feature F4: Gustavo's Private Content Editor
 
 **Release:** R1  
-**Status:** Proposed  
+**Status:** Done (all five stories F4-US1 to F4-US5 Done and approved, pull requests merged; status line aligned 2026-10-28 by the R1 gate)  
 **Goal:** Let Gustavo manage project and story content without editing source code, while ensuring drafts remain private until he explicitly publishes them.  
 **Starting point in the code:** The `Blog` module already provides published-post reads and administrator-only create, update, and delete with draft/publish state, tags, and slugs, and the client has an in-page blog section that loads published stories from `/api/blog` (its hard-coded sample posts were removed on 2026-10-26, enabler TE4, because R1 requires no sample content). F4 and F5 should evolve this module (adding projects, images, and the editor UI) rather than start a parallel one.
 
@@ -338,6 +340,8 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 3. Given Gustavo selects Create, when the action completes, then the correct project or story form opens for a new item; given he selects an existing item, then its corresponding edit form opens with its saved values.
 4. Given Gustavo chooses to delete an item, when the confirmation is dismissed, then the item remains unchanged; when deletion is confirmed, then the item is removed from the editor list and cannot be retrieved as a published item.
 5. Given the editor is used at 320 CSS-pixel width or by keyboard only, when Gustavo navigates the workspace, then content actions remain reachable, controls do not overlap, and focus order and visible focus are clear.
+
+**Implementation evidence (added 2026-10-28 by the R1 gate follow-up; approval dates as in the status):** AC1 workspace: Karma `EditorPage` (`lists each story with its state in words and its last update date`, `switches to projects, lists them with their state, and offers New project`, `wears the shared page shell, with the Stories and Projects switch exposing its state as text and aria-pressed`). AC2 filter and search: `filters by status and searches by title`, `says so when there are no stories yet, and offers New story`. AC3 create and open: `StoryFormPage` (`opens an existing story with its saved values and says whether it is a draft`, `saves a new story as a draft, with the tags split on commas, and moves to its own address`) and the matching `ProjectFormPage` tests. AC4 deletion: `deletes only after the explicit confirmation, and then removes the row`, `keeps the row when the deletion fails`, `deletes a project through the projects API`, and the new `keeps the story untouched when the confirmation is dismissed with Keep it (F4-US1 acceptance test 4)` (2026-10-28: the dismissal case had no test before); the server side is `StoryEditorApiTests.DeletingAStoryRemovesItForGood` and `70-blog.sh` (`a deleted story is gone`, anonymous callers refused). AC5: the container browser tests `keyboard.spec.ts` and `reflow.spec.ts` run on the `editor-workspace`, `story-form` and `project-form` screens (Chromium, Firefox, WebKit). Anonymous access: `EditorAccessTests` and `editor.guard.spec.ts`.
 
 **Tasks:**
 
@@ -577,7 +581,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 ## Feature F7: Centralized Data Access Safeguards
 
 **Release:** R1  
-**Status:** Proposed  
+**Status:** Done (its only story, F7-US1, is Done and approved; status line aligned 2026-10-28 by the R1 gate)  
 **Goal:** Give the whole application one place where every database read and write passes, so protection such as input sanitization and access checks is written once and applies to every feature as the product grows.
 
 **Feature is complete when:** `DatabaseService` is the only route to the database for all modules (this is already true in the code as of 2026-10-02), it applies the agreed safeguards to every operation, and the F7 acceptance tests pass. Modules keep their own query logic but must not bypass the gateway.
@@ -713,7 +717,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 ## Feature F9: Brand and Visual Redesign
 
 **Release:** R1 (after the R1 content features, before public launch)  
-**Status:** Proposed  
+**Status:** Done (F9-US1 to F9-US7 all Done; real Edge and Safari still to be checked by hand, `Docs/tests/browser-manual-check.md`, and the emails have not been viewed in real mail clients, `Docs/email-templates/client-check.md`; status line aligned 2026-10-28 by the R1 gate)  
 **Goal:** Give the whole site Gustavo's own identity: his logo and a visual design he chose, applied consistently to every page, email, and screen, replacing the earlier working design.
 
 **Confirmed scope (Gustavo, 2026-10-02):**
@@ -773,29 +777,31 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F9-US2: Redesign the Site Shell
 
-**Status:** Done (implemented 2026-10-16 to 2026-10-20; approved by the merge of the F9 pull requests; page transitions and the card copy review were not built and are not required for R1 unless Gustavo asks)  
+**Status:** Done (implemented 2026-10-16 to 2026-10-20; approved by the merge of the F9 pull requests; the card copy review with Gustavo was not held and is not required for R1 unless he asks; the page transition was added 2026-10-28 on Gustavo's request, see the evidence of F9-US2)  
 **Release:** R1  
 **Estimate:** 2 US (24 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see the new header, navigation, footer, and page transitions on every page.
 
-**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. A mobile menu (button with aria-expanded, same links) was added 2026-10-20. Page transitions and the narrow-screen checks are not done yet.
+**Progress 2026-10-16:** the header and footer are rebuilt to the landing-page mockup: logo, Home / Projects / Skills / About, GitHub, LinkedIn and email icons over the hero; a closing strip with the logo and the Let's connect button; the sign-in and Editor links stay. Stories was added to the navigation. A mobile menu (button with aria-expanded, same links) was added 2026-10-20. The narrow-screen checks and the shell motion test came later (see the evidence below).
 
 **Acceptance tests:**
 
 1. Given any page, when it loads, then the new header (with the logo) and footer (with the logo) match the approved design at desktop and mobile widths.
-2. Given a visitor navigates between sections or routes, when the transition runs, then it matches the approved motion design, and with reduced-motion enabled the transition is removed or minimal.
+2. Given a visitor follows a link between routes (home, projects, a project, stories, a story, not-found, sign-in), when the page changes, then there is a transition matching the approved motion design: the page content cross-fades with a small upward settle (about 12 px) over the base motion duration (240 ms), the header and footer stay still, nothing plays on the first load or on in-page home section scrolling, and with reduced motion the change is instant. The shell's own motion (the header slides away when scrolling down and returns when scrolling up, links fade colour) also has a real, short transition and is immediate under reduced motion. (Restored 2026-10-28 after Gustavo ruled "A page transition is necessary"; the motion design is recorded in `Docs/work-items/F9-US2-transition/decisions.md` and in `Docs/architecture.md` section 6.2.)
 3. Given the shell is used by keyboard, when the visitor tabs through it, then focus order is logical and focus is visible.
 4. Given Gustavo reviews the shell, when he approves it, then the approval is recorded before F9-US3 starts.
 
+**Implementation evidence (added 2026-10-28 by the R1 gate follow-up):** AC1: Karma `Brand components` (`shows the logo with descriptive alternative text and a width that keeps it crisp`), `SiteHeader` (`opens and closes a menu with the same links, and reports its state to assistive technology`, the Editor and sign-in link tests) and `App shell` (header and footer around every public page, none on sign-in, verification and editor screens); the 320 px layout is covered by the browser `reflow` test on every screen. AC2: the browser test `shell-motion.spec.ts` (built 2026-10-28, Chromium, Firefox, WebKit) proves the header's `transform` transition and the link colour transition have a real duration under normal motion and the header really hides on scrolling down and returns on scrolling up, and that under `prefers-reduced-motion: reduce` the same change has a duration of at most 0.01 ms with nothing left running; `motion.spec.ts` proves nothing animates on the home page. AC3: browser `keyboard.spec.ts` (every control reachable in page order with visible focus) and `keyboard-mobile.spec.ts` (320 px with the menu open). AC4: approval recorded by the merge of the pull requests. **Criterion 2 restored 2026-10-28 (page transition, PT-AC1 to PT-AC5):** the router now uses the View Transitions API (`withViewTransitions`, `shared/page-transition.ts`, rules in `shared/styles/site.scss`). Karma: `Page transition` (no transition on the first load, skipped under reduced motion and when only the query string changes, plays otherwise) and `App shell` (`asks the browser for a view transition on a route change`; the first load is covered by the `Page transition` options test (`does not play on the first page load`) and the browser direct-load test); browser: `verify/browser/tests/page-transition.spec.ts` proves on each engine that a route change plays `::view-transition-old/new(root)` animations of 150 to 400 ms with the header unmoved (engines without the API navigate instantly and the test asserts that), that a direct load and home section scrolling play nothing, and that under reduced motion nothing animates. Decision log row added; the rewording row of the same day is superseded.
+
 **Tasks:**
 
-- [ ] Rebuild the header and footer components and the navigation behavior to the design.
-- [ ] Implement shell-level transitions and animation using the tokens, with a reduced-motion path.
-- [ ] Update the header tests and record Gustavo's approval.
+- [x] Rebuild the header and footer components and the navigation behavior to the design.
+- [x] Implement shell-level transitions and animation using the tokens, with a reduced-motion path. (The header slide and link colour fades, plus the route page transition added 2026-10-28, all on `--gcv-motion-*` tokens that `prefers-reduced-motion` sets to 0.01 ms.)
+- [x] Update the header tests and record Gustavo's approval. (Header tests: `SiteHeader` and `App shell` specs; approval recorded by the merge of the pull requests.)
 
 ### User Story F9-US3: Redesign the Home Page
 
-**Status:** Done (implemented 2026-10-16 to 2026-10-20; approved by the merge of the F9 pull requests; page transitions and the card copy review were not built and are not required for R1 unless Gustavo asks)  
+**Status:** Done (implemented 2026-10-16 to 2026-10-20; approved by the merge of the F9 pull requests; the card copy review with Gustavo was not held and is not required for R1 unless he asks; the page transition was added 2026-10-28 on Gustavo's request, see the evidence of F9-US2)  
 **Release:** R1  
 **Estimate:** 3 US (36 hours), proposed 2026-10-02  
 **Goal:** As a visitor, I see a home page whose layout and section order follow Gustavo's inspiration image closely and still make who he is and how to contact him clear.
@@ -809,11 +815,13 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 3. Given animations are present, when reduced-motion is requested, then essential content is fully available without them.
 4. Given Gustavo approves the page, when approval is recorded, then F9-US4 may start.
 
+**Implementation evidence (added 2026-10-28 by the R1 gate follow-up):** AC1 layout and order: Karma `Landing page` (`shows the headline, the eyebrow, the three-line intro and the Explore action`, `shows the three category cards, each with an image strip and a link to its own page`, `never links to a removed section`, the Projects and Life stories card navigation tests) and `SelectedWork`; the side-by-side comparison with the inspiration image is Gustavo's review, recorded by the merge. AC2 first viewport and no sensitive detail: the same landing tests, Karma `About (Approach)` (`shows the name as a caption beside the portrait, visibly`, `shows at most the broad location and no age or street address`, `keeps a descriptive alt text on the portrait`) and the container browser test `profile.spec.ts`. AC3 reduced motion: browser test `motion.spec.ts` (`home: reduced motion stops every animation and keeps the content`, Chromium, Firefox, WebKit). AC4: approval recorded by the merge of the pull requests. The R1 gate (`Docs/tests/reports/R1-GATE.md`) saw all of these pass in three identical container runs (790 of 790).
+
 **Tasks:**
 
-- [ ] Agree the new section list and order with Gustavo; update the home components and the shared profile content only where the design requires.
-- [ ] Implement the layout, imagery, and animation from the tokens.
-- [ ] Review side by side with the inspiration image and record approval.
+- [x] Agree the new section list and order with Gustavo; update the home components and the shared profile content only where the design requires. (Section list and order were agreed in the design analysis above and approved by the merge; the Skills section was later removed, TE4.)
+- [x] Implement the layout, imagery, and animation from the tokens.
+- [x] Review side by side with the inspiration image and record approval. (Recorded only as the merge of the F9 pull requests; the card copy review with Gustavo was not held and is not required for R1 unless he asks.)
 
 ### User Story F9-US4: Redesign Contact, Blog, and Account Pages
 
@@ -831,11 +839,13 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 3. Given the sign-in and email-verification screens, when they render, then they use the new design and keep the existing CSRF and explicit-confirmation behavior.
 4. Given Gustavo reviews these pages, when he approves them, then approval is recorded before F9-US5.
 
+**Implementation evidence (added 2026-10-28 by the R1 gate follow-up; the code and approval date from 2026-10-20):** AC1 contact form: Karma `ContactPage field errors` (`leaving an empty <field> shows "<text>" next to it, tied with aria-describedby`, `a malformed email shows the email error and a corrected one removes it`, `submitting an empty form shows every error and sends nothing`, `a submit attempt on an invalid form moves keyboard focus to the first invalid field`, `submitting a valid form posts once and shows the verification status`). AC2 story section: Karma `BlogPage (home Stories preview)` and the `stories.spec.ts` reading and index tests. AC3 sign-in and verification screens: Karma `SignInPage` (`labels the Email and Password fields and ties each label to its input`, the generic-failure tests), `VerifyEmailPage` (`waits for explicit confirmation before posting the verification token`), `ContactVerifyPage` (`waits for explicit confirmation before posting the token`), and the container runtime `60-auth.sh` for CSRF. The container browser tests (Chromium, Firefox, WebKit) run `a11y`, `keyboard`, `reflow` (320 px) and `load` on the `sign-in`, `email-confirmation`, `contact-confirmation`, `access-denied`, `stories` and home screens. "Uses the new design" has no visual-comparison test: it is covered by the tokens-only rules in `editor-design.spec.ts` for the account styles and by Gustavo's approval (AC4, recorded by the merge of the pull request).
+
 **Tasks:**
 
-- [ ] Re-skin the contact, blog, sign-in, and verify-email components using the tokens.
-- [ ] Confirm existing component tests still pass and update them for markup changes.
-- [ ] Record Gustavo's approval.
+- [x] Re-skin the contact, blog, sign-in, and verify-email components using the tokens.
+- [x] Confirm existing component tests still pass and update them for markup changes.
+- [x] Record Gustavo's approval: recorded only as the merge of the pull request (no separate note exists).
 
 ### User Story F9-US5: Apply the Design to the Editor
 
@@ -855,7 +865,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Tasks:**
 
 - [x] Re-skin the F4 editor screens with the tokens and base components.
-- [x] Update editor tests for markup changes. (Gustavo's approval is still to be recorded.)
+- [x] Update editor tests for markup changes. (Gustavo's approval is recorded by the merge of the pull request, see the status.)
 
 ### User Story F9-US6: Brand the Emails
 
@@ -876,7 +886,8 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 **Tasks:**
 
 - [x] Add HTML and plain-text templates through the shared mail sender, embedding the logo without third-party hosting (logo on the site's own address).
-- [ ] Test rendering in representative clients and the automated mail-sink tests.
+- [x] Test the automated mail-sink and rendering tests (`AccountVerificationEmailTests`, `ContactEmailTemplateTests`, `MailServiceTests`).
+- [ ] Test rendering in real mail clients: a manual step (`Docs/email-templates/client-check.md`), not run by any agent and listed as an open gap in `Docs/architecture.md` section 11. The story stays Done for R1 on Gustavo's approval of 2026-10-22; the gap is honest, not closed.
 
 ### User Story F9-US7: Verify Accessibility and Responsiveness After the Redesign
 
@@ -939,6 +950,8 @@ These are technical/product-detail choices not settled in the interview. Record 
 
 | Date | Decision | Reason / impact |
 | --- | --- | --- |
+| 2026-10-28 | R1 gate follow-up (W5): F9-US2 acceptance test 2 reworded from "transition between sections or routes matching the approved motion design" to the motion the shell really has (header slide, link colour fades, immediate under reduced motion), because no route or page transition was ever designed or built; it is now proven by `verify/browser/tests/shell-motion.spec.ts`. Feature status lines of F4, F7 and F9 aligned to their stories (Done); task boxes of F9-US2 to US6 ticked or explained; evidence paragraphs added for F4-US1 and F9-US2/3/4; F4-US1 dismissal of the delete confirmation got its own Karma test. F3-US1 and F3 stay In Progress until Gustavo accepts. | Keeps the backlog consistent with the code and the tests (R1-G1); no story's status was changed. |
+| 2026-10-28 | F9-US2 page transition (PR #24 review): Gustavo ruled "A page transition is necessary". Acceptance test 2 is restored to the route transition criterion and the motion design is recorded (cross-fade with a 12 px upward settle, 240 ms, header and footer still, instant under reduced motion, via the browser View Transitions API with no animation where unsupported). **Supersedes the rewording row of the same day (R1 gate follow-up W5) for criterion 2 only.** | Restores the original criterion and supplies the missing motion design. |
 | 2026-10-27 | TE4 amendment (Gustavo, at review): no statement about him that he has not written. Removed the Skills section (component, navigation item, home composition), the About lede, heading statement and three principles (About keeps the portrait, name, positioning line, short bio and professional summary), and the Stories intro (now "Stories" and "Stories Gustavo has published."). The four category cards (Applications, Cloud & DevOps, Security, Systems & Tools) are replaced by three (Projects, Life stories, Competitions); Competitions opens Stories pre-filtered by the tag `competition` (the F5 browsing pages come later; until then the cards point at existing sections). This supersedes the F9 mockup decisions on four cards and on the Skills navigation item below. | Gustavo does not want unverified statements; the site's main aspect is showcasing projects. |
 | 2026-10-26 | TE4: removed the sample content. The Stories section starts empty and shows only what `/api/blog` returns (loading, empty and failure states in words; categories derived from the data; the reading view renders the Markdown body with the safe renderer, loaded on first reading). The `/design` review page, its route, its shell rule and its runtime check are removed. A repository sweep for the sample strings found nothing else. Operator note for demo posts in existing local databases: `Docs/architecture.md` section 11. | Sample content must not reach a deployment (R1 decision). |
 | 2026-09-25 | Created backlog from the confirmed purpose, profile/contact/editor scope, later public browsing, and later verified-reader comments. | Establishes a measurable product source of truth; no completion status is inferred from existing implementation. |

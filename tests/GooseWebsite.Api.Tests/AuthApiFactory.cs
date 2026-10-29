@@ -14,6 +14,7 @@ using Microsoft.Data.Sqlite;
 using GooseWebsite.Api.Modules.Accounts.Domain;
 using GooseWebsite.Api.Modules.Accounts.Services;
 using GooseWebsite.Api.Modules.Contact.Services;
+using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Persistence;
 using Xunit;
 
@@ -33,6 +34,7 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
     private readonly bool _readerRegistrationEnabled;
     private readonly ICurrentCaller? _callerOverride;
     private readonly bool _includeProbeControllers;
+    private readonly Action<IServiceCollection>? _configureServices;
 
     /// <summary>Every log message the host writes, for tests that assert what is (not) logged.</summary>
     public CapturingLoggerProvider Logs { get; } = new();
@@ -42,8 +44,10 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         TimeSpan? confirmationTokenLifetime = null,
         bool readerRegistrationEnabled = true,
         ICurrentCaller? callerOverride = null,
-        bool includeProbeControllers = false)
+        bool includeProbeControllers = false,
+        Action<IServiceCollection>? configureServices = null)
     {
+        _configureServices = configureServices;
         _cookieLifetime = cookieLifetime;
         _confirmationTokenLifetime = confirmationTokenLifetime;
         _readerRegistrationEnabled = readerRegistrationEnabled;
@@ -65,6 +69,7 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(_connection));
             services.AddSingleton<ILoggerProvider>(Logs);
+            _configureServices?.Invoke(services);
             if (_callerOverride is not null)
             {
                 services.RemoveAll<ICurrentCaller>();
@@ -80,9 +85,9 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IContactEmailDeliveryService>();
             services.AddSingleton<StubContactEmailDeliveryService>();
             services.AddSingleton<IContactEmailDeliveryService>(provider => provider.GetRequiredService<StubContactEmailDeliveryService>());
-            services.RemoveAll<IAccountEmailSender>();
-            services.AddSingleton<TestAccountEmailSender>();
-            services.AddSingleton<IAccountEmailSender>(provider => provider.GetRequiredService<TestAccountEmailSender>());
+            services.RemoveAll<IMailService>();
+            services.AddSingleton<TestMailService>();
+            services.AddSingleton<IMailService>(provider => provider.GetRequiredService<TestMailService>());
             if (_cookieLifetime is not null)
             {
                 services.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
@@ -126,7 +131,8 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         Assert.True(result.Succeeded, result.ErrorMessage);
     }
 
-    public TestAccountEmailSender AccountEmailSender => Services.GetRequiredService<TestAccountEmailSender>();
+    /// <summary>The one mail double: records every email the application would send.</summary>
+    public TestMailService Mail => Services.GetRequiredService<TestMailService>();
 
     public StubContactEmailDeliveryService ContactEmail => Services.GetRequiredService<StubContactEmailDeliveryService>();
 

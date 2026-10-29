@@ -185,6 +185,20 @@ describe('EditorPage', () => {
     expect(names).toEqual(['Yes, delete', 'Keep it']);
   });
 
+  it('keeps the story untouched when the confirmation is dismissed with Keep it (F4-US1 acceptance test 4)', async () => {
+    const page = await open();
+    page.pendingDelete.set(2);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    Array.from(element.querySelectorAll<HTMLButtonElement>('.story-list li:nth-child(2) button')).find((button) => button.textContent?.trim() === 'Keep it')!.click();
+    fixture.detectChanges();
+
+    expect(api.remove).not.toHaveBeenCalled();
+    expect(element.querySelector('.story-list [role="alert"]')).toBeNull();
+    expect(element.querySelectorAll('.story-list li').length).toBe(2);
+    expect(element.textContent).toContain('Beta notes');
+  });
   it('gives every button and link an accessible name and uses the shared button style', async () => {
     await open();
 

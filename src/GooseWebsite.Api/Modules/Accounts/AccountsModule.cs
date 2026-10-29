@@ -64,7 +64,7 @@ public static class AccountsModule
         });
 
         services.AddScoped<AdminProvisioningService>();
-        services.AddTransient<IAccountEmailSender, SmtpAccountEmailSender>();
+        services.AddTransient<IAccountEmailSender, AccountEmailSender>();
         services.AddScoped<IModuleInitializer, AccountRoleInitializer>();
         services.AddScoped<AdminPasswordResetService>();
         services.AddScoped<IReaderAccountService, ReaderAccountService>();

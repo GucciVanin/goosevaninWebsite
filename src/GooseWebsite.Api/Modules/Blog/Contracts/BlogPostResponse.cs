@@ -28,3 +28,16 @@ public sealed record StorySummaryResponse(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     DateTime? PublishedAtUtc);
+
+// What the public story pages need and nothing else: no database id, no author account id, no editor state.
+public sealed record PublicStoryResponse(
+    string Title,
+    string Slug,
+    string Excerpt,
+    string Content,
+    string Category,
+    IReadOnlyList<string> Tags,
+    string CoverImage,
+    string CoverImageAlt,
+    DateTime CreatedAtUtc,
+    DateTime? PublishedAtUtc);

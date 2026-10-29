@@ -210,4 +210,27 @@ describe('App routing configuration', () => {
       host.remove();
     }
   });
+  it('asks the browser for a view transition on a route change', async () => {
+    const host = document.createElement('app-root');
+    document.body.append(host);
+    const original = (document as any).startViewTransition;
+    const calls: number[] = [];
+    (document as any).startViewTransition = (callback: () => unknown) => {
+      calls.push(1);
+      const done = Promise.resolve(callback());
+      return { skipTransition() {}, updateCallbackDone: done, ready: done, finished: done };
+    };
+    const application = await bootstrapApplication(App, { providers: [...appConfig.providers, provideHttpClientTesting()] });
+    try {
+      const router = application.injector.get(Router);
+      await router.navigateByUrl('/nowhere');
+      const before = calls.length;
+      await router.navigateByUrl('/projects');
+      expect(calls.length).toBe(before + 1);
+    } finally {
+      application.destroy();
+      (document as any).startViewTransition = original;
+      host.remove();
+    }
+  });
 });
