@@ -13,3 +13,7 @@ Add an `AnnouncedAtUtc` marker (migration) to stories and projects; on the first
 
 ## O2 addendum (Security O1 follow-ups)
 (a) S4: strip Unicode categories Zl, Zp and Cf from the subscriber name, with a test. (b) Set and document `PublicBaseUrl` in `.env.example` and `docker-compose.yml` if it is not already. (c) Verify in the container run that the subscription rate limit keys on the real client address behind Caddy (S2) and record the evidence. (d) Drop the unused unsubscribe-token-hash column (see the 2026-10-29 unsubscribe token decision).
+
+## O3 addendum (Security O2 follow-ups)
+(a) S1: document in `Docs/architecture.md` that the Data Protection key ring needs the same backup as the database and must never be revoked; add a startup/log guard (category only) when a fresh key ring is created while `Subscribers` rows exist. (b) S2: `[RequestSizeLimit(1024)]` and form limits on the one-click action. (c) S3: give the one-click endpoint its own, higher rate-limit policy than confirm. (d) S4: record in `Docs/architecture.md` that the one-click query string must never be logged. (e) S6: on the unsubscribe page, keep the token available for retry when the failure is 429, 5xx or a network error; only invalid-token (400) is final. Each with a test.
+(f) Reviewer O2 advisories: rename the "valid until the subscriber is deleted" test so it does not claim key-ring behaviour (or add a rotated-key test), and add a purpose-isolation test (a token protected under another purpose is rejected).
