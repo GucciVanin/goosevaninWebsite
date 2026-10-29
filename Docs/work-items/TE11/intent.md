@@ -1,3 +1,4 @@
 # TE11 - Contact emails as rendered SMTP mail
+Issue: https://github.com/GucciVanin/goosevaninWebsite/issues/27
 
 Gustavo (2026-10-29): no MailerSend API key can be created for the site domain; only the SMTP login and password exist. The site must format its own emails and hand finished mail to MailerSend over SMTP. The contact form is the only feature that still uses MailerSend API templates, so its three emails (confirmation link to the sender, notice to Gustavo, receipt to the sender) must be rendered by the Contact module and sent with `IMailService.SendAsync`. Spec: row TE11 in `Docs/project.md`; behaviour stays as in F2-US2 and F2-US3 (privacy, retry, rate limits, no durable inbox). Needs acceptance tests written at planning: the three mails (recipient, subject, plain text and HTML), Reply-To on the owner notice, HTML encoding of visitor input, no header injection, no body, address or link in logs, retry rules unchanged.
