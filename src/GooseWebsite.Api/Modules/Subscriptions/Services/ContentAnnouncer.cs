@@ -10,7 +10,9 @@ namespace GooseWebsite.Api.Modules.Subscriptions.Services;
 // Listens for the first publication of a story or project (Blog and Projects call IContentAnnouncer after it) and
 // queues the announcement: one record for the work and one delivery record per confirmed subscriber at this moment.
 // It sends nothing and talks to no mail provider; the hosted delivery job does that later. The rows are saved in
-// the publish request's own unit of work, so the publish and its announcement are committed together or not at all.
+// the publish request's own unit of work (UnitOfWorkFilter): this save and the caller's earlier save share one
+// transaction that commits when the action ends, so the publish, its marker and the queue rows are committed together
+// or not at all. If this method throws, everything rolls back and the publish request fails and can be repeated.
 // A person who confirms later is not told about earlier work; one who unsubscribes first is dropped (the database
 // removes their delivery record with them).
 public sealed class ContentAnnouncer(

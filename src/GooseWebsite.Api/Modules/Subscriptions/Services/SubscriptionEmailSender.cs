@@ -26,7 +26,7 @@ public sealed class SubscriptionEmailSender(IMailService mail, PublicLinkBuilder
         return result.Succeeded;
     }
 
-    public async Task<bool> SendAnnouncementAsync(int subscriberId, string email, string name, Announcement announcement)
+    public async Task<bool> SendAnnouncementAsync(int subscriberId, string email, string name, Announcement announcement, CancellationToken cancellationToken = default)
     {
         var content = new AnnouncementContent(announcement.Kind, announcement.Title, announcement.Summary, links.SiteLink(announcement.PublicPath));
         var unsubscribeUrl = subscriptionLinks.UnsubscribePageUrl(subscriberId);
@@ -35,7 +35,7 @@ public sealed class SubscriptionEmailSender(IMailService mail, PublicLinkBuilder
             AnnouncementEmailRenderer.Subject(content),
             AnnouncementEmailRenderer.RenderHtml(name, content, unsubscribeUrl, links.SiteLink(SubscriptionEmailRenderer.LogoPath), links.SiteLink(string.Empty)),
             AnnouncementEmailRenderer.RenderPlainText(name, content, unsubscribeUrl),
-            subscriptionLinks.UnsubscribeHeaders(subscriberId)));
+            subscriptionLinks.UnsubscribeHeaders(subscriberId)), cancellationToken);
 
         return result.Succeeded;
     }

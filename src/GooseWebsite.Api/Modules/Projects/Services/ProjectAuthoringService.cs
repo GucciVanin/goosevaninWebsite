@@ -79,7 +79,8 @@ public sealed class ProjectAuthoringService(IProjectRepository projects, IConten
         project.PublishedAtUtc ??= now;
         project.UpdatedAtUtc = now;
 
-        // The first publish only (see BlogAuthoringService): the marker is set once and never cleared.
+        // The first publish only (see BlogAuthoringService): the marker is set once and never cleared. The marker and
+        // the announcer's queue rows are committed together by the request's unit of work, or not at all.
         var firstPublish = project.AnnouncedAtUtc is null;
         if (firstPublish)
         {

@@ -9,5 +9,5 @@ public interface ISubscriptionEmailSender
     Task<bool> SendConfirmationAsync(int subscriberId, string email, string name, string confirmationUrl);
 
     /// <summary>Emails one subscriber the announcement of new work, with their own unsubscribe link and headers. True when the provider accepted the message.</summary>
-    Task<bool> SendAnnouncementAsync(int subscriberId, string email, string name, Announcement announcement);
+    Task<bool> SendAnnouncementAsync(int subscriberId, string email, string name, Announcement announcement, CancellationToken cancellationToken = default);
 }

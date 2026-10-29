@@ -113,7 +113,15 @@ public sealed class AnnouncementDispatcher(
             }
 
             var emailSender = scope.ServiceProvider.GetRequiredService<ISubscriptionEmailSender>();
-            var accepted = await emailSender.SendAnnouncementAsync(delivery.SubscriberId, subscriber.Email, subscriber.Name, delivery.Announcement);
+            // The token ends the send promptly on shutdown: the recipient is then neither sent nor counted as failed,
+            // and the next round starts from the same state.
+            var accepted = await emailSender.SendAnnouncementAsync(delivery.SubscriberId, subscriber.Email, subscriber.Name, delivery.Announcement, cancellationToken);
+            if (!accepted)
+            {
+                // A mail service that reports a cancelled send as a failure must not burn a retry on shutdown.
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
             var now = clock.GetUtcNow().UtcDateTime;
             if (accepted)
             {

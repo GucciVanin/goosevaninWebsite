@@ -12,6 +12,7 @@ using GooseWebsite.Api.Modules.Projects.Domain;
 using GooseWebsite.Api.Modules.Subscriptions.Domain;
 using GooseWebsite.Api.Modules.Subscriptions.Models;
 using GooseWebsite.Api.Modules.Subscriptions.Services;
+using GooseWebsite.Api.Shared.Announcements;
 using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Persistence;
 using Xunit;
@@ -48,13 +49,14 @@ public sealed class AnnouncementsApiTests
 
         public IAnnouncementDispatcher Dispatcher => Factory.Services.GetRequiredService<IAnnouncementDispatcher>();
 
-        public static async Task<Site> StartAsync(Action<SubscriptionOptions>? configure = null)
+        public static async Task<Site> StartAsync(Action<SubscriptionOptions>? configure = null, Action<IServiceCollection>? configureServices = null)
         {
             var clock = new AdjustableTimeProvider(DateTimeOffset.Parse("2026-11-01T10:00:00Z"));
             var factory = new AuthApiFactory(configureServices: services =>
             {
                 services.RemoveAll<TimeProvider>();
                 services.AddSingleton<TimeProvider>(clock);
+                configureServices?.Invoke(services);
                 services.Configure<SubscriptionOptions>(options =>
                 {
                     // The hosted delivery loop stays asleep; tests run a delivery round by hand unless they say otherwise.
@@ -657,6 +659,254 @@ public sealed class AnnouncementsApiTests
 
         // The mail was queued with the content as it was; deleting the story afterwards does not break delivery.
         Assert.Equal(1, round.Sent);
+    }
+
+    // ---- O4: the publish and its announcement commit together (Security O3 S1, Reviewer O3 advisory 1) ----
+
+    // Wraps the real announcer and can be told to fail, either before it queues anything or after it has saved the
+    // queue rows, so the tests can look at what is left in the database when the announcement step breaks.
+    private sealed class FaultyAnnouncer(ContentAnnouncer inner, FaultSwitch fault) : IContentAnnouncer
+    {
+        public async Task AnnounceAsync(ContentAnnouncement announcement, CancellationToken cancellationToken = default)
+        {
+            if (fault.Mode == FaultMode.BeforeQueue)
+            {
+                throw new InvalidOperationException("The queue could not be written.");
+            }
+
+            await inner.AnnounceAsync(announcement, cancellationToken);
+            if (fault.Mode == FaultMode.AfterQueueSaved)
+            {
+                throw new InvalidOperationException("Something failed after the queue rows were saved.");
+            }
+        }
+    }
+
+    public enum FaultMode
+    {
+        None,
+        BeforeQueue,
+        AfterQueueSaved
+    }
+
+    private sealed class FaultSwitch
+    {
+        public volatile FaultMode Mode;
+    }
+
+    private static Action<IServiceCollection> Faulty(FaultSwitch fault) => services =>
+    {
+        services.AddScoped<ContentAnnouncer>();
+        services.RemoveAll<IContentAnnouncer>();
+        services.AddScoped<IContentAnnouncer>(provider => new FaultyAnnouncer(provider.GetRequiredService<ContentAnnouncer>(), fault));
+    };
+
+    [Theory]
+    [InlineData(FaultMode.BeforeQueue)]
+    [InlineData(FaultMode.AfterQueueSaved)]
+    public async Task AStoryWhoseAnnouncementFailsStaysADraftUnmarkedAndUnqueued_AndPublishingAgainWorks(FaultMode mode)
+    {
+        var fault = new FaultSwitch { Mode = mode };
+        using var site = await Site.StartAsync(configureServices: Faulty(fault));
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        var (id, slug) = await site.CreateStoryAsync();
+
+        var failed = await site.PublishStoryAsync(id);
+
+        Assert.True((int)failed.Status >= 500, "The publish request fails so Gustavo knows to try again.");
+        var post = Assert.Single(await site.ReadAsync<BlogPost>());
+        Assert.False(post.IsPublished);
+        Assert.Null(post.PublishedAtUtc);
+        Assert.Null(post.AnnouncedAtUtc);
+        Assert.Empty(await site.ReadAsync<Announcement>());
+        Assert.Empty(await site.ReadAsync<AnnouncementDelivery>());
+        using var anonymous = site.Factory.CreateHttpsClient();
+        Assert.Equal(HttpStatusCode.NotFound, (await anonymous.GetAsync($"/api/blog/{slug}")).StatusCode);
+
+        fault.Mode = FaultMode.None;
+        Assert.Equal(HttpStatusCode.OK, (await site.PublishStoryAsync(id)).Status);
+        await site.Dispatcher.DeliverPendingAsync();
+
+        Assert.NotNull(Assert.Single(await site.ReadAsync<BlogPost>()).AnnouncedAtUtc);
+        Assert.Single(await site.ReadAsync<Announcement>());
+        Assert.Equal(Ada, Assert.Single(site.Mail.Rendered).To.Email);
+    }
+
+    [Theory]
+    [InlineData(FaultMode.BeforeQueue)]
+    [InlineData(FaultMode.AfterQueueSaved)]
+    public async Task AProjectWhoseAnnouncementFailsStaysADraftUnmarkedAndUnqueued_AndPublishingAgainWorks(FaultMode mode)
+    {
+        var fault = new FaultSwitch { Mode = mode };
+        using var site = await Site.StartAsync(configureServices: Faulty(fault));
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        var (id, _) = await site.CreateProjectAsync();
+
+        var failed = await site.PublishProjectAsync(id);
+
+        Assert.True((int)failed.Status >= 500);
+        var project = Assert.Single(await site.ReadAsync<Project>());
+        Assert.False(project.IsPublished);
+        Assert.Null(project.PublishedAtUtc);
+        Assert.Null(project.AnnouncedAtUtc);
+        Assert.Empty(await site.ReadAsync<Announcement>());
+        Assert.Empty(await site.ReadAsync<AnnouncementDelivery>());
+
+        fault.Mode = FaultMode.None;
+        Assert.Equal(HttpStatusCode.OK, (await site.PublishProjectAsync(id)).Status);
+        await site.Dispatcher.DeliverPendingAsync();
+
+        Assert.NotNull(Assert.Single(await site.ReadAsync<Project>()).AnnouncedAtUtc);
+        Assert.Equal(Ada, Assert.Single(site.Mail.Rendered).To.Email);
+    }
+
+    [Fact]
+    public async Task AMailProviderThatFailsAfterThePublishNeverUndoesItNorTheMarker()
+    {
+        using var site = await Site.StartAsync();
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        site.Mail.ShouldFail = true;
+        var (id, _) = await site.CreateStoryAsync();
+
+        Assert.Equal(HttpStatusCode.OK, (await site.PublishStoryAsync(id)).Status);
+        await site.Dispatcher.DeliverPendingAsync();
+
+        var post = Assert.Single(await site.ReadAsync<BlogPost>());
+        Assert.True(post.IsPublished);
+        Assert.NotNull(post.AnnouncedAtUtc);
+        var delivery = Assert.Single(await site.ReadAsync<AnnouncementDelivery>());
+        Assert.Null(delivery.SentAtUtc);
+        Assert.Equal(1, delivery.Attempts);
+    }
+
+    // ---- O4 (c): two simultaneous first publishes ----
+
+    private sealed class TemporaryDatabase(string path) : IDisposable
+    {
+        public void Dispose()
+        {
+            SqliteConnection.ClearAllPools();
+            foreach (var file in new[] { path, path + "-wal", path + "-shm", path + "-journal" })
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (IOException)
+                {
+                    // A leftover temp file is harmless.
+                }
+            }
+        }
+    }
+
+    // Two requests that really overlap need two database connections, so these tests use a file database (the other
+    // tests share one in-memory connection, which cannot hold two transactions at once).
+    private static Action<IServiceCollection> OnAFileDatabase(string path) => services =>
+    {
+        services.RemoveAll<ApplicationDbContext>();
+        services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+        services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
+        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite($"Data Source={path}"));
+    };
+
+    [Fact]
+    public async Task TwoSimultaneousFirstPublishesOfAStoryNeitherFailNorMailAnyoneTwice()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"goosewebsite-race-{Guid.NewGuid():N}.db");
+        using var cleanup = new TemporaryDatabase(file);
+        using var site = await Site.StartAsync(configureServices: OnAFileDatabase(file));
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        var (id, _) = await site.CreateStoryAsync();
+
+        var results = await Task.WhenAll(site.PublishStoryAsync(id), site.PublishStoryAsync(id));
+        await site.Dispatcher.DeliverPendingAsync();
+        await site.Dispatcher.DeliverPendingAsync();
+
+        Assert.All(results, result => Assert.True((int)result.Status < 500, $"No publish answers with a server error; got {(int)result.Status}."));
+        Assert.Contains(results, result => result.Status == HttpStatusCode.OK);
+        Assert.True(Assert.Single(await site.ReadAsync<BlogPost>()).IsPublished);
+        Assert.Single(await site.ReadAsync<Announcement>());
+        Assert.Single(site.Mail.Rendered);
+    }
+
+    [Fact]
+    public async Task TwoSimultaneousFirstPublishesOfAProjectNeitherFailNorMailAnyoneTwice()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"goosewebsite-race-{Guid.NewGuid():N}.db");
+        using var cleanup = new TemporaryDatabase(file);
+        using var site = await Site.StartAsync(configureServices: OnAFileDatabase(file));
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        var (id, _) = await site.CreateProjectAsync();
+
+        var results = await Task.WhenAll(site.PublishProjectAsync(id), site.PublishProjectAsync(id));
+        await site.Dispatcher.DeliverPendingAsync();
+
+        Assert.All(results, result => Assert.True((int)result.Status < 500, $"No publish answers with a server error; got {(int)result.Status}."));
+        Assert.Contains(results, result => result.Status == HttpStatusCode.OK);
+        Assert.Single(await site.ReadAsync<Announcement>());
+        Assert.Single(site.Mail.Rendered);
+    }
+
+    // ---- O4 (a): shutdown is not delayed by an announcement in flight ----
+
+    [Fact]
+    public async Task TheCancellationTokenOfARoundReachesTheMailService()
+    {
+        using var site = await Site.StartAsync();
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        var (id, _) = await site.CreateStoryAsync();
+        await site.PublishStoryAsync(id);
+        using var source = new CancellationTokenSource();
+
+        await site.Dispatcher.DeliverPendingAsync(source.Token);
+
+        Assert.Equal(source.Token, site.Mail.LastRenderedToken);
+    }
+
+    [Fact]
+    public async Task ARoundCancelledDuringASendEndsPromptly_AndTheRecipientIsNotCountedAsFailed()
+    {
+        using var site = await Site.StartAsync();
+        await site.AddSubscriberAsync("Ada Reader", Ada);
+        var (id, _) = await site.CreateStoryAsync();
+        await site.PublishStoryAsync(id);
+        using var source = new CancellationTokenSource();
+        site.Mail.OnRenderedSend = async token =>
+        {
+            source.Cancel();
+            await Task.Delay(TimeSpan.FromSeconds(30), token);
+        };
+
+        var started = DateTime.UtcNow;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => site.Dispatcher.DeliverPendingAsync(source.Token));
+
+        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(10));
+        var delivery = Assert.Single(await site.ReadAsync<AnnouncementDelivery>());
+        Assert.Null(delivery.SentAtUtc);
+        Assert.Equal(0, delivery.Attempts);
+        site.Mail.OnRenderedSend = null;
+        Assert.Equal(1, (await site.Dispatcher.DeliverPendingAsync()).Sent);
+    }
+
+    // ---- O4 (b): the summary rules cannot be made slow ----
+
+    [Theory]
+    [InlineData('[')]
+    [InlineData('!')]
+    public async Task AVeryLongRunOfBracketsInASummaryIsHandledQuickly(char opener)
+    {
+        using var site = await Site.StartAsync();
+        using var scope = site.Factory.Services.CreateScope();
+        var announcer = scope.ServiceProvider.GetRequiredService<IContentAnnouncer>();
+        var hostile = new string(opener, 200_000) + "[x](" + new string('(', 1000);
+
+        var started = DateTime.UtcNow;
+        await announcer.AnnounceAsync(new ContentAnnouncement(AnnouncedContentKind.Story, 99, "Hostile", hostile, "/stories/hostile"));
+
+        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(3), "The summary cleaning is bounded in time.");
+        var stored = Assert.Single(await site.ReadAsync<Announcement>());
+        Assert.True(stored.Summary.Length <= 300 + 1);
     }
 
     // ---- Dependency rule (architecture 3.1) ----

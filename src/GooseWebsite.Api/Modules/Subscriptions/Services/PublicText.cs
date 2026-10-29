@@ -47,14 +47,39 @@ internal static partial class PublicText
     /// </summary>
     public static string Summary(string? markdown, int maxLength)
     {
+        // Only the start of the text can reach a summary, so the Markdown rules never see more than MaxMarkdownLength
+        // characters, and every rule has a match timeout. If a rule still runs out of time (a hostile run of
+        // brackets), the text is kept as it is: still one plain line, just with a few raw markers left in it.
         var text = markdown ?? string.Empty;
-        text = Fence().Replace(text, string.Empty);
-        text = Image().Replace(text, "$1");
-        text = Link().Replace(text, "$1");
-        text = LineMarker().Replace(text, string.Empty);
-        text = Emphasis().Replace(text, string.Empty);
+        if (text.Length > MaxMarkdownLength)
+        {
+            text = text[..MaxMarkdownLength];
+            if (char.IsHighSurrogate(text[^1]))
+            {
+                text = text[..^1];
+            }
+        }
+
+        try
+        {
+            text = Fence().Replace(text, string.Empty);
+            text = Image().Replace(text, "$1");
+            text = Link().Replace(text, "$1");
+            text = LineMarker().Replace(text, string.Empty);
+            text = Emphasis().Replace(text, string.Empty);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // Keep what is there.
+        }
+
         return Shorten(OneLine(text), maxLength);
     }
+
+    // Far more than a summary keeps (a few hundred characters once the markers are gone).
+    private const int MaxMarkdownLength = 4000;
+
+    private const int RegexTimeoutMilliseconds = 200;
 
     private static bool IsHidden(Rune rune) =>
         Rune.IsControl(rune)
@@ -84,21 +109,21 @@ internal static partial class PublicText
         return text[..cut].TrimEnd() + "…";
     }
 
-    [GeneratedRegex(@"[ ]{2,}")]
+    [GeneratedRegex(@"[ ]{2,}", RegexOptions.None, RegexTimeoutMilliseconds)]
     private static partial Regex Spaces();
 
-    [GeneratedRegex(@"^[ \t]*(```|~~~).*$", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^[ \t]*(```|~~~).*$", RegexOptions.Multiline, RegexTimeoutMilliseconds)]
     private static partial Regex Fence();
 
-    [GeneratedRegex(@"!\[([^\]]*)\]\([^)]*\)")]
+    [GeneratedRegex(@"!\[([^\]]*)\]\([^)]*\)", RegexOptions.None, RegexTimeoutMilliseconds)]
     private static partial Regex Image();
 
-    [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
+    [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)", RegexOptions.None, RegexTimeoutMilliseconds)]
     private static partial Regex Link();
 
-    [GeneratedRegex(@"^[ \t]*(#{1,6}[ \t]*|>+[ \t]?|[-*+][ \t]+|\d+[.)][ \t]+)", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^[ \t]*(#{1,6}[ \t]*|>+[ \t]?|[-*+][ \t]+|\d+[.)][ \t]+)", RegexOptions.Multiline, RegexTimeoutMilliseconds)]
     private static partial Regex LineMarker();
 
-    [GeneratedRegex(@"\*\*|__|~~|`|\*")]
+    [GeneratedRegex(@"\*\*|__|~~|`|\*", RegexOptions.None, RegexTimeoutMilliseconds)]
     private static partial Regex Emphasis();
 }

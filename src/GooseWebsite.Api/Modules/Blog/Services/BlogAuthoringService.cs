@@ -92,7 +92,10 @@ public sealed class BlogAuthoringService(IBlogPostRepository posts, IContentAnno
         post.UpdatedAtUtc = now;
 
         // The first publish only: the marker is set once and never cleared, so unpublishing, editing and publishing
-        // again tell nobody twice. The announcer queues the work in this same unit of work and sends nothing here.
+        // again tell nobody twice. These are two saves (the post, then the announcer's queue rows), but both run inside
+        // the request's unit of work (UnitOfWorkFilter): nothing is committed until the action ends, and if the announcer
+        // throws, the post stays a draft with no marker and no queue rows, and the request fails so the publish can be
+        // repeated. The announcer sends no mail here, so a mail provider can never fail this request.
         var firstPublish = post.AnnouncedAtUtc is null;
         if (firstPublish)
         {
