@@ -458,7 +458,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 ## Feature F5: Public Project and Story Browsing
 
 **Release:** R2  
-**Status:** Proposed  
+**Status:** Done (F5-US1 and F5-US2 accepted 2026-10-29)  
 **Goal:** Let visitors explore Gustavo's published work and selected public stories, while keeping drafts and private data inaccessible.
 
 **Feature is complete when:** Project and story indexes show published content, each item has a usable detail view, direct links work, drafts remain private, and the agreed profile/contact paths remain available. All F5 acceptance tests pass on mobile and desktop.
@@ -919,7 +919,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 ## Feature F10: Update Subscriptions
 
 **Release:** R2  
-**Status:** Proposed (spec drafted 2026-10-29, awaiting Gustavo's approval)  
+**Status:** Done (all three stories accepted by Gustavo 2026-10-29, after he tested them)  
 **Goal:** Let visitors ask to be emailed whenever Gustavo publishes a new story or project, without creating an account. Gustavo is the only person who can sign in.
 
 **Decided 2026-10-29 (Gustavo):** only Gustavo signs in; visitors interact through subscriptions. The only data kept about a subscriber is a name and an email address (plus the technical state needed to run the feature: confirmed or pending, the time of each, and hashed confirmation and unsubscribe tokens). Subscribing is double opt-in. A notification goes out for stories and projects, once, when the item is first published. The parked reader features (F3-US4, F6, F8) stay Proposed but their public entry points stay switched off.
@@ -928,7 +928,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F10-US1: Subscribe with a Name and an Email
 
-**Status:** In Progress (implemented 2026-10-29, order O1; awaiting review, not yet Done)  
+**Status:** Done (accepted 2026-10-29)
 **Estimate:** 2 US (24 hours)  
 **Goal:** As a visitor, I can enter my name and email, confirm through a link in a message, and become a subscriber.
 
@@ -953,7 +953,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F10-US2: Unsubscribe with One Click
 
-**Status:** In Progress (implemented 2026-10-29, order O2; awaiting review, not yet Done)  
+**Status:** Done (accepted 2026-10-29)
 **Estimate:** 1 US (12 hours)  
 **Goal:** As a subscriber, I can leave from any email without signing in, and my data is deleted.
 
@@ -973,7 +973,7 @@ Automated runtime coverage in `tests/GooseWebsite.Api.Tests/AuthApiIntegrationTe
 
 ### User Story F10-US3: Notify Subscribers of New Posts
 
-**Status:** In Progress  
+**Status:** Done (accepted 2026-10-29)
 **Estimate:** 2 US (24 hours)  
 **Goal:** As Gustavo, when I publish a story or project for the first time, every confirmed subscriber receives one email with its title, summary and link.
 
@@ -1076,14 +1076,15 @@ These are technical/product-detail choices not settled in the interview. Record 
 | F2 Contact and Message Delivery | R1 | 4 US / 48 hours | Done | 3 of 3 |
 | F3 User Accounts and Authentication | R1, R3 | 6 US / 72 hours | In Progress | 2 of 4 |
 | F4 Gustavo's Private Content Editor | R1 | 11 US / 132 hours | Done | 5 of 5 |
-| F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Proposed | 0 of 2 |
+| F5 Public Project and Story Browsing | R2 | 4 US / 48 hours | Done | 2 of 2 |
 | F6 Verified Reader Comments | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
 | F7 Centralized Data Access Safeguards | R1 | 2.5 US / 30 hours | Done | 1 of 1 |
 | F8 Member Profiles | R3 | 5 US / 60 hours | Proposed | 0 of 3 |
-| F10 Update Subscriptions | R2 | 5 US / 60 hours | Proposed | 0 of 3 |
+| F10 Update Subscriptions | R2 | 5 US / 60 hours | Done | 3 of 3 |
 | F9 Brand and Visual Redesign | R1 | 14 US / 168 hours | Done | 7 of 7 |
-| **Total planned effort** | **R1-R3** | **53.5 US / 642 hours** | **In Progress** | **20 of 30** |
+| **Total planned effort** | **R1-R3** | **58.5 US / 702 hours** | **In Progress** | **25 of 33** |
 
-By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 4 US / 48 hours, and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 53. Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.
+By release: R1 is 36 US / 432 hours (F1 2, F2 4, F3-US1 and F3-US3 3, F4 11, F7 2.5, F9 14), R2 is 9 US / 108 hours (F5 4, F10 5), and R3 is 13 US / 156 hours (F3-US2 and F3-US4 3, F6 5, F8 5). Done stories account for 8 US of the 58.5 (as last counted before F5 and F10; recount at the next planning). Technical enablers that are not product features are tracked in [project.md](./project.md). Re-estimate stories after implementation decisions are recorded or after a story is split; update both this summary and the feature total in the same change.
 | 2026-10-29 | Enablers TE11 (contact emails as rendered SMTP mail), TE12 (remove the MailerSend API path and check the SMTP login instead) and TE13 (operator mail check command) proposed in `project.md`, work items at `intake`. Gustavo: no MailerSend API key can be created for the site domain, only the SMTP login and password exist, so every email is formatted by the site and sent as finished mail. Sender domain verification at the provider and a real delivery check remain Gustavo tasks before deployment. | The MailerSend API is used only by the contact form; SMTP already carries account and subscription mail. Estimates are proposals and need confirmation. |
 | 2026-10-29 | TE11 implemented (not Done): the three contact emails are rendered by `ContactEmailRenderer` and sent over SMTP with `IMailService.SendAsync`; `RenderedMail` gained `ReplyTo`; `BrandedEmailLayout` moved to `Shared/Email`. Evidence so far: unit and request-level tests `ContactRenderedMailTests` and `ContactMailFlowApiTests` (full flow with no MailerSend key and no template ids, retry rules, escaping, header injection, logs) pass in `dotnet test`. Still to do: CI, container run (`scripts/verify.ps1`), and the real-provider delivery check, which stays a Gustavo task (gap 3). | Does not close F2-US2 gap 3: no real email has been sent. |
+| 2026-10-29 | Gustavo tested the work done so far and accepted it: F10-US1, US2 and US3 (F10 Done), F5 (Done), TE7 and TE8. The work item F10 is closed. Still unchecked by a person: real mail delivery, emails in real mail clients, real Edge and Safari, the deployment (architecture section 11). | Acceptance recorded from Gustavo's message of 2026-10-29. |
