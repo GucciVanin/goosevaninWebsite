@@ -35,6 +35,7 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
     private readonly ICurrentCaller? _callerOverride;
     private readonly bool _includeProbeControllers;
     private readonly Action<IServiceCollection>? _configureServices;
+    private readonly bool _realContactDelivery;
 
     /// <summary>Every log message the host writes, for tests that assert what is (not) logged.</summary>
     public CapturingLoggerProvider Logs { get; } = new();
@@ -45,8 +46,10 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         bool readerRegistrationEnabled = true,
         ICurrentCaller? callerOverride = null,
         bool includeProbeControllers = false,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        bool realContactDelivery = false)
     {
+        _realContactDelivery = realContactDelivery;
         _configureServices = configureServices;
         _cookieLifetime = cookieLifetime;
         _confirmationTokenLifetime = confirmationTokenLifetime;
@@ -62,6 +65,12 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("DataProtection:KeysPath", _dataProtectionPath);
         builder.UseSetting("Media:Directory", _mediaPath);
         builder.UseSetting("Auth:ReaderRegistration:Enabled", _readerRegistrationEnabled.ToString());
+        if (_realContactDelivery)
+        {
+            // The only contact setting the flow needs now (TE11): no template ids, no MailerSend key.
+            builder.UseSetting("Contact:RecipientEmail", "gustavo@example.test");
+        }
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<ApplicationDbContext>();
@@ -82,9 +91,12 @@ internal sealed class AuthApiFactory : WebApplicationFactory<Program>
                 services.AddControllersWithViews().AddApplicationPart(typeof(AuthApiFactory).Assembly);
             }
 
-            services.RemoveAll<IContactEmailDeliveryService>();
-            services.AddSingleton<StubContactEmailDeliveryService>();
-            services.AddSingleton<IContactEmailDeliveryService>(provider => provider.GetRequiredService<StubContactEmailDeliveryService>());
+            if (!_realContactDelivery)
+            {
+                services.RemoveAll<IContactEmailDeliveryService>();
+                services.AddSingleton<StubContactEmailDeliveryService>();
+                services.AddSingleton<IContactEmailDeliveryService>(provider => provider.GetRequiredService<StubContactEmailDeliveryService>());
+            }
             services.RemoveAll<IMailService>();
             services.AddSingleton<TestMailService>();
             services.AddSingleton<IMailService>(provider => provider.GetRequiredService<TestMailService>());

@@ -1,4 +1,5 @@
 using System.Net;
+using GooseWebsite.Api.Shared.Email;
 
 namespace GooseWebsite.Api.Modules.Subscriptions.Services;
 

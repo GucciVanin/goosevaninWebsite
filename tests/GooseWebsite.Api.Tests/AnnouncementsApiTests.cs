@@ -30,6 +30,16 @@ public sealed class AnnouncementsApiTests
     private const string Ada = "ada.reader@example.test";
     private const string Grace = "grace.reader@example.test";
 
+    // Holds every delivery round until the test says the publish request is over.
+    private sealed class GatedDispatcher(IAnnouncementDispatcher inner, Task gate) : IAnnouncementDispatcher
+    {
+        public async Task<AnnouncementRound> DeliverPendingAsync(CancellationToken cancellationToken = default)
+        {
+            await gate.WaitAsync(cancellationToken);
+            return await inner.DeliverPendingAsync(cancellationToken);
+        }
+    }
+
     private sealed class Site : IDisposable
     {
         private Site(AuthApiFactory factory, HttpClient admin, AdjustableTimeProvider clock)
@@ -456,13 +466,36 @@ public sealed class AnnouncementsApiTests
     [Fact]
     public async Task TheHostedLoopDeliversInTheBackgroundWithoutTheEditorRequestWaiting()
     {
-        using var site = await Site.StartAsync(options => options.Announcements.PollSeconds = 1);
+        // The hosted loop wakes every second on real time. In these tests every database context shares one
+        // SQLite connection, so a round that fires in the middle of the publish request can see its uncommitted
+        // rows (an announcement before its deliveries) and close the announcement; in production each context has
+        // its own connection and cannot. The gate keeps every round waiting until the publish request has finished,
+        // so the test no longer depends on how fast the machine is. The loop itself still does the delivery.
+        var publishDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var site = await Site.StartAsync(
+            options => options.Announcements.PollSeconds = 1,
+            services =>
+            {
+                services.AddSingleton<AnnouncementDispatcher>();
+                services.RemoveAll<IAnnouncementDispatcher>();
+                services.AddSingleton<IAnnouncementDispatcher>(provider =>
+                    new GatedDispatcher(provider.GetRequiredService<AnnouncementDispatcher>(), publishDone.Task));
+            });
+        var sendStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        site.Mail.OnRenderedSend = _ =>
+        {
+            sendStarted.TrySetResult();
+            return Task.CompletedTask;
+        };
         await site.AddSubscriberAsync("Ada Reader", Ada);
         var (id, _) = await site.CreateStoryAsync();
 
         await site.PublishStoryAsync(id);
+        publishDone.SetResult();
 
-        for (var waited = 0; waited < 100 && site.Mail.Rendered.Count == 0; waited++)
+        // Wait for the hosted loop's own signal (the mail service was called). The generous timeout only guards a hang.
+        await sendStarted.Task.WaitAsync(TimeSpan.FromSeconds(60));
+        for (var waited = 0; waited < 600 && site.Mail.Rendered.Count == 0; waited++)
         {
             await Task.Delay(100);
         }

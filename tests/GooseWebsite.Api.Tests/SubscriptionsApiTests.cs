@@ -319,6 +319,19 @@ public sealed partial class SubscriptionsApiTests
     }
 
     [Fact]
+    public async Task TheConfirmationMailFooterCarriesTheUnsubscribeLine_Pinned()
+    {
+        using var h = new Harness();
+        await h.SubscribeAsync(SubscriberName, Email);
+
+        var html = Assert.Single(h.Factory.Mail.Rendered).Html;
+        var match = System.Text.RegularExpressions.Regex.Match(
+            html,
+            "<div style=\"padding-top:10px; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; font-size:12px; line-height:18px; color:#6c7199;\">Changed your mind[?] You can unsubscribe at any time: <a href=\"https://[^\"]+/unsubscribe#token=[^\"]+\" style=\"color:#19e6ff; text-decoration:underline;\">Unsubscribe</a></div>");
+        Assert.True(match.Success);
+    }
+
+    [Fact]
     public async Task ASubmissionWithoutTheCsrfTokenIsRefused()
     {
         using var h = new Harness();
