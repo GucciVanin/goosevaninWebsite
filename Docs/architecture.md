@@ -27,7 +27,7 @@ flowchart LR
         vol[(web-data volume<br/>goosewebsite.db<br/>Data Protection keys)]
     end
 
-    smtp[[MailerSend<br/>SMTP and HTTP API]]
+    smtp[[SMTP provider]]
     inbox([Gustavo's inbox])
 
     visitor -->|HTTPS| caddy
@@ -36,7 +36,7 @@ flowchart LR
     api --- spa
     api --> vol
     api -->|SMTP over TLS: account emails| smtp
-    api -->|HTTPS API: templated contact emails| smtp
+    api -->|SMTP over TLS: contact emails| smtp
     smtp --> inbox
     smtp --> sender
 ```
@@ -151,7 +151,8 @@ flowchart TB
 | `Shared/Modules/IModuleInitializer` | A module's startup hook (for example, create roles). Run in registration order after the database exists. | Accounts, Persistence |
 | `Shared/Modules/IModuleCommand` | A module's operator command-line entry point. If one handles the arguments, the web host does not start. | Accounts (`admin provision`, `admin reset-password`) |
 | `Shared/Announcements/IContentAnnouncer` | The seam for "something was published for the first time" (F10-US3, see 3.1): the `ContentAnnouncement` record, the interface, and the quiet `NoContentAnnouncer` fallback (`AddContentAnnouncerFallback`). | Blog, Projects (call it); Subscriptions (implements it) |
-| `Shared/Email/IMailService` (`MailService`) | The only mail interface modules use (TE8). `SendAsync(RenderedMail)` sends content the caller rendered (recipient, subject, HTML, plain text, and optional extra headers such as `List-Unsubscribe`, written by `SmtpMailTransport.CreateMessage`) over SMTP; `SendTemplateAsync(TemplateMail)` sends a MailerSend template (template id plus variables). Returns a `MailResult` (success or a `MailFailure` category) and never throws. It is also the one place mail is logged: categories only (kind, transport, failure, HTTP or SMTP status, exception type), never an address, name, subject, body, link, token, key or provider response text. `MailServiceTests` captures the log for success, failure, unconfigured and throwing transports. | Accounts, Contact, Subscriptions |
+| `Shared/Email/IMailService` (`MailService`) | The only mail interface modules use (TE8). `SendAsync(RenderedMail)` sends content the caller rendered (recipient, subject, HTML, plain text, and optional extra headers such as `List-Unsubscribe`, and an optional `ReplyTo` addressee, written as the Reply-To header by `SmtpMailTransport.CreateMessage`) over SMTP; `SendTemplateAsync(TemplateMail)` sends a MailerSend template (template id plus variables). Returns a `MailResult` (success or a `MailFailure` category) and never throws. It is also the one place mail is logged: categories only (kind, transport, failure, HTTP or SMTP status, exception type), never an address, name, subject, body, link, token, key or provider response text. `MailServiceTests` captures the log for success, failure, unconfigured and throwing transports. | Accounts, Contact, Subscriptions |
+| `Shared/Email/BrandedEmailLayout` | The brand frame (gradient rule, logo, card, footer) every rendered mail uses: account, subscription and contact (TE11 moved it here from Subscriptions so Contact does not depend on that module). The footer shows the unsubscribe line when given an unsubscribe link, otherwise an optional plain note | Accounts (look), Subscriptions, Contact |
 | `Shared/Email/SmtpMailTransport`, `MailerSendTransport` | The two transports behind `IMailService` (`IRenderedMailTransport`, `ITemplateMailTransport`). Each is the only class that talks to its provider; they never log and report back a failure category plus log-safe diagnostics. Modules must not reference them (`MailServiceTests.NoModuleTalksToSmtpOrMailerSendDirectly`). | `IMailService` only |
 | `Shared/Hosting/AddTrustedProxyHeaders` | Forwarded-header trust from configuration | `Program.cs` |
 
@@ -213,7 +214,7 @@ Owns the public contact form. Source: `Modules/Contact/`. It keeps no durable da
 | Endpoints | `Controllers/ContactController.cs` | Maps outcomes to status codes only. `POST /api/contact` (emails the link to the sender), `POST /api/contact/verify` (body `{token}`; the emailed link opens the client page `/contact/verify#token=...`) |
 | Abuse guard | `Services/ContactSubmissionAbuseGuard.cs` | Thread-safe sliding windows in two separate bounded stores: per socket IP, and per submitted address (stored only as a SHA-256 hash, case-insensitive). Configured under `Contact:RateLimit` |
 | Pending store | `Services/ContactVerificationService.cs` | In-memory, 30-minute lifetime, single use, removed on use or expiry |
-| Delivery | `Services/ContactEmailDeliveryService.cs` | Three MailerSend templates through `IMailService.SendTemplateAsync`: the confirm link to the sender, then the notice to Gustavo, then the receipt to the sender. Template ids come from `Contact:Templates`; the variables each template needs are in `Models/ContactEmailTemplateVariables.cs` and pinned by `ContactEmailTemplateTests` |
+| Delivery | `Services/ContactEmailDeliveryService.cs`, `ContactEmailRenderer.cs` | TE11: the three contact emails are rendered by the site and sent as finished mail through `IMailService.SendAsync` (no template, no API key): the confirm link to the sender (subject `Confirm your email to send your message to Gustavo`, never the message), then the notice to Gustavo (`New contact message from <name>`, Reply-To = the sender, holds sender name and address, reason and message), then the receipt to the sender (`Your message has been received`, Reply-To = Gustavo, holds a copy of the message). Each has HTML in the shared `BrandedEmailLayout` (looks from `Docs/email-templates/*.html`) and plain text. Every visitor value is HTML-encoded in the HTML part and the message keeps its line breaks as `<br>`; a name is stripped of control, line-separator and format characters before it reaches a subject, greeting or display name, so it cannot add a header or a recipient. Delivery needs only `Contact:RecipientEmail`. The old `Contact:Templates` settings are unused and go in TE12 |
 
 Validation on `POST /api/contact` (performed by `ContactSubmissionService`, which the controller calls): honeypot field `website` must be empty, all four fields required, `reason` must be `Work or collaboration` or `Personal note`, email must be well formed, then the rate limit applies (HTTP 429 before any token is created). Logs carry the reason and a client key, never the sender's address or the message body.
 
@@ -394,7 +395,7 @@ sequenceDiagram
     participant G as AbuseGuard
     participant V as VerificationService (memory)
     participant D as DeliveryService
-    participant S as MailerSend API
+    participant S as SMTP provider
 
     B->>C: POST /api/contact {name, email, reason, message, website}
     C->>C: honeypot, required fields, reason, email format
@@ -404,7 +405,7 @@ sequenceDiagram
     else allowed
         C->>V: CreateVerification (30 minute token)
         C->>D: SendVerificationRequestAsync (link only, no message body)
-        D->>S: confirmation template to the sender
+        D->>S: rendered confirmation mail to the sender
         alt email failed
             C->>V: Discard(token)
             C-->>B: 502
@@ -419,7 +420,7 @@ sequenceDiagram
         C-->>B: 400, 410, or 409
     else valid
         C->>D: SendAsync(pending message)
-        D->>S: owner template to Gustavo, then receipt template to the sender
+        D->>S: rendered notice to Gustavo, then rendered receipt to the sender
         C-->>B: 200, or 502 if delivery failed
     end
 ```
@@ -605,8 +606,8 @@ Configuration binds in this order of precedence, last wins: `appsettings.json`, 
 | --- | --- | --- |
 | `ConnectionStrings:Default` | SQLite database; a relative path resolves against the project folder | `Data Source=Data/goosewebsite.db` |
 | `Email:Smtp:Host`, `Port`, `Username`, `Password`, `FromEmail`, `FromName` | The shared SMTP sender. **Secrets: user-secrets or environment only** | empty; mail is skipped with a warning |
-| `Email:MailerSend:ApiKey`, `FromEmail`, `FromName` | MailerSend HTTP API for the templated contact emails. Both mail transports sit under the one `Email` section; the older `MailerSend:*` keys (existing user-secrets, environment `MailerSend__*`) are still read as a fallback, and `Email:MailerSend:*` wins when both are set. **The API key is a secret: user-secrets or environment only** (Docker: `MAILERSEND_API_KEY`, sender defaults to `SMTP_FROM_EMAIL`) | empty; contact emails are not sent |
-| `Contact:Templates:SenderConfirmation`, `SenderReceipt`, `OwnerNotification` | MailerSend template ids (identifiers, not secrets) | the three ids in `appsettings.json` |
+| `Email:MailerSend:ApiKey`, `FromEmail`, `FromName` | MailerSend HTTP API, no longer used by the contact flow (TE11); removed in TE12. Both mail transports sit under the one `Email` section; the older `MailerSend:*` keys (existing user-secrets, environment `MailerSend__*`) are still read as a fallback, and `Email:MailerSend:*` wins when both are set. **The API key is a secret: user-secrets or environment only** (Docker: `MAILERSEND_API_KEY`, sender defaults to `SMTP_FROM_EMAIL`) | empty; contact emails are not sent |
+| `Contact:Templates:SenderConfirmation`, `SenderReceipt`, `OwnerNotification` | Unused since TE11 (contact mail is rendered by the site); removed in TE12 | the three ids in `appsettings.json` |
 | `Contact:LogoUrl` | Public address of the email logo | `{PublicBaseUrl}/email/gcv-logo.png` |
 | `Contact:RecipientEmail` | Inbox for verified contact messages | empty; delivery is skipped |
 | `Contact:RateLimit:MaxRequestsPerWindow`, `WindowMinutes`, `MaxTrackedClients`, `MaxRequestsPerRecipient` | Contact abuse guard | 5, 10, 10000, 2 |
@@ -665,7 +666,7 @@ flowchart LR
 - **Contracts:** never return an entity from an endpoint. Use a request and response type in `Contracts/` with validation attributes. Never bind privilege-bearing fields (role, `EmailConfirmed`, ids of other users) from a request.
 - **Authorization:** protect every write with a policy from `AuthorizationPolicies`, not bare `[Authorize]`, and add `[ValidateAntiForgeryToken]` to cookie-authenticated mutations.
 - **Configuration:** bind settings to an options class (see `SmtpOptions`, `ContactOptions`). Do not read `IConfiguration` ad hoc in new code, and never hard-code addresses or credentials.
-- **Mail:** modules send only through `IMailService` and read the `MailResult`; they never touch SMTP or MailerSend. Account emails are rendered in the module and sent with `SendAsync`. Subscription emails (F10) are rendered the same way. Contact emails are MailerSend templates sent with `SendTemplateAsync`: the module picks the template id and supplies every variable it reads (case-sensitive names, constants in `ContactEmailTemplateVariables`), and a test pins them. A variable the request omits renders as its own name in the inbox.
+- **Mail:** modules send only through `IMailService` and read the `MailResult`; they never touch SMTP or MailerSend. Account emails are rendered in the module and sent with `SendAsync`. Subscription emails (F10) are rendered the same way. Contact emails (TE11) are rendered by `ContactEmailRenderer` and sent with `SendAsync` too; the contact flow no longer uses `SendTemplateAsync` (removed with the MailerSend path in TE12).
 - **Style:** C# with nullable references enabled, file-scoped namespaces, primary constructors for dependency injection, `sealed` classes by default, a short comment saying why a type exists. TypeScript uses standalone components, signals, and typed models; one feature per folder under `app/features/`.
 - **Naming:** `I<Name>` for seams, `<Name>Module`, `<Name>Controller`, `<Name>Repository`, `<Name>Configuration` for EF mappings.
 
@@ -682,7 +683,7 @@ Each item is a defect that a code review found in this repository. Check new cod
 | State change on `GET` | A verify link that changed state would be triggered by mail scanners | State changes use `POST` after an explicit user action |
 | Secrets or mail settings in `appsettings.json` | Working MailerSend credentials were placed in `appsettings.json` under a `MailerSend:Smtp` section the code never reads, while the values the app did read (user-secrets) were stale, so every send failed with `535` | Mail settings live only under `Email:Smtp:*` in user-secrets or environment variables, never in a tracked file (CLAUDE.md rule 4). When a setting seems ignored, check the key name against `SmtpOptions.SectionName` |
 | Logging only the exception type for a failure | `SmtpException` alone hid the cause, and .NET reports every SMTP 530 reply as `MustIssueStartTlsFirst`, which misled the diagnosis | Log safe categories that identify the cause (exception type, SMTP status code). To diagnose an SMTP failure, replay the handshake (EHLO, AUTH, MAIL FROM, RCPT TO) without sending data |
-| Template variables that do not match the request | A MailerSend template renders any variable the request omits (or spells differently) as its own name, for example `{{name}}` | Keep the variable names in one constants class, document them next to the templates, and pin them with a test that checks every variable for every template. Variable names in the MailerSend editor must be copied exactly |
+| Template variables that do not match the request | Gone with TE11: contact mail is rendered in code, so a missing value is a compile or test failure, not a variable name in an inbox | `ContactRenderedMailTests` and `ContactMailFlowApiTests` pin the rendered mails |
 | Check-then-act on a one-time token | `Verify` looked the token up, then removed it, so two simultaneous confirmations both succeeded and the message was delivered twice | Claim the token with one atomic operation (`TryRemove`) and act only if it returned the value. Test with many parallel requests and assert exactly one success |
 | Retrying a multi-step action from the start | A failed receipt made the retry notify Gustavo a second time | Record how far an attempt got (`ContactDeliveryOutcome`, `OwnerNotified`) and resume from there. Test the partial failure and the retry |
 | Backlog status from reading code | F2-US2 was recorded Done before the browser flow was exercised | Run the acceptance tests and a runtime check before marking Done (CLAUDE.md rule 7) |

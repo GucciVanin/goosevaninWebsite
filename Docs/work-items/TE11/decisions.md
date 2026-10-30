@@ -1,0 +1,7 @@
+# Decisions - TE11
+
+| Date | Decision | Outcome |
+| --- | --- | --- |
+| 2026-10-29 | Gustavo: no MailerSend API key can be created for the site domain; only the SMTP login and password exist. The site formats its own emails and sends finished mail. Spec: row TE11 in `Docs/project.md`, issue 27. Approved by merging pull request 31. | Approved |
+| 2026-10-29 | Captain defaults: subjects and wording stay as today (`Confirm your email to send your message to Gustavo`, `New contact message from <name>`, `Your message has been received`); the owner notice has Reply-To = sender; the sender's receipt has Reply-To = the owner address; the layout is the branded one used by account and subscription mail, with the look of `Docs/email-templates/*.html`; the plain-text part is written in code for all three. Contact module may not depend on Subscriptions, so `BrandedEmailLayout` moves to `Shared/Email`. `Contact:Templates` and `TemplateMail` are left in place for TE12 to remove. | Recorded; Gustavo may amend |
+| 2026-10-29 | Review round 1: Security Low finding F1 (mailto link not URL-encoded) fixed; the F10-US3 test `TheHostedLoopDeliversInTheBackgroundWithoutTheEditorRequestWaiting` was nondeterministic once under load, made deterministic with a gate in the test (test-only; the Reviewer found no production race). Follow-ups for Gustavo: assert empty mail list after publish in that test, optional guard so `CloseFinishedAsync` never closes a very young announcement, no-unsubscribe test for the owner notice and receipt, real delivery check (TE13). | Recorded |

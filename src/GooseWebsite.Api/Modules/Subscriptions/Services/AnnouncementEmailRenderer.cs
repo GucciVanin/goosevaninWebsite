@@ -1,4 +1,5 @@
 using System.Net;
+using GooseWebsite.Api.Shared.Email;
 using GooseWebsite.Api.Shared.Announcements;
 
 namespace GooseWebsite.Api.Modules.Subscriptions.Services;

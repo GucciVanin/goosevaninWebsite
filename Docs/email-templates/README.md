@@ -10,7 +10,7 @@ Three self-contained HTML emails in the cyberpunk look of the redesign (near-bla
 
 ## Placeholders
 
-Replace these `{{...}}` tokens before sending (MailerSend personalization uses the same double-brace syntax).
+These `{{...}}` tokens mark where the renderer puts a value.
 
 | Placeholder | Used in | Value |
 | --- | --- | --- |
@@ -26,11 +26,11 @@ Suggested subjects: `Confirm your email to send your message to Gustavo`, `Your 
 
 ## Using them
 
-- **They are the source for the MailerSend templates.** The contact emails are sent through the MailerSend HTTP API with a template id (`Contact:Templates`), by `ContactEmailDeliveryService`. The variable names above are exactly what the code sends (`Models/ContactEmailTemplateVariables.cs`); each template must use only these, spelled the same way, or the inbox shows the variable name instead of the value. `ContactEmailTemplateTests` pins them.
-- **Plain-text limitation (contact emails):** the plain-text alternative of these three templates lives in the MailerSend dashboard, which the code cannot change. Gustavo must add or check it there (a follow-up that needs a dashboard action).
+- **They are the design source for the code renderer (TE11).** The contact emails are rendered by `ContactEmailRenderer` (`Modules/Contact/Services`) in the shared `BrandedEmailLayout` (`Shared/Email`) and sent over SMTP as HTML plus plain text by `ContactEmailDeliveryService`; nothing is stored at MailerSend. These HTML files are the visual reference: when the look changes, change the files and the renderer together. The placeholders below describe the values the renderer fills in.
+- **Plain text:** all three contact emails carry a plain-text alternative written in code.
 - **Account verification email is built in code, not from these files.** It is sent over SMTP as HTML plus plain text by `AccountEmailSender` and `AccountVerificationEmailRenderer` (`Modules/Accounts/Services`), in the same look. Its only remote resource is the logo, whose address is `{PublicBaseUrl}/email/gcv-logo.png` (built with `PublicLinkBuilder.SiteLink`; there is no override for it). Like the contact emails, the logo shows in real inboxes only once the site is public. The display name is HTML-encoded in the HTML view. `AccountVerificationEmailTests` pins the structure, the text and the absence of third-party content. A rendered preview with sample values is in `account-verification-preview.png`. To check the emails in real mail clients, follow `client-check.md`.
 - **Variables per template:** confirmation uses `name`, `verification_url`, `site_url`, `logo_url`; receipt and owner notification use `name`, `sender_email`, `reason`, `message`, `site_url`, `logo_url`. The confirmation request deliberately never includes `message`.
-- **Escaping:** the values come from a public form. Confirm in MailerSend that `{{message}}` and `{{name}}` are HTML-escaped (a test message containing `<b>bold</b>` must show the tags as text). If a template uses triple braces or a raw-output option, switch it to the escaped form.
+- **Escaping:** the values come from a public form. The renderer HTML-encodes every visitor value (name, email, reason, message) in the HTML part and keeps the message's line breaks as `<br>`; the plain-text part carries them as typed. `ContactRenderedMailTests` pins it with `<script>`, quotes, `&` and `<b>`.
 - **Logo:** `logo_url` is `{site_url}/email/gcv-logo.png` (file `src/GooseWebsite.Client/public/email/gcv-logo.png`). Mail clients fetch images from a public address, so the logo does not display in real inboxes while `PublicBaseUrl` is `localhost`; it will once the site is public. `Contact:LogoUrl` overrides the address, for example with an image hosted elsewhere. An inline (`cid:`) image was tried on 2026-10-06 and did not render in the MailerSend templates, so it was removed.
 - **Privacy:** the receipt contains a copy of the sender's message, so it goes only to the verified sender address. Never log the rendered emails.
 

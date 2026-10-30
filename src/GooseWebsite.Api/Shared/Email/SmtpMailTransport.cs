@@ -59,6 +59,11 @@ public sealed class SmtpMailTransport(IOptions<SmtpOptions> options) : IRendered
             Subject = mail.Subject
         };
         message.To.Add(new MailAddress(mail.To.Email, mail.To.Name));
+        if (mail.ReplyTo is not null)
+        {
+            message.ReplyToList.Add(new MailAddress(mail.ReplyTo.Email, mail.ReplyTo.Name));
+        }
+
         message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(mail.PlainText, null, MediaTypeNames.Text.Plain));
         message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(mail.Html, null, MediaTypeNames.Text.Html));
         foreach (var (name, value) in mail.Headers ?? new Dictionary<string, string>())

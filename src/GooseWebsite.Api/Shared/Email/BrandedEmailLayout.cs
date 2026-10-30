@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace GooseWebsite.Api.Modules.Subscriptions.Services;
+namespace GooseWebsite.Api.Shared.Email;
 
 // The brand frame shared by every subscription email: gradient rule, logo, the card for the message, and the footer
 // with the unsubscribe line. Tables and inline styles only (no web fonts, scripts, remote CSS or tracking images);
@@ -14,10 +14,15 @@ internal static class BrandedEmailLayout
     /// <param name="title">Document title (plain text; encoded here).</param>
     /// <param name="preheader">The inbox preview line (plain text; encoded here).</param>
     /// <param name="cardHtml">The HTML inside the message card, already encoded.</param>
-    /// <param name="unsubscribeUrl">The personal unsubscribe link (plain; encoded here).</param>
-    public static string Render(string title, string preheader, string cardHtml, string unsubscribeUrl, string logoUrl, string siteUrl)
+    /// <param name="unsubscribeUrl">The personal unsubscribe link (plain; encoded here). Null for mail that is not a subscription (contact, account): the footer then shows <paramref name="footerNote"/> or nothing.</param>
+    /// <param name="footerNote">An optional plain-text line for the footer of mail without an unsubscribe link (encoded here).</param>
+    public static string Render(string title, string preheader, string cardHtml, string? unsubscribeUrl, string logoUrl, string siteUrl, string? footerNote = null)
     {
-        var unsubscribe = WebUtility.HtmlEncode(unsubscribeUrl);
+        var footerLine = unsubscribeUrl is not null
+            ? $"""<div style="padding-top:10px; font-family:{Sans}; font-size:12px; line-height:18px; color:#6c7199;">{UnsubscribeSentence} <a href="{WebUtility.HtmlEncode(unsubscribeUrl)}" style="color:#19e6ff; text-decoration:underline;">Unsubscribe</a></div>"""
+            : footerNote is not null
+                ? $"""<div style="padding-top:10px; font-family:{Sans}; font-size:11px; line-height:16px; color:#555a80;">{WebUtility.HtmlEncode(footerNote)}</div>"""
+                : string.Empty;
         var logo = WebUtility.HtmlEncode(logoUrl);
         var site = WebUtility.HtmlEncode(siteUrl);
         var documentTitle = WebUtility.HtmlEncode(title);
@@ -54,7 +59,7 @@ internal static class BrandedEmailLayout
     <tr><td align="center" bgcolor="#000000" style="background-color:#000000; padding:22px 32px 26px 32px; border:1px solid #23264a;">
       <div style="font-family:{{Mono}}; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#8b90b8; line-height:20px;">Curious mind. Practical solutions. Real impact.</div>
       <div style="padding-top:10px; font-family:{{Sans}}; font-size:12px; line-height:18px; color:#6c7199;">Gustavo Couto Vanin &middot; <a href="{{site}}" style="color:#19e6ff; text-decoration:none;">{{site}}</a></div>
-      <div style="padding-top:10px; font-family:{{Sans}}; font-size:12px; line-height:18px; color:#6c7199;">{{UnsubscribeSentence}} <a href="{{unsubscribe}}" style="color:#19e6ff; text-decoration:underline;">Unsubscribe</a></div>
+      {{footerLine}}
     </td></tr>
     <tr><td style="font-size:0; line-height:0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
